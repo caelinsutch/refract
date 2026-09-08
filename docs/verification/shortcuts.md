@@ -18,6 +18,12 @@ The Shortcuts inspector supports global visibility, label size, single-key visib
 
 ## Remaining
 
-Native keyboard-event capture and its macOS permission handling, typing suppression, the dedicated timeline lane, reference transition/style comparison, and a real MP4 export containing shortcut labels remain unverified/unimplemented. The current fixture is synthetic and is not evidence of captured keyboard input. No global input listener was added in this batch.
+Native keyboard-event capture and its macOS permission handling, typing suppression, reference transition/style comparison, and a real MP4 export containing shortcut labels remain unverified/unimplemented. The current fixture is synthetic and is not evidence of captured keyboard input. No global input listener was added in this batch.
 
 Apple's [event-monitor documentation](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/MonitoringEvents/MonitoringEvents.html) specifies accessibility trust for global keyboard monitoring. Capture integration must report unavailable permission accurately and stop observing when recording stops.
+
+## Timeline lane follow-up
+
+The timeline now exposes Shortcuts with the 3 key and its visibility menu. It uses the established 48px lane height and 12px spacing, with tokenized neutral track colors. Each retained part of a source event is positioned separately, including repeated footage and different clip speeds. Click or Space toggles an event; right-click or Shift-F10 opens Hide all matching shortcuts. Disabled events stay visible with reduced opacity and a struck-through label. The context menu restores keyboard focus on dismissal.
+
+Production build and 58 core tests passed, including a new test for event projection across cuts, 2× playback, and repeated source footage. Live packaged verification showed the lane on pressing 3, confirmed click/Space toggling without triggering playback, and confirmed that the context action disabled both ⌘C events and returned focus to the first block. Visual comparison of the lane against the reference is still pending; neutral colors are an implementation choice.

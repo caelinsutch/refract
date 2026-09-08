@@ -6,6 +6,7 @@ import "./theme.css";
 import "./reset.css";
 import "./motion.css";
 import "./camera-timeline.css";
+import "./shortcut-timeline.css";
 if (location.hash === "#recorder" || location.hash === "#area")
   document.documentElement.classList.add("recorder-surface");
 createRoot(document.getElementById("root")!).render(

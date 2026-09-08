@@ -1,3 +1,4 @@
+import { ShortcutTimeline } from "./ShortcutTimeline";
 import { ClipContextMenu } from "./ClipContextMenu";
 import { CameraTimeline } from "./CameraTimeline";
 import * as sx from "@stylexjs/stylex";
@@ -390,7 +391,10 @@ export default function Timeline({
         height:
           145 +
           60 *
-            (Number(tracks.zoom) + Number(tracks.mask) + Number(tracks.camera)),
+            (Number(tracks.zoom) +
+              Number(tracks.mask) +
+              Number(tracks.camera) +
+              Number(tracks.shortcuts)),
       }}
     >
       {clipMenu && contextClip && (
@@ -662,12 +666,26 @@ export default function Timeline({
               seek={seek}
             />
           )}
+          {tracks.shortcuts && (
+            <ShortcutTimeline
+              project={project}
+              px={px}
+              top={100 + 60 * (Number(tracks.zoom) + Number(tracks.camera))}
+              edit={edit}
+              seek={seek}
+            />
+          )}
           {tracks.mask && (
             <div
               {...sx.props(s.zoomTrack)}
               aria-label="Mask timeline"
               style={{
-                top: 100 + 60 * (Number(tracks.zoom) + Number(tracks.camera)),
+                top:
+                  100 +
+                  60 *
+                    (Number(tracks.zoom) +
+                      Number(tracks.camera) +
+                      Number(tracks.shortcuts)),
                 backgroundColor: "var(--track-mask-subtle)",
                 borderColor: "var(--track-mask-outline)",
               }}

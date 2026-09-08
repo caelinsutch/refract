@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createCanvas } from "@napi-rs/canvas";
 import { createProject, validateProject } from "./project";
-import { shortcutAt, shortcutLabel } from "./shortcuts";
+import { shortcutAt, shortcutLabel, shortcutRanges } from "./shortcuts";
 import { drawFrame } from "./compositor";
 function fixture() {
   const p = createProject({
@@ -93,4 +93,16 @@ test("shared compositor renders shortcut labels deterministically and global hid
   assert.deepEqual(frame(200), shown);
   p.appearance.showShortcuts = false;
   assert.deepEqual(frame(200), empty);
+});
+
+test("shortcut timeline pieces preserve cut boundaries and repeat with retained footage", () => {
+  const p = fixture();
+  const event = { ...p.shortcuts![0], start: 500, end: 2500 };
+  p.segments.push({ id: "repeat", start: 500, end: 1000, speed: 1 });
+  assert.deepEqual(shortcutRanges(p, event), [
+    { start: 500, end: 1000, segmentId: "a" },
+    { start: 1000, end: 1250, segmentId: "b" },
+    { start: 2500, end: 3000, segmentId: "repeat" },
+  ]);
+  assert.deepEqual(shortcutRanges(p, p.shortcuts![1]), []);
 });

@@ -66,3 +66,21 @@ export function drawShortcut(
   c.fillText(label, width / 2, top + boxHeight / 2, boxWidth - size * 0.7);
   c.restore();
 }
+
+/** Keep separate retained pieces: a cut must not make an event span removed footage. */
+export function shortcutRanges(p: Project, shortcut: Shortcut) {
+  let offset = 0;
+  const ranges: Array<{ start: number; end: number; segmentId: string }> = [];
+  for (const segment of p.segments) {
+    const start = Math.max(shortcut.start, segment.start);
+    const end = Math.min(shortcut.end, segment.end);
+    if (end > start)
+      ranges.push({
+        start: offset + (start - segment.start) / segment.speed,
+        end: offset + (end - segment.start) / segment.speed,
+        segmentId: segment.id,
+      });
+    offset += (segment.end - segment.start) / segment.speed;
+  }
+  return ranges;
+}

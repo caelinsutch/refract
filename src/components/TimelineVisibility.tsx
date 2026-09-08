@@ -1,8 +1,20 @@
 import { useRef, useState } from "react";
 import * as sx from "@stylexjs/stylex";
-import { Layers, ChevronDown, ZoomIn, Scan, Video } from "lucide-react";
+import {
+  Layers,
+  ChevronDown,
+  ZoomIn,
+  Scan,
+  Video,
+  Keyboard,
+} from "lucide-react";
 import { Button } from "./ui";
-export type TimelineTracks = { zoom: boolean; mask: boolean; camera: boolean };
+export type TimelineTracks = {
+  zoom: boolean;
+  mask: boolean;
+  camera: boolean;
+  shortcuts: boolean;
+};
 const s = sx.create({
   root: { position: "relative", flexShrink: 0 },
   menu: {
@@ -35,9 +47,11 @@ export function TimelineVisibility({
   tracks,
   onChange,
   hasCamera = false,
+  hasShortcuts = false,
 }: {
   tracks: TimelineTracks;
   hasCamera?: boolean;
+  hasShortcuts?: boolean;
   onChange: (tracks: TimelineTracks) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -57,7 +71,10 @@ export function TimelineVisibility({
     node.showPopover();
   };
   const count =
-    Number(tracks.zoom) + Number(tracks.mask) + Number(tracks.camera);
+    Number(tracks.zoom) +
+    Number(tracks.mask) +
+    Number(tracks.camera) +
+    Number(tracks.shortcuts);
   return (
     <div ref={root} {...sx.props(s.root)}>
       <Button onClick={toggle} aria-expanded={open} title="Visible timelines">
@@ -78,6 +95,7 @@ export function TimelineVisibility({
           [
             { id: "zoom", label: "Zooms", key: "1", Icon: ZoomIn },
             { id: "camera", label: "Camera layouts", key: "2", Icon: Video },
+            { id: "shortcuts", label: "Shortcuts", key: "3", Icon: Keyboard },
             { id: "mask", label: "Masks", key: "4", Icon: Scan },
           ] as const
         ).map(({ id, label, key, Icon }) => (
@@ -87,7 +105,10 @@ export function TimelineVisibility({
             <kbd>{key}</kbd>
             <input
               type="checkbox"
-              disabled={id === "camera" && !hasCamera}
+              disabled={
+                (id === "camera" && !hasCamera) ||
+                (id === "shortcuts" && !hasShortcuts)
+              }
               checked={tracks[id]}
               onChange={(e) => onChange({ ...tracks, [id]: e.target.checked })}
             />

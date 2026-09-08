@@ -388,6 +388,7 @@ export default function App() {
       zoom: true,
       mask: false,
       camera: false,
+      shortcuts: false,
     }),
     [modal, setModal] = useState<"export" | "presets" | null>(null),
     [commandOpen, setCommandOpen] = useState(false),
@@ -850,11 +851,18 @@ export default function App() {
         !e.metaKey &&
         !e.ctrlKey &&
         !e.altKey &&
-        (e.key === "1" || e.key === "2" || e.key === "4")
+        (e.key === "1" || e.key === "2" || e.key === "3" || e.key === "4")
       ) {
         const track =
-          e.key === "1" ? "zoom" : e.key === "2" ? "camera" : "mask";
+          e.key === "1"
+            ? "zoom"
+            : e.key === "2"
+              ? "camera"
+              : e.key === "3"
+                ? "shortcuts"
+                : "mask";
         if (track === "camera" && !project?.source.camera) return;
+        if (track === "shortcuts" && !project?.shortcuts?.length) return;
         setTimelineTracks((t) => ({ ...t, [track]: !t[track] }));
       }
       if (e.key.toLowerCase() === "c" && !e.metaKey && !e.ctrlKey) cut();
@@ -1424,6 +1432,7 @@ export default function App() {
               <TimelineVisibility
                 tracks={timelineTracks}
                 hasCamera={!!project.source.camera}
+                hasShortcuts={!!project.shortcuts?.length}
                 onChange={setTimelineTracks}
               />
             )}

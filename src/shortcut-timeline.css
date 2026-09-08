@@ -1,0 +1,39 @@
+[data-shortcut-track] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  border: 1px dashed var(--track-shortcut-outline);
+  border-radius: 10px;
+  background: var(--track-shortcut-subtle);
+}
+[data-shortcut-block] {
+  position: absolute;
+  top: 0;
+  height: 46px;
+  padding: 0 8px;
+  border: 1px solid var(--track-shortcut-outline);
+  border-radius: 9px;
+  background: var(--track-shortcut);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+}
+[data-shortcut-block] span {
+  white-space: nowrap;
+  pointer-events: none;
+}
+[data-shortcut-block]:hover {
+  background: var(--track-shortcut-hover);
+}
+[data-shortcut-block][data-disabled="true"] {
+  opacity: 0.45;
+}
+[data-shortcut-block][data-disabled="true"] span {
+  text-decoration: line-through;
+}
+[data-shortcut-block]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
