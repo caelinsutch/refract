@@ -1603,6 +1603,18 @@ export default function App() {
                     <X size={13} />
                   </Button>
                 </Row>
+                <Toggle
+                  label="Hide mouse cursor"
+                  value={!!clip.hideCursor}
+                  onChange={(hideCursor) =>
+                    edit({
+                      ...project,
+                      segments: project.segments.map((c) =>
+                        c.id === clip.id ? { ...c, hideCursor } : c,
+                      ),
+                    })
+                  }
+                />
                 <Range
                   label="Playback speed"
                   value={clip.speed}
@@ -1902,6 +1914,24 @@ export default function App() {
             ) : tab === "cursor" ? (
               <>
                 <Heading>Cursor</Heading>
+                {sourceAt(project, time)?.segment.hideCursor && (
+                  <>
+                    <Note>
+                      The cursor is hidden in this clip. Change its clip setting
+                      to see cursor adjustments here.
+                    </Note>
+                    <Button
+                      onClick={() => {
+                        const segment = sourceAt(project, time)?.segment;
+                        if (segment)
+                          setSelection({ type: "clip", id: segment.id });
+                      }}
+                    >
+                      Open clip settings
+                    </Button>
+                    <Divider />
+                  </>
+                )}
                 {!project.cursor.length ? (
                   <Note>
                     This imported video has no separate cursor track. Cursor

@@ -150,3 +150,33 @@ dialog[data-command-menu][open] {
     filter: none;
   }
 }
+
+[data-clip-menu] {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 5px;
+  width: 220px;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--white-a20);
+  background: var(--surface-popover);
+  box-shadow: 0 8px 30px var(--black-a88);
+  color: var(--text-primary);
+}
+[data-clip-menu] button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  text-align: left;
+}
+[data-clip-menu] button:hover,
+[data-clip-menu] button:focus-visible {
+  background: var(--primary);
+  color: var(--primary-text);
+  outline: none;
+}

@@ -2,7 +2,13 @@ import type { CameraLayout } from "./camera-layout.js";
 import type { SpringConfig } from "./spring.js";
 import { screenMotionAt } from "./motion.js";
 import type { CropRect } from "./crop.js";
-export type Segment = { id: string; start: number; end: number; speed: number };
+export type Segment = {
+  id: string;
+  start: number;
+  end: number;
+  speed: number;
+  hideCursor?: boolean;
+};
 export type Zoom = {
   id: string;
   start: number;
@@ -217,7 +223,8 @@ export function validateProject(value: unknown): Project {
       s.end > p.source.duration + 1 ||
       s.end <= s.start ||
       s.speed < 0.1 ||
-      s.speed > 16
+      s.speed > 16 ||
+      (s.hideCursor !== undefined && typeof s.hideCursor !== "boolean")
     )
       throw new Error("The project has an invalid clip range.");
   if (

@@ -255,6 +255,7 @@ export function drawFrame(
   }
   if (
     !a.hideCursor &&
+    !sourceAt(p, t)?.segment.hideCursor &&
     (loopMoving || cursorVisibleAt(p.cursor, source, a.cursorIdleMs))
   ) {
     const { x: px, y: py } = loopedCursorAt(

@@ -1,7 +1,8 @@
+import { ClipContextMenu } from "./ClipContextMenu";
 import { CameraTimeline } from "./CameraTimeline";
 import * as sx from "@stylexjs/stylex";
 import { useEffect, useRef, useState } from "react";
-import { Scissors, Plus, ZoomIn } from "lucide-react";
+import { Scissors, Plus, ZoomIn, EyeOff } from "lucide-react";
 import {
   type Project,
   type Zoom,
@@ -204,6 +205,12 @@ export default function Timeline({
   setZoom: (n: number) => void;
   cut: () => void;
 }) {
+  const [clipMenu, setClipMenu] = useState<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const contextClip = project.segments.find((c) => c.id === clipMenu?.id);
   const el = useRef<HTMLDivElement>(null);
   const [dragScale, setDragScale] = useState<number | null>(null);
   const viewport = useRef<HTMLDivElement>(null);
@@ -386,6 +393,24 @@ export default function Timeline({
             (Number(tracks.zoom) + Number(tracks.mask) + Number(tracks.camera)),
       }}
     >
+      {clipMenu && contextClip && (
+        <ClipContextMenu
+          clip={contextClip}
+          x={clipMenu.x}
+          y={clipMenu.y}
+          onClose={() => setClipMenu(null)}
+          onToggleCursor={() =>
+            edit({
+              ...project,
+              segments: project.segments.map((c) =>
+                c.id === contextClip.id
+                  ? { ...c, hideCursor: !c.hideCursor }
+                  : c,
+              ),
+            })
+          }
+        />
+      )}
       <div {...sx.props(s.tools)}>
         <Button title="Cut at playhead (C)" onClick={cut} icon>
           <Scissors size={14} />
@@ -435,7 +460,7 @@ export default function Timeline({
                 key={clip.id}
                 role="button"
                 tabIndex={0}
-                aria-label={`Clip ${formatTime(clip.end - clip.start)} at ${clip.speed} times speed`}
+                aria-label={`Clip ${formatTime(clip.end - clip.start)} at ${clip.speed} times speed${clip.hideCursor ? ", cursor hidden" : ""}`}
                 {...sx.props(
                   s.clip(
                     left * px,
@@ -443,12 +468,38 @@ export default function Timeline({
                   ),
                   selection?.id === clip.id && s.selected,
                 )}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.focus({ preventScroll: true });
+                  select({ type: "clip", id: clip.id });
+                  const bounds = e.currentTarget.getBoundingClientRect();
+                  setClipMenu({
+                    id: clip.id,
+                    x: e.clientX || bounds.left + 10,
+                    y: e.clientY || bounds.top + 10,
+                  });
+                }}
                 onClick={(e) => {
                   select({ type: "clip", id: clip.id });
                   seek(toTime(e.clientX));
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") select({ type: "clip", id: clip.id });
+                  if (
+                    e.key === "ContextMenu" ||
+                    (e.shiftKey && e.key === "F10")
+                  ) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    select({ type: "clip", id: clip.id });
+                    const bounds = e.currentTarget.getBoundingClientRect();
+                    setClipMenu({
+                      id: clip.id,
+                      x: bounds.left + 10,
+                      y: bounds.top + 10,
+                    });
+                  }
                 }}
               >
                 {(["start", "end"] as const).map((side) => (
@@ -482,6 +533,13 @@ export default function Timeline({
                     }}
                   />
                 ))}
+                {clip.hideCursor && (
+                  <EyeOff
+                    size={13}
+                    aria-label="Cursor hidden in this clip"
+                    style={{ marginRight: 6 }}
+                  />
+                )}
                 Clip {((clip.end - clip.start) / clip.speed / 1000).toFixed(1)}s{" "}
                 <span style={{ marginLeft: "auto" }}>{clip.speed} ×</span>
               </div>
