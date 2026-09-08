@@ -12,7 +12,7 @@ export const wallpapers = [
 export function dimensions(p: Project, max = 1280) {
   const [w, h] =
     p.appearance.ratio === "Auto"
-      ? [p.source.width, p.source.height]
+      ? [p.crop?.width ?? p.source.width, p.crop?.height ?? p.source.height]
       : p.appearance.ratio.split(":").map(Number);
   const ratio = w / h;
   return ratio >= 1
@@ -106,9 +106,13 @@ export function drawFrame(
   }
   c.restore();
   const padding = (Math.min(width, height) * a.padding) / 100;
-  const fit = Math.min((width - padding * 2) / sw, (height - padding * 2) / sh);
-  const w = sw * fit,
-    h = sh * fit,
+  const crop = p.crop ?? { x: 0, y: 0, width: sw, height: sh };
+  const fit = Math.min(
+    (width - padding * 2) / crop.width,
+    (height - padding * 2) / crop.height,
+  );
+  const w = crop.width * fit,
+    h = crop.height * fit,
     x = (width - w) / 2,
     y = (height - h) / 2,
     r = a.radius * scale;
@@ -131,10 +135,16 @@ export function drawFrame(
   c.clip();
   const source = sourceAt(p, t)?.time ?? 0;
   const z = zoomAt(p, source);
-  const cw = sw / z.scale,
-    ch = sh / z.scale,
-    sx = z.x * sw - cw / 2,
-    sy = z.y * sh - ch / 2;
+  const cw = crop.width / z.scale,
+    ch = crop.height / z.scale,
+    sx = Math.max(
+      crop.x,
+      Math.min(crop.x + crop.width - cw, z.x * sw - cw / 2),
+    ),
+    sy = Math.max(
+      crop.y,
+      Math.min(crop.y + crop.height - ch, z.y * sh - ch / 2),
+    );
   c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
   for (const m of p.masks.filter((m) => source >= m.start && source <= m.end)) {
     const mx = x + ((m.x * sw - sx) / cw) * w,

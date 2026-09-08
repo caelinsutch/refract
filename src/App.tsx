@@ -58,6 +58,7 @@ import {
   validateProject,
 } from "./core/project";
 import { dimensions, drawFrame, wallpapers } from "./core/compositor";
+import CropEditor from "./components/CropEditor";
 import Timeline, { type Selection } from "./components/Timeline";
 import {
   Button,
@@ -337,6 +338,7 @@ const tabs = [
   { id: "animations", title: "Animations", icon: Clapperboard },
 ];
 export default function App() {
+  const [cropping, setCropping] = useState(false);
   const [project, setProject] = useState<Project | null>(null),
     [url, setUrl] = useState(""),
     [cameraUrl, setCameraUrl] = useState(""),
@@ -683,6 +685,7 @@ export default function App() {
   }, [previewSpeed, loop]);
   useEffect(() => {
     const action = (a: string) => {
+      if (cropping) return;
       if (a === "import") void importVideo();
       if (a === "open") void open();
       if (a === "save") void save();
@@ -696,6 +699,7 @@ export default function App() {
     };
     const off = window.refract?.onMenu(action);
     const key = (e: KeyboardEvent) => {
+      if (cropping || e.defaultPrevented) return;
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -944,6 +948,19 @@ export default function App() {
   }
   return (
     <div {...sx.props(s.app)}>
+      {cropping && project && (
+        <CropEditor
+          width={project.source.width}
+          height={project.source.height}
+          initial={project.crop}
+          video={video.current}
+          onCancel={() => setCropping(false)}
+          onConfirm={(crop) => {
+            edit({ ...project, crop });
+            setCropping(false);
+          }}
+        />
+      )}
       <header className="titlebar" {...sx.props(s.header)}>
         {window.refract ? (
           <div style={{ width: 69 }} />
@@ -1045,10 +1062,10 @@ export default function App() {
                   </select>
                   <Button
                     onClick={() => {
-                      setTab("background");
-                      setSelection(null);
+                      setPlaying(false);
+                      setCropping(true);
                     }}
-                    title="Screen framing"
+                    title="Crop recording"
                   >
                     <Crop size={13} />
                     Crop

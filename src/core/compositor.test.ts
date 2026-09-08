@@ -87,3 +87,48 @@ test("directional shadow follows angle without shifting the recording", () => {
   assert.equal(redAt(0, 200), 255);
   assert.equal(redAt(180, 200), 255);
 });
+
+test("crop removes source pixels in the shared compositor, including during zoom", () => {
+  const source = createCanvas(100, 100),
+    sc = source.getContext("2d");
+  sc.fillStyle = "#ff0000";
+  sc.fillRect(0, 0, 50, 100);
+  sc.fillStyle = "#0000ff";
+  sc.fillRect(50, 0, 50, 100);
+  const p = createProject({
+    file: "test",
+    width: 100,
+    height: 100,
+    duration: 1000,
+    hasAudio: false,
+  });
+  p.crop = { x: 50, y: 0, width: 50, height: 100 };
+  Object.assign(p.appearance, { padding: 0, radius: 0, shadow: 0, inset: 0 });
+  const canvas = createCanvas(100, 200),
+    c = canvas.getContext("2d");
+  for (const zoom of [false, true]) {
+    p.zooms = zoom
+      ? [
+          {
+            id: "z",
+            start: 0,
+            end: 1000,
+            scale: 2,
+            x: 0,
+            y: 0.5,
+            mode: "manual",
+            disabled: false,
+          },
+        ]
+      : [];
+    drawFrame(
+      c as unknown as CanvasRenderingContext2D,
+      source as unknown as CanvasImageSource,
+      p,
+      500,
+      100,
+      200,
+    );
+    assert.deepEqual([...c.getImageData(50, 100, 1, 1).data], [0, 0, 255, 255]);
+  }
+});

@@ -45,3 +45,11 @@ Two pixel-level tests verify background blur does not blur the recording, and op
 Zoom regions now display the surviving source interval after cuts, even when one or both original endpoints have been trimmed away. Dragging and resizing convert output-clock displacement through clip speed; a 500ms drag on a 2× clip moves the source interval by 1000ms. At a cut, the start handle maps to the incoming clip and the end handle to the outgoing clip. Whole-region movement clamps at the project edges and preserves its visible duration. Pointer cancellation and lost capture remove drag listeners.
 
 The timeline's default scale now uses the available viewport width instead of a fixed 900px, keeping the ruler and clips fitted when the editor is resized. Four regression tests cover cuts, speed, boundaries, and edge clamping. All eleven tests and the production build pass. These changes correct observed code defects; gesture equivalence with the reference still needs live verification.
+
+## Crop workflow
+
+The Screen Studio crop window was opened and visually inspected. Its 960 × 720 surface has Size width/height steppers, an aspect selector, Position x/y steppers, Reset, a raw-video preview with eight handles, and Confirm changes / Discard changes. Accessibility describes arrow-key movement for the selection and handles.
+
+Refract's Crop action now opens a matching control layout with pixel inputs, aspect presets, eight handles, keyboard movement (Shift for ten pixels), reset, and draft confirm/discard behavior. The crop is saved on the project and consumed by the common preview/export compositor. Auto aspect ratio follows the retained source dimensions; zoom sampling is clamped inside the crop. Crop editing suppresses underlying editor shortcuts.
+
+Three added tests cover constrained handle movement, saved crop validation and dimensions, and actual pixel exclusion with and without zoom. Fourteen tests and the production build pass. Refract's UI connection timed out while its process remained live, so the new dialog has not been visually signed off. It currently uses an editor overlay; the reference uses a separate native window. Native window presentation, finer spacing, crop grid, and full aspect-preset parity remain open.

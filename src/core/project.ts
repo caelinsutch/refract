@@ -1,3 +1,4 @@
+import type { CropRect } from "./crop.js";
 export type Segment = { id: string; start: number; end: number; speed: number };
 export type Zoom = {
   id: string;
@@ -61,6 +62,7 @@ export type Appearance = {
 };
 export type Project = {
   version: 1;
+  crop?: CropRect;
   id: string;
   title: string;
   source: {
@@ -224,6 +226,19 @@ export function validateProject(value: unknown): Project {
       z.y > 1
     )
       throw new Error("The project has an invalid zoom.");
+  if (p.crop) {
+    const { x, y, width, height } = p.crop;
+    if (
+      ![x, y, width, height].every(valid) ||
+      x < 0 ||
+      y < 0 ||
+      width < 1 ||
+      height < 1 ||
+      x + width > p.source.width ||
+      y + height > p.source.height
+    )
+      throw new Error("The project has an invalid crop.");
+  }
   p.appearance = { ...defaults, ...p.appearance };
   for (const k of [
     "padding",
