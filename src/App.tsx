@@ -350,6 +350,8 @@ const tabs = [
 ];
 export default function App() {
   const [cropping, setCropping] = useState(false);
+  const [captionBusy, setCaptionBusy] = useState(false);
+  const [captionLocale, setCaptionLocale] = useState("en-US");
   const [history, dispatchHistory] = useReducer(reduceHistory, emptyHistory);
   const { present: project, past, future } = history;
   const [url, setUrl] = useState(""),
@@ -733,6 +735,29 @@ export default function App() {
       window.removeEventListener("keydown", key);
     };
   });
+  async function generateCaptions() {
+    if (!project || !window.refract || captionBusy) return;
+    const source = project.source;
+    setCaptionBusy(true);
+    try {
+      const result = await window.refract.generateCaptions(
+        project,
+        captionLocale,
+      );
+      const current = projectRef.current;
+      if (!current || current.source !== source) return;
+      if (!result.captions.length) {
+        tell("No speech was found in this video.");
+        return;
+      }
+      edit({ ...current, captions: result.captions });
+      tell(`Generated ${result.captions.length} captions locally.`);
+    } catch (error) {
+      tell(String(error));
+    } finally {
+      setCaptionBusy(false);
+    }
+  }
   async function exportVideo() {
     if (!project || !window.refract) {
       tell("Video export is available in the desktop app.");
@@ -1737,6 +1762,57 @@ export default function App() {
             ) : tab === "captions" ? (
               <>
                 <Heading>Captions</Heading>
+                <Row>
+                  <span>Language</span>
+                  <select
+                    aria-label="Caption language"
+                    value={captionLocale}
+                    disabled={captionBusy}
+                    onChange={(e) => setCaptionLocale(e.target.value)}
+                  >
+                    {[
+                      ["en-US", "English (US)"],
+                      ["en-GB", "English (UK)"],
+                      ["es-ES", "Spanish"],
+                      ["fr-FR", "French"],
+                      ["de-DE", "German"],
+                      ["it-IT", "Italian"],
+                      ["pt-BR", "Portuguese"],
+                      ["ja-JP", "Japanese"],
+                    ].map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </Row>
+                <Button
+                  primary
+                  disabled={
+                    captionBusy || !project.source.hasAudio || !window.refract
+                  }
+                  onClick={generateCaptions}
+                >
+                  {captionBusy
+                    ? "Generating captions…"
+                    : project.captions.length
+                      ? "Regenerate captions locally"
+                      : "Generate captions locally"}
+                </Button>
+                {captionBusy && (
+                  <Button onClick={() => void window.refract?.cancelCaptions()}>
+                    Cancel generation
+                  </Button>
+                )}
+                <Note>
+                  Speech is processed on this Mac. A language model may download
+                  from Apple the first time. Captions follow your cuts and speed
+                  changes.
+                </Note>
+                {!project.source.hasAudio && (
+                  <Note>This video has no audio track.</Note>
+                )}
+                <Divider />
                 <Button onClick={() => captionInput.current?.click()}>
                   <Upload size={13} />
                   Import SRT captions

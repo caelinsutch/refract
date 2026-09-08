@@ -444,6 +444,71 @@ handle(
     return current.id;
   },
 );
+let transcription: AbortController | null = null;
+handle("captions-generate", async (project: Project, locale: string) => {
+  if (transcription) throw Error("Caption generation is already running.");
+  if (!projectDir) throw Error("Open a video first.");
+  if (!project.source.hasAudio)
+    throw Error("This video has no audio to transcribe.");
+  if (
+    typeof locale !== "string" ||
+    !/^[a-z]{2,3}[-_][A-Za-z]{2,4}$/.test(locale)
+  )
+    throw Error("Choose a supported caption language.");
+  const source = inside(projectDir, project.source.file);
+  const controller = new AbortController();
+  transcription = controller;
+  let temp: string | undefined;
+  try {
+    temp = await fs.mkdtemp(
+      path.join(app.getPath("temp"), "refract-captions-"),
+    );
+    const audio = path.join(temp, "speech.wav");
+    await run(
+      tool("ffmpeg"),
+      [
+        "-v",
+        "error",
+        "-y",
+        "-i",
+        source,
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        audio,
+      ],
+      { signal: controller.signal, timeout: 300000 },
+    );
+    const helper = path.join(
+      __dirname,
+      "../../native/.build/refract-transcribe",
+    );
+    const { stdout } = await run(helper, [audio, locale], {
+      signal: controller.signal,
+      timeout: 1200000,
+      maxBuffer: 32 * 1024 * 1024,
+    });
+    const result = JSON.parse(stdout.trim().split("\n").at(-1)!);
+    if (!Array.isArray(result.words))
+      throw Error(result.error || "No transcript returned.");
+    const { captionsFromWords } = await import("../src/core/captions.js");
+    return {
+      captions: captionsFromWords(result.words, project.source.duration),
+      locale: result.locale,
+    };
+  } catch (error) {
+    if (controller.signal.aborted) throw Error("Caption generation cancelled.");
+    throw error;
+  } finally {
+    if (transcription === controller) transcription = null;
+    if (temp) await fs.rm(temp, { recursive: true, force: true });
+  }
+});
+handle("captions-cancel", () => transcription?.abort());
+app.on("before-quit", () => transcription?.abort());
+
 handle("export-frame", async (id: string, data: ArrayBuffer) => {
   if (!job || job.id !== id) throw Error("Export is no longer active.");
   const child = job.child;

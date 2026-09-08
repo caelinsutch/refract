@@ -7,6 +7,11 @@ import type { Project } from "./core/project";
 declare global {
   interface Window {
     refract?: {
+      generateCaptions(
+        project: Project,
+        locale: string,
+      ): Promise<{ captions: Project["captions"]; locale: string }>;
+      cancelCaptions(): Promise<void>;
       showRecorder(): Promise<void>;
       recorderState(): Promise<RecorderState>;
       recorderSources(): Promise<CaptureSources>;

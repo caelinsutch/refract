@@ -25,7 +25,7 @@ npm start
 
 `npm test` runs the time-map and zoom correctness tests. `npm run dev` runs the browser editor; native project operations and video export require the desktop app. All application JavaScript is authored in TypeScript (`.ts`, `.tsx`, and Electron `.cts` sources).
 
-The initial editor implements import, project save/open, preview, cuts, speed, manual zoom, background/frame styling, fixed masks, SRT captions, appearance presets, and a frame-by-frame MP4/GIF export pipeline. The offline MP4/GIF pipeline passes the generated-media verification; Electron export and save/reopen still require full live verification. Native display/window/area, microphone, system audio, and camera capture are implemented but awaiting permission-enabled end-to-end checks. Transcription, sharing, device capture, and several advanced effects remain incomplete.
+The initial editor implements import, project save/open, preview, cuts, speed, manual zoom, background/frame styling, fixed masks, SRT captions, appearance presets, and a frame-by-frame MP4/GIF export pipeline. The offline MP4/GIF pipeline passes generated-media verification, and a packaged desktop 1080p/30 fps MP4 export with audio has passed live verification. Native display/window/area, microphone, system audio, and camera capture are implemented but awaiting permission-enabled end-to-end checks. Local caption generation uses a Swift SpeechAnalyzer helper on macOS 26+, with source-time alignment through cuts and speed changes. The helper passes a synthetic spoken-audio test; the packaged caption UI still needs live verification. Sharing, device capture, and several advanced effects remain incomplete.
 
 ## Verification updates
 
@@ -33,3 +33,5 @@ The initial editor implements import, project save/open, preview, cuts, speed, m
 - [Automated media results](docs/verification/media-results.md)
 
 Build an Apple Silicon app bundle with `npm run package`. The unsigned development app is written to `release/Refract-darwin-arm64/Refract.app`. macOS screen, microphone, and camera access are required for the selected recording inputs.
+
+Local captions: choose Captions → Generate captions locally. Apple may download the selected language model once; speech processing stays on the Mac. Run `npm run build:native` before launching from source. See [local captions and cursor verification](docs/verification/local-captions.md).

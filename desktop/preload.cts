@@ -3,6 +3,9 @@ import type { Project } from "../src/core/project.js" with {
   "resolution-mode": "import",
 };
 contextBridge.exposeInMainWorld("refract", {
+  generateCaptions: (project: Project, locale: string) =>
+    ipcRenderer.invoke("captions-generate", project, locale),
+  cancelCaptions: () => ipcRenderer.invoke("captions-cancel"),
   showRecorder: () => ipcRenderer.invoke("recorder-show"),
   recorderState: () => ipcRenderer.invoke("recorder-state"),
   recorderSources: () => ipcRenderer.invoke("recorder-sources"),
