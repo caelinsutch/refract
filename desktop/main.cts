@@ -5,7 +5,6 @@ import {
   ipcMain,
   dialog,
   protocol,
-  net,
   Menu,
   type IpcMainInvokeEvent,
 } from "electron";
@@ -21,7 +20,7 @@ import {
   type ChildProcessWithoutNullStreams,
 } from "node:child_process";
 import { promisify } from "node:util";
-import { pathToFileURL } from "node:url";
+import { serveMediaFile } from "./media.cjs";
 const run = promisify(execFile);
 const media = new Map<string, string>();
 let win: BrowserWindow;
@@ -110,14 +109,7 @@ app.whenReady().then(() => {
       )
     )
       return new Response("Forbidden", { status: 403 });
-    const range = request.headers.get("Range");
-    const response = await net.fetch(pathToFileURL(file).toString(), {
-      headers: range ? { Range: range } : undefined,
-    });
-    const headers = new Headers(response.headers);
-    headers.set("Access-Control-Allow-Origin", origin);
-    headers.set("Vary", "Origin");
-    return new Response(response.body, { status: response.status, headers });
+    return serveMediaFile(file, request, origin);
   });
   win = new BrowserWindow({
     width: 1320,

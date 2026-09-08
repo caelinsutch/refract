@@ -33,3 +33,9 @@ After the origin fix, the same native export completed successfully. FFprobe con
 ## Correction: live source-frame verification
 
 The local-caption test revealed that earlier live container metadata checks missed frozen source pixels. The renderer now waits for a submitted video frame as well as a completed seek. A new live 1080p/30 MP4 check verified source timecode 2.000 seconds/frame 60 at output second two, alongside the correct generated caption. See [local caption verification](local-captions.md). Offline compositor/encoder matrices do not by themselves verify Chromium video decoding.
+
+## Explicit byte-range responses
+
+The authorized local-media protocol now streams requested byte ranges directly, with Accept-Ranges, Content-Length, Content-Range, 206 partial responses, and 416 responses for unsatisfiable ranges. Origin validation remains in the protocol handler and media paths still come from issued opaque tokens. HEAD returns headers without streaming a body.
+
+Tests verify fixed/open-ended/suffix ranges, bounds, exact streamed response bytes, content type, allowed-origin headers, HEAD, and 416 behavior. All 41 core tests and the production build pass. This change was prompted by a paused-preview seek that requested 5.427313 seconds but remained at media time zero. Live confirmation that this change resolves that symptom is pending because the Mac locked before the next app test. Temporary preview diagnostics remain local and are not part of this commit.
