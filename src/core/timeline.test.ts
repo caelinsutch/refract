@@ -60,3 +60,17 @@ test("dragging beyond the timeline clamps the whole interval", () => {
   const moved = dragZoomRange(p, zoom(8500, 9500), "move", 10000);
   assert.deepEqual(visibleRange(p, moved), { start: 5500, end: 6000 });
 });
+
+test("clip trimming follows speed and cannot overlap adjacent footage", async () => {
+  const { trimClip } = await import("./timeline");
+  const p = fixture();
+  let q = trimClip(p, "b", "start", 500);
+  assert.equal(q.segments[1].start, 9000);
+  q = trimClip(p, "a", "end", 10000);
+  assert.equal(q.segments[0].end, 8000);
+  q = trimClip(p, "b", "start", -10000);
+  assert.equal(q.segments[1].start, 4000);
+  q = trimClip(p, "b", "end", -10000);
+  assert.equal(q.segments[1].end, 8100);
+  assert.equal(p.segments[1].end, 12000);
+});

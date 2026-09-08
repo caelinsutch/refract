@@ -10,7 +10,7 @@ import {
   uid,
 } from "../core/project";
 import { Button } from "./ui";
-import { visibleRange, dragZoomRange } from "../core/timeline";
+import { visibleRange, dragZoomRange, trimClip } from "../core/timeline";
 export type Selection = { type: "clip" | "zoom" | "mask"; id: string } | null;
 const s = sx.create({
   root: {
@@ -187,6 +187,7 @@ export default function Timeline({
   cut: () => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
+  const [dragScale, setDragScale] = useState<number | null>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const [viewportWidth, setViewportWidth] = useState(900);
   useEffect(() => {
@@ -200,7 +201,7 @@ export default function Timeline({
   }, []);
   const total = duration(project),
     base = viewportWidth / Math.max(total, 1000),
-    px = base * zoom;
+    px = dragScale ?? base * zoom;
   const toTime = (clientX: number) =>
     Math.max(
       0,
@@ -234,6 +235,31 @@ export default function Timeline({
       );
     };
     const end = () => {
+      target.removeEventListener("pointermove", move);
+      target.removeEventListener("pointerup", end);
+      target.removeEventListener("pointercancel", end);
+      target.removeEventListener("lostpointercapture", end);
+    };
+    target.addEventListener("pointermove", move);
+    target.addEventListener("pointerup", end);
+    target.addEventListener("pointercancel", end);
+    target.addEventListener("lostpointercapture", end);
+  }
+  function dragClip(e: React.PointerEvent, id: string, side: "start" | "end") {
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.currentTarget as HTMLElement,
+      original = project,
+      x = e.clientX;
+    const gesture = `trim:${id}:${e.pointerId}:${e.timeStamp}`;
+    target.setPointerCapture(e.pointerId);
+    setDragScale(px);
+    select({ type: "clip", id });
+    seek(time);
+    const move = (ev: PointerEvent) =>
+      edit(trimClip(original, id, side, (ev.clientX - x) / px), gesture);
+    const end = () => {
+      setDragScale(null);
       target.removeEventListener("pointermove", move);
       target.removeEventListener("pointerup", end);
       target.removeEventListener("pointercancel", end);
@@ -331,7 +357,38 @@ export default function Timeline({
                   if (e.key === "Enter") select({ type: "clip", id: clip.id });
                 }}
               >
-                Clip {((clip.end - clip.start) / 1000).toFixed(1)}s{" "}
+                {(["start", "end"] as const).map((side) => (
+                  <button
+                    key={side}
+                    {...sx.props(s.handle)}
+                    style={{
+                      [side === "start" ? "left" : "right"]: 0,
+                      border: 0,
+                      padding: 0,
+                      touchAction: "none",
+                    }}
+                    aria-label={`Trim clip ${side}`}
+                    title={`Drag to trim ${side}`}
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => dragClip(e, clip.id, side)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        edit(
+                          trimClip(
+                            project,
+                            clip.id,
+                            side,
+                            (e.key === "ArrowLeft" ? -1 : 1) *
+                              (e.shiftKey ? 100 : 10),
+                          ),
+                        );
+                      }
+                    }}
+                  />
+                ))}
+                Clip {((clip.end - clip.start) / clip.speed / 1000).toFixed(1)}s{" "}
                 <span style={{ marginLeft: "auto" }}>{clip.speed} ×</span>
               </div>
             );

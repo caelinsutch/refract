@@ -1,3 +1,4 @@
+import { smootherstep, followClicks } from "./motion.js";
 import type { CropRect } from "./crop.js";
 export type Segment = { id: string; start: number; end: number; speed: number };
 export type Zoom = {
@@ -269,8 +270,15 @@ export function zoomAt(p: Project, t: number) {
       (c) => c.click && c.time >= z.start && c.time <= z.end,
     );
     if (!clicks.length) return { scale: 1, x: 0.5, y: 0.5 };
-    const click = clicks.findLast((c) => c.time <= t) ?? clicks[0];
-    target = click;
+    target = followClicks(
+      clicks,
+      t,
+      p.appearance.animation === "instant"
+        ? 0
+        : p.appearance.animation === "focused"
+          ? 180
+          : 350,
+    );
   }
   const transition =
     p.appearance.animation === "instant"
@@ -281,7 +289,7 @@ export function zoomAt(p: Project, t: number) {
   const edge = transition
     ? Math.min(1, (t - z.start) / transition, (z.end - t) / transition)
     : 1;
-  const ease = edge * edge * (3 - 2 * edge);
+  const ease = smootherstep(edge);
   const scale = 1 + (z.scale - 1) * ease;
   const limit = 0.5 / scale;
   return {

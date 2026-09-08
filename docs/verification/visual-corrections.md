@@ -79,3 +79,11 @@ The old process was confirmed absent, the candidate rebuilt, and the candidate a
 Imported the generated twelve-second fixture through the native picker. The new background/reset controls and tab order appeared in the editor. Opened Crop, changed width from 1280 to 640, confirmed, and visually verified the composition became 640 × 720 in Auto aspect. One Undo restored the original 1280 × 720 values, confirmed by reopening Crop. Discarded the untouched crop draft and saved; the UI reported Project saved.
 
 The crop screenshot showed edge handles being clipped by the preview container; it also confirmed the remaining overlay-versus-native-window difference. A subsequent close-window check encountered changed editor state (a selected zoom and modified playhead), so window close/activation is not counted as verified. The app was left open rather than risking the newly changed state.
+
+## Clip lengths and motion refinement
+
+Clip blocks now have draggable start/end handles. Dragging changes source in/out points through the clip's speed, ripples the edited duration, and clamps at adjacent retained footage and the source bounds. Arrow keys nudge a handle by 10ms of edited time; Shift changes that to 100ms. During a drag, the pixel/time scale stays fixed so resizing the project does not change pointer sensitivity. Clip labels show edited duration. Each drag has its own undo group.
+
+Zoom easing now uses a quintic curve with zero velocity and acceleration at its endpoints. Automatic panning retargets from the current in-flight position when another click arrives, removing the previous position jump. Instant mode remains immediate. Preview and export share these functions. These are motion refinements, not verified equivalence to Screen Studio's spring solver.
+
+Twenty-one tests pass, including clip trim bounds/speed, smooth easing endpoints, and continuity under rapid retargeting. Production build passes. The running candidate predates these last changes and has not been replaced while it is being used.

@@ -58,3 +58,32 @@ export function dragZoomRange(
   };
   return next.end - next.start >= 200 ? next : z;
 }
+
+/** Ripple trim in edited milliseconds, constrained by adjacent retained footage. */
+export function trimClip(
+  p: Project,
+  id: string,
+  side: "start" | "end",
+  delta: number,
+): Project {
+  const index = p.segments.findIndex((s) => s.id === id);
+  if (index < 0) return p;
+  const clip = p.segments[index];
+  const lower = index > 0 ? p.segments[index - 1].end : 0;
+  const upper =
+    index + 1 < p.segments.length
+      ? p.segments[index + 1].start
+      : p.source.duration;
+  const next = { ...clip };
+  if (side === "start")
+    next.start = Math.max(
+      lower,
+      Math.min(clip.end - 100, clip.start + delta * clip.speed),
+    );
+  else
+    next.end = Math.min(
+      upper,
+      Math.max(clip.start + 100, clip.end + delta * clip.speed),
+    );
+  return { ...p, segments: p.segments.map((s) => (s.id === id ? next : s)) };
+}
