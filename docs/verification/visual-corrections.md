@@ -160,3 +160,15 @@ All 38 tests and the production build pass, including loop boundaries, a trimmed
 Rendered tests exposed idle hiding suppressing an active cursor return. The compositor now reveals a moving loop, retains explicit Hide cursor as an override, and leaves a zero-displacement loop idle. The packaged cursor-controls build loaded a separate synthetic cursor project with both settings enabled. Its controls showed saved values of 2 seconds for looping and 0.5 seconds for idle hiding. Increasing the idle delay changed the visible value; Undo restored 0.5 seconds. The end-frame preview showed the cursor at its starting position.
 
 This live check also exposed an unrelated frozen source picture during paused seeking. Temporary diagnostics showed the timeline at 5447.313 ms while the underlying video element remained at zero despite a 5.427313-second target. Preview decoder/frame-callback changes alone did not resolve it. An explicit local byte-range response implementation is under test; do not treat paused seeking as fixed until source timecode and actual media time agree.
+
+## Timeline visibility, mask editing, and track styling
+
+The live reference track chooser exposes Zooms (1), Camera Layouts (2), Shortcuts (3), and Masks (4). Refract now places a visible-timeline chooser at the left of the transport and supports its implemented Zooms and Masks tracks, including the 1/4 keyboard toggles. Camera Layouts and Shortcuts remain unimplemented timeline types. Hiding a track changes only the editor view; it does not disable its effects.
+
+Installed reference definitions identify 48 px track height, 12 px gaps, 10 px item corner radius, clip color #93610c, zoom color from primary (#4d2ff5), and mask color #82345a. Those replace the prototype's shorter tracks and invented colors. Full pixel parity remains unverified because reference editor screenshots still return white.
+
+Empty-track pointer gestures now create zoom or mask intervals, including backward drags. Both map edited-time boundaries through cuts and clip speed. Masks have selectable interval blocks, move gestures, resize handles, keyboard trim adjustments, and existing sidebar geometry/strength editing. Zoom handles also expose keyboard adjustments. Gesture edits group into one Undo step.
+
+Live verification in the saved synthetic project: a mask dragged from approximately 1.12 to 2.60 seconds reopened at the correct position and width; dragging its end extended it to approximately 3.09 seconds; Right added 10 ms; two Undo actions restored the original end. Dragging the empty zoom track created a selected 2× Auto interval. A native popover fixed a menu that appeared in AX but was not visibly overlaid. Moving mask colors and draft styling into StyleX fixed an inline-style override that had discarded dynamic position/width variables.
+
+The title bar now preserves its explicit class alongside StyleX's generated classes, and its buttons' descendants are excluded from native drag regions. A toolbar Open click successfully opened the native file picker after the correction. All 45 core tests and the production build pass.

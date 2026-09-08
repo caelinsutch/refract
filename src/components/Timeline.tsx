@@ -4,13 +4,20 @@ import { Scissors, Plus, ZoomIn } from "lucide-react";
 import {
   type Project,
   type Zoom,
+  type Mask,
   duration,
   formatTime,
   sourceAt,
   uid,
 } from "../core/project";
+import type { TimelineTracks } from "./TimelineVisibility";
 import { Button } from "./ui";
-import { visibleRange, dragZoomRange, trimClip } from "../core/timeline";
+import {
+  visibleRange,
+  dragZoomRange,
+  trimClip,
+  createTimelineRange,
+} from "../core/timeline";
 export type Selection = { type: "clip" | "zoom" | "mask"; id: string } | null;
 const s = sx.create({
   root: {
@@ -18,7 +25,7 @@ const s = sx.create({
     borderTopWidth: 1,
     borderTopStyle: "solid",
     borderTopColor: "#ffffff0d",
-    height: 192,
+    minHeight: 149,
     flexShrink: 0,
     display: "flex",
     flexDirection: "column",
@@ -36,7 +43,7 @@ const s = sx.create({
   },
   scroll: {
     overflowX: "auto",
-    overflowY: "hidden",
+    overflowY: "auto",
     paddingInline: 24,
     flexGrow: 1,
   },
@@ -44,7 +51,7 @@ const s = sx.create({
     width,
     minWidth: "100%",
     position: "relative",
-    height: 146,
+    height: "100%",
   }),
   ruler: {
     height: 31,
@@ -71,14 +78,14 @@ const s = sx.create({
     position: "absolute",
     left,
     width,
-    height: 34,
+    height: 48,
     top: 40,
-    borderRadius: 6,
-    backgroundColor: "#b99a47",
+    borderRadius: 10,
+    backgroundColor: "#93610c",
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: "#d4b765",
-    color: "#262218",
+    borderColor: "#b47a21",
+    color: "#ffffff",
     fontWeight: 500,
     fontSize: 11,
     display: "flex",
@@ -92,13 +99,13 @@ const s = sx.create({
     position: "absolute",
     left: 0,
     right: 0,
-    height: 34,
-    top: 83,
-    borderRadius: 6,
-    backgroundColor: "#29252f",
+    height: 48,
+    top: 100,
+    borderRadius: 10,
+    backgroundColor: "#4d2ff51a",
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#5b476c",
+    borderColor: "#4d2ff54d",
     cursor: "crosshair",
   },
   zoom: (left: number, width: number) => ({
@@ -106,12 +113,12 @@ const s = sx.create({
     left,
     width,
     top: 0,
-    height: 32,
-    backgroundColor: "#754ab1",
+    height: 46,
+    backgroundColor: "#4d2ff5",
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: "#9b70c9",
-    borderRadius: 5,
+    borderColor: "#7b63ff",
+    borderRadius: 10,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -121,6 +128,8 @@ const s = sx.create({
     overflow: "hidden",
   }),
   selected: { outline: "2px solid #efedf5", outlineOffset: 2 },
+  mask: { backgroundColor: "#82345a", borderColor: "#af507d" },
+  draft: { pointerEvents: "none", opacity: 0.5 },
   handle: {
     position: "absolute",
     width: 9,
@@ -167,6 +176,7 @@ const s = sx.create({
 });
 export default function Timeline({
   project,
+  tracks,
   time,
   seek,
   edit,
@@ -177,6 +187,7 @@ export default function Timeline({
   cut,
 }: {
   project: Project;
+  tracks: TimelineTracks;
   time: number;
   seek: (t: number) => void;
   edit: (p: Project, group?: string) => void;
@@ -210,26 +221,39 @@ export default function Timeline({
         (clientX - (el.current?.getBoundingClientRect().left ?? 0)) / px,
       ),
     );
-  function dragZoom(
+  function dragRange(
     e: React.PointerEvent,
-    z: Zoom,
+    z: Zoom | Mask,
     side: "start" | "end" | "move",
+    kind: "zoom" | "mask",
   ) {
     e.stopPropagation();
     e.preventDefault();
     const startX = e.clientX;
     const target = e.currentTarget as HTMLElement;
+    target.focus({ preventScroll: true });
     target.setPointerCapture(e.pointerId);
-    select({ type: "zoom", id: z.id });
+    select({ type: kind, id: z.id });
+    seek(time);
     const original = structuredClone(project);
-    const gesture = `zoom:${z.id}:${e.pointerId}:${e.timeStamp}`;
+    const gesture = `${kind}:${z.id}:${e.pointerId}:${e.timeStamp}`;
     const move = (ev: PointerEvent) => {
       const delta = (ev.clientX - startX) / px;
       const next = dragZoomRange(original, z, side, delta);
       edit(
         {
           ...original,
-          zooms: original.zooms.map((v) => (v.id === z.id ? next : v)),
+          ...(kind === "zoom"
+            ? {
+                zooms: original.zooms.map((v) =>
+                  v.id === z.id ? (next as Zoom) : v,
+                ),
+              }
+            : {
+                masks: original.masks.map((v) =>
+                  v.id === z.id ? (next as Mask) : v,
+                ),
+              }),
         },
         gesture,
       );
@@ -270,28 +294,85 @@ export default function Timeline({
     target.addEventListener("pointercancel", end);
     target.addEventListener("lostpointercapture", end);
   }
-  function add(e: React.MouseEvent) {
-    const source = sourceAt(project, toTime(e.clientX))?.time ?? 0;
-    const z: Zoom = {
-      id: uid(),
-      start: source,
-      end: Math.min(project.source.duration, source + 2500),
-      scale: 2,
-      x: 0.5,
-      y: 0.5,
-      mode: project.cursor.length ? "auto" : "manual",
-      disabled: false,
+  const [draft, setDraft] = useState<{
+    kind: "zoom" | "mask";
+    start: number;
+    end: number;
+  } | null>(null);
+  function addRange(e: React.PointerEvent, kind: "zoom" | "mask") {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const target = e.currentTarget as HTMLElement,
+      anchor = toTime(e.clientX);
+    let latest = anchor;
+    target.setPointerCapture(e.pointerId);
+    seek(anchor);
+    const move = (ev: PointerEvent) => {
+      latest = toTime(ev.clientX);
+      setDraft({
+        kind,
+        start: Math.min(anchor, latest),
+        end: Math.max(anchor, latest),
+      });
     };
-    if (z.end - z.start < 200) return;
-    edit({ ...project, zooms: [...project.zooms, z] });
-    select({ type: "zoom", id: z.id });
+    const cleanup = () => {
+      target.removeEventListener("pointermove", move);
+      target.removeEventListener("pointerup", end);
+      target.removeEventListener("pointercancel", cancel);
+      target.removeEventListener("lostpointercapture", cancel);
+      setDraft(null);
+    };
+    const cancel = () => cleanup();
+    const end = () => {
+      cleanup();
+      const clicked = Math.abs(latest - anchor) * px < 4;
+      const range = createTimelineRange(
+        project,
+        anchor,
+        clicked ? Math.min(total, anchor + 2500) : latest,
+      );
+      if (!range) return;
+      const id = uid();
+      if (kind === "zoom") {
+        const z: Zoom = {
+          id,
+          ...range,
+          scale: 2,
+          x: 0.5,
+          y: 0.5,
+          mode: project.cursor.length ? "auto" : "manual",
+          disabled: false,
+        };
+        edit({ ...project, zooms: [...project.zooms, z] });
+      } else {
+        const mask: Mask = {
+          id,
+          ...range,
+          x: 0.3,
+          y: 0.3,
+          width: 0.3,
+          height: 0.2,
+          type: "blur",
+          strength: 20,
+        };
+        edit({ ...project, masks: [...project.masks, mask] });
+      }
+      select({ type: kind, id });
+    };
+    target.addEventListener("pointermove", move);
+    target.addEventListener("pointerup", end);
+    target.addEventListener("pointercancel", cancel);
+    target.addEventListener("lostpointercapture", cancel);
   }
   let offset = 0;
   const ticks = [];
   const step = total / zoom > 20000 ? 5000 : 1000;
   for (let i = 0; i <= total; i += step) ticks.push(i);
   return (
-    <div {...sx.props(s.root)}>
+    <div
+      {...sx.props(s.root)}
+      style={{ height: 145 + 60 * (Number(tracks.zoom) + Number(tracks.mask)) }}
+    >
       <div {...sx.props(s.tools)}>
         <Button title="Cut at playhead (C)" onClick={cut} icon>
           <Scissors size={14} />
@@ -308,7 +389,7 @@ export default function Timeline({
         />
         <ZoomIn size={12} />
         <span style={{ flex: 1 }} />
-        <span>Clip & zooms</span>
+        <span>Timeline</span>
         <span style={{ width: 12 }} />
         <span>{formatTime(total, true)}</span>
       </div>
@@ -393,53 +474,181 @@ export default function Timeline({
               </div>
             );
           })}
-          <div {...sx.props(s.zoomTrack)} onClick={add}>
-            {project.zooms.length === 0 ? (
-              <span {...sx.props(s.hint)}>
-                <Plus size={12} /> Click or drag to add zoom
-              </span>
-            ) : null}
-            {project.zooms.map((z) => {
-              const range = visibleRange(project, z);
-              if (!range) return null;
-              const { start, end } = range;
-              return (
+          {tracks.zoom && (
+            <div
+              {...sx.props(s.zoomTrack)}
+              aria-label="Zoom timeline"
+              onPointerDown={(e) => addRange(e, "zoom")}
+            >
+              {project.zooms.length === 0 ? (
+                <span {...sx.props(s.hint)}>
+                  <Plus size={12} /> Click or drag to add zoom
+                </span>
+              ) : null}
+              {project.zooms.map((z) => {
+                const range = visibleRange(project, z);
+                if (!range) return null;
+                const { start, end } = range;
+                return (
+                  <div
+                    key={z.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Zoom ${z.scale} times`}
+                    {...sx.props(
+                      s.zoom(start * px, Math.max(12, (end - start) * px - 2)),
+                      selection?.id === z.id && s.selected,
+                    )}
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => dragRange(e, z, "move", "zoom")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") select({ type: "zoom", id: z.id });
+                    }}
+                  >
+                    {(["start", "end"] as const).map((side) => (
+                      <button
+                        key={side}
+                        aria-label={`Trim zoom ${side}`}
+                        {...sx.props(s.handle)}
+                        style={{
+                          [side === "start" ? "left" : "right"]: 0,
+                          border: 0,
+                          padding: 0,
+                          touchAction: "none",
+                        }}
+                        onPointerDown={(e) => dragRange(e, z, side, "zoom")}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const next = dragZoomRange(
+                              project,
+                              z,
+                              side,
+                              (e.key === "ArrowLeft" ? -1 : 1) *
+                                (e.shiftKey ? 100 : 10),
+                            );
+                            edit({
+                              ...project,
+                              zooms: project.zooms.map((item) =>
+                                item.id === z.id ? next : item,
+                              ),
+                            });
+                          }
+                        }}
+                      />
+                    ))}
+                    {z.disabled
+                      ? "Disabled"
+                      : `${z.scale}× ${z.mode === "auto" ? "Auto" : "Manual"}`}
+                  </div>
+                );
+              })}
+              {draft?.kind === "zoom" && (
                 <div
-                  key={z.id}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Zoom ${z.scale} times`}
                   {...sx.props(
-                    s.zoom(start * px, Math.max(12, (end - start) * px - 2)),
-                    selection?.id === z.id && s.selected,
+                    s.zoom(
+                      draft.start * px,
+                      Math.max(2, (draft.end - draft.start) * px),
+                    ),
+                    s.draft,
                   )}
-                  onClick={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => dragZoom(e, z, "move")}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") select({ type: "zoom", id: z.id });
-                  }}
-                >
+                />
+              )}
+            </div>
+          )}
+          {tracks.mask && (
+            <div
+              {...sx.props(s.zoomTrack)}
+              aria-label="Mask timeline"
+              style={{
+                top: tracks.zoom ? 160 : 100,
+                backgroundColor: "#82345a1a",
+                borderColor: "#82345a66",
+              }}
+              onPointerDown={(e) => addRange(e, "mask")}
+            >
+              {!project.masks.length && (
+                <span {...sx.props(s.hint)}>Click or drag to add a mask</span>
+              )}
+              {project.masks.map((mask) => {
+                const range = visibleRange(project, mask);
+                if (!range) return null;
+                return (
                   <div
-                    {...sx.props(s.handle)}
-                    style={{ left: 0 }}
-                    onPointerDown={(e) => dragZoom(e, z, "start")}
-                  />
-                  {z.disabled
-                    ? "Disabled"
-                    : `${z.scale}× ${z.mode === "auto" ? "Auto" : "Manual"}`}
-                  <div
-                    {...sx.props(s.handle)}
-                    style={{ right: 0 }}
-                    onPointerDown={(e) => dragZoom(e, z, "end")}
-                  />
-                </div>
-              );
-            })}
-          </div>
+                    key={mask.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${mask.type === "blur" ? "Blur" : "Highlight"} mask ${formatTime(range.start)} to ${formatTime(range.end)}`}
+                    {...sx.props(
+                      s.zoom(
+                        range.start * px,
+                        Math.max(12, (range.end - range.start) * px - 2),
+                      ),
+                      s.mask,
+                      selection?.id === mask.id && s.selected,
+                    )}
+                    onPointerDown={(e) => dragRange(e, mask, "move", "mask")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.stopPropagation();
+                        select({ type: "mask", id: mask.id });
+                      }
+                    }}
+                  >
+                    {(["start", "end"] as const).map((side) => (
+                      <button
+                        key={side}
+                        aria-label={`Trim mask ${side}`}
+                        {...sx.props(s.handle)}
+                        style={{
+                          [side === "start" ? "left" : "right"]: 0,
+                          border: 0,
+                          padding: 0,
+                          touchAction: "none",
+                        }}
+                        onPointerDown={(e) => dragRange(e, mask, side, "mask")}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const next = dragZoomRange(
+                              project,
+                              mask,
+                              side,
+                              (e.key === "ArrowLeft" ? -1 : 1) *
+                                (e.shiftKey ? 100 : 10),
+                            );
+                            edit({
+                              ...project,
+                              masks: project.masks.map((m) =>
+                                m.id === mask.id ? next : m,
+                              ),
+                            });
+                          }
+                        }}
+                      />
+                    ))}
+                    {mask.type === "blur" ? "Blur" : "Highlight"}
+                  </div>
+                );
+              })}
+              {draft?.kind === "mask" && (
+                <div
+                  {...sx.props(
+                    s.zoom(
+                      draft.start * px,
+                      Math.max(2, (draft.end - draft.start) * px),
+                    ),
+                    s.draft,
+                  )}
+                />
+              )}
+            </div>
+          )}
           <div {...sx.props(s.head(time * px))}>
             <div {...sx.props(s.cap)} />
           </div>
-          <div {...sx.props(s.footer)}>Zooms</div>
         </div>
       </div>
     </div>

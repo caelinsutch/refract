@@ -47,6 +47,7 @@ export function Button({
   primary = false,
   disabled = false,
   icon = false,
+  "aria-expanded": expanded,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -55,6 +56,7 @@ export function Button({
   primary?: boolean;
   disabled?: boolean;
   icon?: boolean;
+  "aria-expanded"?: boolean;
 }) {
   return (
     <button
@@ -66,6 +68,7 @@ export function Button({
       )}
       onClick={onClick}
       aria-label={title}
+      aria-expanded={expanded}
       title={title}
       disabled={disabled}
     >

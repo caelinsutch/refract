@@ -114,6 +114,7 @@
     -webkit-app-region: drag;
   }
   .titlebar button,
+  .titlebar button *,
   .titlebar input {
     -webkit-app-region: no-drag;
   }

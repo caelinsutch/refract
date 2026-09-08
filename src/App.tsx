@@ -74,6 +74,10 @@ import { emptyHistory, reduceHistory } from "./core/history";
 import CropEditor from "./components/CropEditor";
 import Timeline, { type Selection } from "./components/Timeline";
 import {
+  TimelineVisibility,
+  type TimelineTracks,
+} from "./components/TimelineVisibility";
+import {
   Button,
   Range,
   Toggle,
@@ -369,6 +373,10 @@ export default function App() {
     [tab, setTab] = useState("background"),
     [selection, setSelection] = useState<Selection>(null),
     [timelineZoom, setTimelineZoom] = useState(1),
+    [timelineTracks, setTimelineTracks] = useState<TimelineTracks>({
+      zoom: true,
+      mask: false,
+    }),
     [modal, setModal] = useState<"export" | "presets" | null>(null),
     [status, setStatus] = useState(""),
     [dirty, setDirty] = useState(false),
@@ -593,6 +601,7 @@ export default function App() {
         strength: 20,
       };
     edit({ ...project, masks: [...project.masks, m] });
+    setTimelineTracks((t) => ({ ...t, mask: true }));
     setSelection({ type: "mask", id: m.id });
   }
   useEffect(() => {
@@ -727,6 +736,16 @@ export default function App() {
       if (e.code === "Space") {
         e.preventDefault();
         if (project) setPlaying((p) => !p);
+      }
+      if (
+        !modal &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        (e.key === "1" || e.key === "4")
+      ) {
+        const track = e.key === "1" ? "zoom" : "mask";
+        setTimelineTracks((t) => ({ ...t, [track]: !t[track] }));
       }
       if (e.key.toLowerCase() === "c" && !e.metaKey && !e.ctrlKey) cut();
       if (e.key === "Backspace" || e.key === "Delete") removeSelection();
@@ -987,7 +1006,10 @@ export default function App() {
           }}
         />
       )}
-      <header className="titlebar" {...sx.props(s.header)}>
+      <header
+        {...sx.props(s.header)}
+        className={`titlebar ${sx.props(s.header).className}`}
+      >
         {window.refract ? (
           <div style={{ width: 69 }} />
         ) : (
@@ -1156,6 +1178,12 @@ export default function App() {
             </div>
           </section>
           <div {...sx.props(s.transport)}>
+            {project && (
+              <TimelineVisibility
+                tracks={timelineTracks}
+                onChange={setTimelineTracks}
+              />
+            )}
             <span {...sx.props(s.time)}>
               {formatTime(time, true)}{" "}
               <span {...sx.props(s.muted)}>
@@ -1994,6 +2022,7 @@ export default function App() {
       </main>
       {project ? (
         <Timeline
+          tracks={timelineTracks}
           project={project}
           time={time}
           seek={seek}

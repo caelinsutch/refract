@@ -71,3 +71,11 @@ The preview previously rasterized every composition at a fixed 1280-pixel maximu
 Landscape, portrait, standard-density, Retina, and fractional-density sizing checks pass, alongside the existing compositor tests (43 tests total). The production build passed and the saved cursor fixture reopened in the updated desktop build with matching framing and a visible cursor. The UI screenshot is scaled by the inspection tool, so it is not an independent per-device-pixel sharpness measurement.
 
 `node --import tsx scripts/verify-cursor-sharpness.ts` compares a cursor drawn directly at a 3200 × 1800 backing resolution against the previous 1280 × 720 canvas upscaled to that same resolution. In the fixed white-background cursor crop, intermediate edge pixels decreased from 997 to 245. This measures the removed resampling softness in that controlled fixture, not a universal visual-quality score. The script writes both rendered images under ignored `work/cursor-sharpness/`.
+
+## First live display/cursor/pause capture
+
+System Settings initially showed one enabled Refract entry while the actual app still returned permission-required. After the authorized permission update and user authentication, a second enabled Refract entry appeared and the running app listed the main display. Standalone helper permission results are not sufficient to infer permission state for a packaged build; verify through the app.
+
+A local display recording completed through the floating bar, including Pause and Resume, and opened automatically in the editor. Its paused counter stayed at 10.21 seconds and resumed from that value. The saved project and H.264 source both report 23.395 seconds, at 3456 × 2234 physical pixels. The file decodes to 1,258 frames; its reported nominal frame rate should not be treated as measured constant capture throughput.
+
+The separate cursor track contains 1,459 samples, 596 distinct positions, and 14 click events. First and last timestamps are 49.964 ms and 23,388.542 ms; the largest sample gap is 37.210 ms, so the long wall-clock pause was removed from cursor time. Six automatic zoom intervals were created. Camera, microphone, system audio, window/area recording, and sub-sample-duration clicks require separate live tests. The test footage remains private in the local application project directory and is not committed.

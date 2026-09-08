@@ -1,6 +1,6 @@
 # Parity matrix
 
-Reference: Screen Studio 3.7.5-4595. Status: first editor prototype implemented; native recorder in progress. “Documented” indicates a requirement source, not a passing test.
+Reference: Screen Studio 3.7.5-4595. Status: partial implementation with verified live display/cursor capture, pause/resume, local captions, and short MP4 exports; exact parity remains open. “Documented” indicates a requirement source, not a passing test.
 
 | ID | Requirement | Reference evidence | Acceptance |
 |---|---|---|---|
@@ -42,6 +42,15 @@ Reference: Screen Studio 3.7.5-4595. Status: first editor prototype implemented;
 | EX-04 | Clipboard/frame copy | Guide | Pasted result is actual image/video data |
 | SH-01 | Shareable links/comments | Guide | Working service, upload, access control, playback, comments |
 | PK-01 | Packaged macOS app | Requirement | Launch outside dev server; bundled helper/runtime; permissions |
+
+## Current gaps and priorities
+
+- Timeline now supports visible Zooms/Masks tracks and real interval creation/trimming; camera-layout and shortcut tracks remain open.
+- Reference track dimensions and base colors have been corrected. Full editor pixel matching, original assets, and several control arrangements remain open.
+- Live display capture with a separate cursor track and pause/resume passed. Window/area, microphone/system audio, and camera still need end-to-end checks.
+- Retina preview resolution, paused media seeking, local Swift captions, and short 1080p MP4 exports at 30/60 fps have evidence in the verification documents. An intermittent export stall remains unresolved despite a successful retry; cancellation is bounded.
+- Dynamic camera layouts, motion blur, click sounds, audio enhancement/music, captured shortcuts, connected-device capture, recovery, and shareable links are not complete.
+- Earlier build evidence below is historical; consult the appended dated verification findings for subsequent corrections.
 
 ## Media tests
 

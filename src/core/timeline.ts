@@ -1,4 +1,4 @@
-import { duration, sourceAt, type Project, type Zoom } from "./project";
+import { duration, sourceAt, type Project } from "./project";
 
 /** Project the surviving portion of a source interval onto the edited clock. */
 export function visibleRange(
@@ -34,12 +34,12 @@ function sourceBoundary(p: Project, time: number, edge: "start" | "end") {
   return sourceAt(p, time)?.time ?? 0;
 }
 
-export function dragZoomRange(
+export function dragZoomRange<T extends { start: number; end: number }>(
   p: Project,
-  z: Zoom,
+  z: T,
   side: "start" | "end" | "move",
   delta: number,
-): Zoom {
+): T {
   const range = visibleRange(p, z);
   if (!range || delta === 0) return z;
   const total = duration(p);
@@ -56,7 +56,23 @@ export function dragZoomRange(
     start: side === "end" ? z.start : sourceBoundary(p, start, "start"),
     end: side === "start" ? z.end : sourceBoundary(p, end, "end"),
   };
-  return next.end - next.start >= 200 ? next : z;
+  return next.end - next.start >= Math.min(200, z.end - z.start) ? next : z;
+}
+
+/** Convert a forward or backward timeline gesture to retained source boundaries. */
+export function createTimelineRange(
+  p: Project,
+  anchor: number,
+  target: number,
+) {
+  const total = duration(p);
+  const start = Math.max(0, Math.min(total, Math.min(anchor, target)));
+  const end = Math.max(0, Math.min(total, Math.max(anchor, target)));
+  if (end - start < 100) return null;
+  return {
+    start: sourceBoundary(p, start, "start"),
+    end: sourceBoundary(p, end, "end"),
+  };
 }
 
 /** Source-time bounds shared by timeline handles and numeric trim controls. */

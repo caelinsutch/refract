@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createProject, type Zoom } from "./project";
-import { visibleRange, dragZoomRange } from "./timeline";
+import { visibleRange, dragZoomRange, createTimelineRange } from "./timeline";
 const fixture = () => {
   const p = createProject({
     file: "test",
@@ -90,4 +90,50 @@ test("short split clips do not expand on a stationary or inward trim", async () 
     endMax: 12000,
   });
   assert.equal(trimClip(p, "short", "end", 100).segments[0].end, 740);
+});
+
+test("timeline creation maps reverse drags, cut boundaries, and doubled speed", () => {
+  const p = fixture();
+  assert.deepEqual(createTimelineRange(p, 3000, 4500), {
+    start: 3000,
+    end: 9000,
+  });
+  assert.deepEqual(createTimelineRange(p, 4500, 3000), {
+    start: 3000,
+    end: 9000,
+  });
+  assert.deepEqual(createTimelineRange(p, 3000, 4000), {
+    start: 3000,
+    end: 4000,
+  });
+  assert.deepEqual(createTimelineRange(p, 4000, 4500), {
+    start: 8000,
+    end: 9000,
+  });
+  assert.deepEqual(createTimelineRange(p, -500, 9000), {
+    start: 0,
+    end: 12000,
+  });
+  assert.equal(createTimelineRange(p, 500, 501), null);
+});
+test("mask range gestures retain geometry and follow the edited clock", () => {
+  const p = fixture();
+  const mask = {
+    id: "mask",
+    start: 8500,
+    end: 9500,
+    x: 0.2,
+    y: 0.3,
+    width: 0.4,
+    height: 0.5,
+    type: "blur" as const,
+    strength: 20,
+  };
+  const moved = dragZoomRange(p, mask, "move", 500);
+  assert.deepEqual(moved, { ...mask, start: 9500, end: 10500 });
+  assert.equal(dragZoomRange(p, mask, "end", -10000), mask);
+  assert.deepEqual(dragZoomRange(p, mask, "start", -500), {
+    ...mask,
+    start: 3750,
+  });
 });
