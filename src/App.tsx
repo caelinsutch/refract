@@ -1932,8 +1932,9 @@ export default function App() {
                         ? `${dimensions(project, resolution).width} × ${dimensions(project, resolution).height} · ${formatTime(duration(project), true)}`
                         : ""}
                       <br />
-                      Your framing, zooms, masks, captions, cuts, and audio
-                      settings are included.
+                      {format === "gif"
+                        ? "Your framing, zooms, masks, captions, and cuts are included. GIF exports are silent."
+                        : "Your framing, zooms, masks, captions, cuts, and audio settings are included."}
                     </Note>
                     <Row>
                       <Button onClick={() => setModal(null)}>Cancel</Button>
