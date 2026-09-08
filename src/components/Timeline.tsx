@@ -179,7 +179,7 @@ export default function Timeline({
   project: Project;
   time: number;
   seek: (t: number) => void;
-  edit: (p: Project) => void;
+  edit: (p: Project, group?: string) => void;
   selection: Selection;
   select: (s: Selection) => void;
   zoom: number;
@@ -221,13 +221,17 @@ export default function Timeline({
     target.setPointerCapture(e.pointerId);
     select({ type: "zoom", id: z.id });
     const original = structuredClone(project);
+    const gesture = `zoom:${z.id}:${e.pointerId}:${e.timeStamp}`;
     const move = (ev: PointerEvent) => {
       const delta = (ev.clientX - startX) / px;
       const next = dragZoomRange(original, z, side, delta);
-      edit({
-        ...original,
-        zooms: original.zooms.map((v) => (v.id === z.id ? next : v)),
-      });
+      edit(
+        {
+          ...original,
+          zooms: original.zooms.map((v) => (v.id === z.id ? next : v)),
+        },
+        gesture,
+      );
     };
     const end = () => {
       target.removeEventListener("pointermove", move);

@@ -1,5 +1,6 @@
 import {
   useState,
+  useReducer,
   useRef,
   useEffect,
   useCallback,
@@ -58,6 +59,7 @@ import {
   validateProject,
 } from "./core/project";
 import { dimensions, drawFrame, wallpapers } from "./core/compositor";
+import { emptyHistory, reduceHistory } from "./core/history";
 import CropEditor from "./components/CropEditor";
 import Timeline, { type Selection } from "./components/Timeline";
 import {
@@ -339,8 +341,9 @@ const tabs = [
 ];
 export default function App() {
   const [cropping, setCropping] = useState(false);
-  const [project, setProject] = useState<Project | null>(null),
-    [url, setUrl] = useState(""),
+  const [history, dispatchHistory] = useReducer(reduceHistory, emptyHistory);
+  const { present: project, past, future } = history;
+  const [url, setUrl] = useState(""),
     [cameraUrl, setCameraUrl] = useState(""),
     [time, setTime] = useState(0),
     [playing, setPlaying] = useState(false),
@@ -357,8 +360,6 @@ export default function App() {
     [resolution, setResolution] = useState(1920),
     [format, setFormat] = useState<"mp4" | "gif">("mp4"),
     [previewSpeed, setPreviewSpeed] = useState(1),
-    [past, setPast] = useState<Project[]>([]),
-    [future, setFuture] = useState<Project[]>([]),
     [presetName, setPresetName] = useState(""),
     [presets, setPresets] = useState<
       { name: string; appearance: Appearance }[]
@@ -379,8 +380,7 @@ export default function App() {
     projectRef = useRef(project),
     timeRef = useRef(time),
     playingRef = useRef(playing),
-    bgImage = useRef<HTMLImageElement | null>(null),
-    historyStamp = useRef(0);
+    bgImage = useRef<HTMLImageElement | null>(null);
   projectRef.current = project;
   timeRef.current = time;
   playingRef.current = playing;
@@ -392,42 +392,27 @@ export default function App() {
     const timer = setTimeout(() => setStatus(""), 6500);
     return () => clearTimeout(timer);
   }, [status]);
-  const edit = useCallback((next: Project) => {
-    setProject((previous) => {
-      if (previous && previous !== next) {
-        const now = Date.now();
-        if (now - historyStamp.current > 350)
-          setPast((p) => [...p.slice(-99), previous]);
-        historyStamp.current = now;
-        setFuture([]);
-        setDirty(true);
-      }
-      return next;
-    });
+  const edit = useCallback((next: Project, group?: string) => {
+    dispatchHistory({ type: "edit", project: next, group, now: Date.now() });
+    setDirty(true);
   }, []);
   const undo = () => {
-    if (!past.length || !project) return;
-    setFuture((f) => [project, ...f]);
-    setProject(past[past.length - 1]);
-    setPast((p) => p.slice(0, -1));
+    if (!past.length) return;
+    dispatchHistory({ type: "undo" });
     setDirty(true);
   };
   const redo = () => {
-    if (!future.length || !project) return;
-    setPast((p) => [...p, project]);
-    setProject(future[0]);
-    setFuture((f) => f.slice(1));
+    if (!future.length) return;
+    dispatchHistory({ type: "redo" });
     setDirty(true);
   };
   function load(p: Project, u: string, cam?: string) {
     setCameraUrl(cam ?? "");
     setPlaying(false);
-    setProject(p);
+    dispatchHistory({ type: "load", project: p });
     setUrl(u);
     setTime(0);
     setSelection(null);
-    setPast([]);
-    setFuture([]);
     setDirty(false);
     setTab("background");
   }
@@ -512,7 +497,10 @@ export default function App() {
   }
   const appearance = (values: Partial<Appearance>) => {
     if (project)
-      edit({ ...project, appearance: { ...project.appearance, ...values } });
+      edit(
+        { ...project, appearance: { ...project.appearance, ...values } },
+        "appearance:" + Object.keys(values).sort().join(","),
+      );
   };
   const seek = (t: number) => {
     setTime(Math.max(0, Math.min(project ? duration(project) : 0, t)));

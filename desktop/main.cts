@@ -25,6 +25,10 @@ import { pathToFileURL } from "node:url";
 const run = promisify(execFile);
 const media = new Map<string, string>();
 let win: BrowserWindow;
+let quitting = false;
+app.on("before-quit", () => {
+  quitting = true;
+});
 let projectDir: string | null = null;
 type ExportJob = {
   id: string;
@@ -108,7 +112,7 @@ app.whenReady().then(() => {
     minHeight: 660,
     title: "Refract",
     show: false,
-    backgroundColor: "#19191c",
+    backgroundColor: "#08090d",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 17, y: 18 },
     webPreferences: {
@@ -180,6 +184,20 @@ app.whenReady().then(() => {
     },
     () => send("import"),
   );
+  // Keep the editor alive when its window closes so the recorder and menu
+  // callbacks never target a destroyed webContents. Dock activation restores UI.
+  win.on("close", (event) => {
+    if (!quitting) {
+      event.preventDefault();
+      win.hide();
+    }
+  });
+  app.on("activate", () => {
+    if (win.isVisible()) {
+      win.show();
+      win.focus();
+    } else recorder.show();
+  });
   recorder.show();
 
   Menu.setApplicationMenu(

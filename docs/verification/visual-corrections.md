@@ -53,3 +53,9 @@ The Screen Studio crop window was opened and visually inspected. Its 960 × 720 
 Refract's Crop action now opens a matching control layout with pixel inputs, aspect presets, eight handles, keyboard movement (Shift for ten pixels), reset, and draft confirm/discard behavior. The crop is saved on the project and consumed by the common preview/export compositor. Auto aspect ratio follows the retained source dimensions; zoom sampling is clamped inside the crop. Crop editing suppresses underlying editor shortcuts.
 
 Three added tests cover constrained handle movement, saved crop validation and dimensions, and actual pixel exclusion with and without zoom. Fourteen tests and the production build pass. Refract's UI connection timed out while its process remained live, so the new dialog has not been visually signed off. It currently uses an editor overlay; the reference uses a separate native window. Native window presentation, finer spacing, crop grid, and full aspect-preset parity remain open.
+
+## Editing history and window lifecycle
+
+History now uses a pure reducer instead of calling state setters inside another state updater. Unrelated actions within 350ms are independent undo steps. Appearance changes group only by changed fields; timeline drag gestures receive distinct IDs. Undo/redo clears the active group, and editing after undo clears the redo branch. Three regression tests cover reducer repeatability, action boundaries, and branch replacement. Seventeen tests pass.
+
+The desktop lifecycle also lacked Dock activation handling: a hidden recorder could keep the app alive after the editor was destroyed, leaving recorder/menu callbacks targeting dead webContents. Editor close now hides its live window, application activation restores a visible surface, and actual Quit allows destruction. This fix follows code inspection; live lifecycle verification is still pending.
