@@ -989,6 +989,14 @@ export default function App() {
         >
           <Monitor size={15} />
         </Button>
+        <Button
+          icon
+          title="Copy current frame"
+          disabled={!project}
+          onClick={copyFrame}
+        >
+          <Copy size={15} />
+        </Button>
         <Button title="Import video" onClick={importVideo}>
           <Plus size={15} />
         </Button>
@@ -1482,8 +1490,18 @@ export default function App() {
                     <Divider />
                   </>
                 )}
+                {(project.appearance.background === "wallpaper" ||
+                  project.appearance.background === "image") && (
+                  <Range
+                    label="Background blur"
+                    value={project.appearance.blur}
+                    max={100}
+                    onChange={(blur) => appearance({ blur })}
+                  />
+                )}
                 <Range
                   label="Padding"
+                  resetValue={defaults.padding}
                   value={project.appearance.padding}
                   max={35}
                   unit="%"
@@ -1491,12 +1509,14 @@ export default function App() {
                 />
                 <Range
                   label="Rounded corners"
+                  resetValue={defaults.radius}
                   value={project.appearance.radius}
-                  max={60}
+                  max={200}
                   onChange={(radius) => appearance({ radius })}
                 />
                 <Range
                   label="Inset"
+                  resetValue={defaults.inset}
                   value={project.appearance.inset}
                   max={30}
                   onChange={(inset) => appearance({ inset })}
@@ -1516,42 +1536,58 @@ export default function App() {
                 ) : null}
                 <Range
                   label="Shadow"
+                  resetValue={defaults.shadow * 100}
                   value={project.appearance.shadow * 100}
                   max={100}
                   unit="%"
                   onChange={(shadow) => appearance({ shadow: shadow / 100 })}
                 />
-                <Divider />
-                <Button onClick={addZoom}>
-                  <Plus size={13} />
-                  Add zoom at playhead
-                </Button>
-                <Button onClick={addMask}>
-                  <Scan size={13} />
-                  Add mask
-                </Button>
-                <Divider />
-                <Row>
-                  <Button onClick={copyFrame}>
-                    <Copy size={13} />
-                    Copy frame
-                  </Button>
-                  <Button
-                    icon
-                    title="Download current frame"
-                    onClick={() =>
-                      canvas.current?.toBlob((b) => {
-                        if (b) download(b, project.title + ".png");
+                <details>
+                  <summary
+                    style={{
+                      cursor: "pointer",
+                      color: "#ffffff99",
+                      paddingBlock: 10,
+                    }}
+                  >
+                    Advanced shadow settings
+                  </summary>
+                  <Toggle
+                    label="Directional shadow"
+                    value={project.appearance.shadowDirectional}
+                    onChange={(shadowDirectional) =>
+                      appearance({
+                        shadowDirectional,
+                        shadow: shadowDirectional ? 0.4 : defaults.shadow,
                       })
                     }
-                  >
-                    <Download size={13} />
-                  </Button>
-                </Row>
-                <Divider />
-                <Button onClick={() => appearance({ ...defaults })}>
-                  Reset appearance
-                </Button>
+                  />
+                  <Range
+                    label="Shadow Distance"
+                    value={project.appearance.shadowDistance}
+                    max={100}
+                    resetValue={defaults.shadowDistance}
+                    onChange={(shadowDistance) =>
+                      appearance({ shadowDistance })
+                    }
+                  />
+                  <Range
+                    label="Shadow Angle"
+                    value={project.appearance.shadowAngle}
+                    max={180}
+                    unit="°"
+                    resetValue={defaults.shadowAngle}
+                    onChange={(shadowAngle) => appearance({ shadowAngle })}
+                  />
+                  <Range
+                    label="Shadow Blur"
+                    value={project.appearance.shadowBlur}
+                    min={5}
+                    max={30}
+                    resetValue={defaults.shadowBlur}
+                    onChange={(shadowBlur) => appearance({ shadowBlur })}
+                  />
+                </details>
               </>
             ) : tab === "cursor" ? (
               <>

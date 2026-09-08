@@ -38,6 +38,10 @@ export type Appearance = {
   inset: number;
   insetColor: string;
   shadow: number;
+  shadowDirectional: boolean;
+  shadowDistance: number;
+  shadowAngle: number;
+  shadowBlur: number;
   blur: number;
   ratio: string;
   cursorSize: number;
@@ -84,6 +88,10 @@ export const defaults: Appearance = {
   inset: 0,
   insetColor: "#ffffff",
   shadow: 0.75,
+  shadowDirectional: false,
+  shadowDistance: 25,
+  shadowAngle: 90,
+  shadowBlur: 20,
   blur: 0,
   ratio: "Auto",
   cursorSize: 1.5,
@@ -222,6 +230,9 @@ export function validateProject(value: unknown): Project {
     "radius",
     "inset",
     "shadow",
+    "shadowDistance",
+    "shadowAngle",
+    "shadowBlur",
     "blur",
     "volume",
     "cursorSize",

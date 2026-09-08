@@ -81,6 +81,7 @@ export function Range({
   max = 100,
   step = 1,
   unit = "",
+  resetValue,
 }: {
   label: string;
   value: number;
@@ -89,14 +90,35 @@ export function Range({
   max?: number;
   step?: number;
   unit?: string;
+  resetValue?: number;
 }) {
   return (
-    <label {...sx.props(s.field)}>
+    <div {...sx.props(s.field)}>
       <span {...sx.props(s.row)}>
         <span {...sx.props(s.label)}>{label}</span>
-        <span {...sx.props(s.value)}>
-          {Number(value.toFixed(2))}
-          {unit}
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {resetValue !== undefined && (
+            <button
+              type="button"
+              aria-label={`Reset ${label}`}
+              title={`Reset to ${resetValue}${unit}`}
+              onClick={() => onChange(resetValue)}
+              style={{
+                alignSelf: "flex-end",
+                border: 0,
+                background: "transparent",
+                color: "#ffffff66",
+                padding: 0,
+                fontSize: 10,
+              }}
+            >
+              Reset
+            </button>
+          )}
+          <span {...sx.props(s.value)}>
+            {Number(value.toFixed(2))}
+            {unit}
+          </span>
         </span>
       </span>
       <input
@@ -108,7 +130,7 @@ export function Range({
         step={step}
         onChange={(e) => onChange(Number(e.target.value))}
       />
-    </label>
+    </div>
   );
 }
 export function Toggle({

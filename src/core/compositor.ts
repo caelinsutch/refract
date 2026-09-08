@@ -46,11 +46,29 @@ export function drawFrame(
     sh = p.source.height;
   c.save();
   c.clearRect(0, 0, width, height);
+  c.save();
+  const backgroundBlur =
+    a.background === "image" || a.background === "wallpaper"
+      ? a.blur * scale
+      : 0;
+  const overscan = backgroundBlur * 3;
+  if (backgroundBlur > 0) c.filter = `blur(${backgroundBlur}px)`;
   if (a.background === "color") {
     c.fillStyle = a.color;
-    c.fillRect(0, 0, width, height);
+    c.fillRect(
+      -overscan,
+      -overscan,
+      width + overscan * 2,
+      height + overscan * 2,
+    );
   } else if (a.background === "image" && bgImage) {
-    c.drawImage(bgImage, 0, 0, width, height);
+    c.drawImage(
+      bgImage,
+      -overscan,
+      -overscan,
+      width + overscan * 2,
+      height + overscan * 2,
+    );
   } else {
     const colors =
       a.background === "gradient"
@@ -61,7 +79,12 @@ export function drawFrame(
     grad.addColorStop(0.6, colors[1]);
     grad.addColorStop(1, colors[2]);
     c.fillStyle = grad;
-    c.fillRect(0, 0, width, height);
+    c.fillRect(
+      -overscan,
+      -overscan,
+      width + overscan * 2,
+      height + overscan * 2,
+    );
     if (a.background === "wallpaper") {
       c.globalAlpha = 0.23;
       for (let i = 0; i < 4; i++) {
@@ -81,6 +104,7 @@ export function drawFrame(
       c.globalAlpha = 1;
     }
   }
+  c.restore();
   const padding = (Math.min(width, height) * a.padding) / 100;
   const fit = Math.min((width - padding * 2) / sw, (height - padding * 2) / sh);
   const w = sw * fit,
@@ -90,13 +114,17 @@ export function drawFrame(
     r = a.radius * scale;
   const inset = a.inset * scale;
   c.shadowColor = `rgba(0,0,0,${a.shadow * 0.6})`;
-  c.shadowBlur = 40 * scale;
-  c.shadowOffsetY = 18 * scale;
+  c.shadowBlur = a.shadowBlur * 2 * scale;
+  const shadowDistance = a.shadowDirectional ? a.shadowDistance * scale : 0;
+  const shadowAngle = (a.shadowAngle * Math.PI) / 180;
+  c.shadowOffsetX = Math.cos(shadowAngle) * shadowDistance;
+  c.shadowOffsetY = Math.sin(shadowAngle) * shadowDistance;
   rounded(c, x - inset, y - inset, w + inset * 2, h + inset * 2, r + inset);
   c.fillStyle = a.insetColor;
   c.fill();
   c.shadowColor = "transparent";
   c.shadowBlur = 0;
+  c.shadowOffsetX = 0;
   c.shadowOffsetY = 0;
   c.save();
   rounded(c, x, y, w, h, r);
