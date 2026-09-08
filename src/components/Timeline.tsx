@@ -1,16 +1,16 @@
 import * as sx from "@stylexjs/stylex";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Scissors, Plus, ZoomIn } from "lucide-react";
 import {
   type Project,
   type Zoom,
   duration,
   formatTime,
-  outputAt,
   sourceAt,
   uid,
 } from "../core/project";
 import { Button } from "./ui";
+import { visibleRange, dragZoomRange } from "../core/timeline";
 export type Selection = { type: "clip" | "zoom" | "mask"; id: string } | null;
 const s = sx.create({
   root: {
@@ -187,8 +187,19 @@ export default function Timeline({
   cut: () => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  const [viewportWidth, setViewportWidth] = useState(900);
+  useEffect(() => {
+    const node = viewport.current;
+    if (!node) return;
+    const measure = () => setViewportWidth(Math.max(1, node.clientWidth - 48));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
   const total = duration(project),
-    base = 900 / Math.max(total, 1000),
+    base = viewportWidth / Math.max(total, 1000),
     px = base * zoom;
   const toTime = (clientX: number) =>
     Math.max(
@@ -212,22 +223,7 @@ export default function Timeline({
     const original = structuredClone(project);
     const move = (ev: PointerEvent) => {
       const delta = (ev.clientX - startX) / px;
-      const next = { ...z };
-      if (side === "move") {
-        const length = z.end - z.start;
-        next.start = Math.max(
-          0,
-          Math.min(project.source.duration - length, z.start + delta),
-        );
-        next.end = next.start + length;
-      } else
-        next[side] =
-          side === "start"
-            ? Math.max(0, Math.min(z.end - 200, z.start + delta))
-            : Math.min(
-                project.source.duration,
-                Math.max(z.start + 200, z.end + delta),
-              );
+      const next = dragZoomRange(original, z, side, delta);
       edit({
         ...original,
         zooms: original.zooms.map((v) => (v.id === z.id ? next : v)),
@@ -236,9 +232,13 @@ export default function Timeline({
     const end = () => {
       target.removeEventListener("pointermove", move);
       target.removeEventListener("pointerup", end);
+      target.removeEventListener("pointercancel", end);
+      target.removeEventListener("lostpointercapture", end);
     };
     target.addEventListener("pointermove", move);
     target.addEventListener("pointerup", end);
+    target.addEventListener("pointercancel", end);
+    target.addEventListener("lostpointercapture", end);
   }
   function add(e: React.MouseEvent) {
     const source = sourceAt(project, toTime(e.clientX))?.time ?? 0;
@@ -282,8 +282,11 @@ export default function Timeline({
         <span style={{ width: 12 }} />
         <span>{formatTime(total, true)}</span>
       </div>
-      <div {...sx.props(s.scroll)}>
-        <div ref={el} {...sx.props(s.inner(Math.max(900, total * px + 40)))}>
+      <div ref={viewport} {...sx.props(s.scroll)}>
+        <div
+          ref={el}
+          {...sx.props(s.inner(Math.max(viewportWidth, total * px)))}
+        >
           <div
             {...sx.props(s.ruler)}
             onPointerDown={(e) => {
@@ -336,9 +339,9 @@ export default function Timeline({
               </span>
             ) : null}
             {project.zooms.map((z) => {
-              const start = outputAt(project, z.start),
-                end = outputAt(project, z.end);
-              if (start === null || end === null) return null;
+              const range = visibleRange(project, z);
+              if (!range) return null;
+              const { start, end } = range;
               return (
                 <div
                   key={z.id}
