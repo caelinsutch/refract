@@ -511,7 +511,7 @@ export default function App() {
       if (window.refract) {
         const dest = await window.refract.saveProject(project, saveAs);
         if (dest) {
-          setDirty(false);
+          if (projectRef.current === project) setDirty(false);
           tell("Project saved.");
         }
       } else {

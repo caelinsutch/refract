@@ -218,9 +218,9 @@ app.whenReady().then(() => {
         "Recording " + new Date().toLocaleString(),
         keys,
       );
-      const manifest = path.join(dir, "project.json");
-      await fs.writeFile(manifest + ".tmp", JSON.stringify(project, null, 2));
-      await fs.rename(manifest + ".tmp", manifest);
+      const { writeProjectManifest } =
+        await import("../src/core/project-storage.js");
+      await writeProjectManifest(dir, project);
       win.webContents.send("recording-finished", {
         project,
         source,
@@ -364,12 +364,22 @@ handle("open-project", async () => {
     properties: ["openDirectory"],
   });
   if (chosen.canceled) return null;
-  const dir = chosen.filePaths[0],
-    project = JSON.parse(
-      await fs.readFile(path.join(dir, "project.json"), "utf8"),
-    );
-  if (project.version !== 1 || !project.source?.file)
-    throw Error("Unsupported Refract project.");
+  const dir = chosen.filePaths[0];
+  const { readProjectManifest } =
+    await import("../src/core/project-storage.js");
+  const { project, recovered } = await readProjectManifest(dir);
+  if (recovered) {
+    const decision = await dialog.showMessageBox(win, {
+      type: "warning",
+      message: "Recover this project from its backup?",
+      detail:
+        "The current project data could not be opened. The backup contains the previous saved version. Recent edits may be missing. Save after reviewing it to restore the project.",
+      buttons: ["Recover", "Cancel"],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (decision.response !== 0) return null;
+  }
   const file = inside(dir, project.source.file);
   await fs.access(file);
   projectDir = dir;
@@ -383,6 +393,10 @@ handle("open-project", async () => {
 });
 handle("save-project", async (project: Project, saveAs = false) => {
   if (!projectDir) throw Error("Import a video first.");
+  const originalDirectory = projectDir;
+  let destination = originalDirectory;
+  const { validateProject } = await import("../src/core/project.js");
+  project = validateProject(project);
   if (saveAs) {
     const chosen = await dialog.showSaveDialog(win, {
       defaultPath: project.title + ".refract",
@@ -390,7 +404,7 @@ handle("save-project", async (project: Project, saveAs = false) => {
     });
     if (chosen.canceled) return null;
     const dest = chosen.filePath!;
-    if (path.resolve(dest) !== path.resolve(projectDir)) {
+    if (path.resolve(dest) !== path.resolve(originalDirectory)) {
       try {
         await fs.access(dest);
         throw Error(
@@ -399,15 +413,15 @@ handle("save-project", async (project: Project, saveAs = false) => {
       } catch (e) {
         if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
       }
-      await fs.cp(projectDir, dest, { recursive: true });
-      projectDir = dest;
+      await fs.cp(originalDirectory, dest, { recursive: true });
+      destination = dest;
     }
   }
-  const manifest = path.join(projectDir, "project.json"),
-    tmp = manifest + ".tmp";
-  await fs.writeFile(tmp, JSON.stringify(project, null, 2));
-  await fs.rename(tmp, manifest);
-  return projectDir;
+  const { writeProjectManifest } =
+    await import("../src/core/project-storage.js");
+  await writeProjectManifest(destination, project);
+  if (projectDir === originalDirectory) projectDir = destination;
+  return destination;
 });
 handle(
   "export-start",
