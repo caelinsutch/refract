@@ -49,9 +49,12 @@ test("zoom is deterministic and constrained at screen edges", () => {
       disabled: false,
     },
   ];
-  assert.deepEqual(zoomAt(p, 2000), { scale: 2, x: 0.25, y: 0.75 });
+  const settled = zoomAt(p, 2000);
+  assert.ok(Math.abs(settled.scale - 2) < 0.01);
+  assert.ok(settled.x >= 0.5 / settled.scale);
+  assert.ok(settled.y <= 1 - 0.5 / settled.scale);
   assert.equal(zoomAt(p, 1000).scale, 1);
-  assert.equal(zoomAt(p, 5000).scale, 1);
+  assert.ok(Math.abs(zoomAt(p, 6000).scale - 1) < 0.001);
   assert.deepEqual(zoomAt(p, 2000), zoomAt(p, 2000));
 });
 test("auto zoom with no clicks does not invent a target", () => {

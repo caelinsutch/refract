@@ -1673,8 +1673,8 @@ export default function App() {
                   ))}
                 </div>
                 <Note>
-                  Choose a transition style for your zooms. The preview and
-                  exporter use the same animation curve.
+                  Choose how screen movement settles between zooms. Preview and
+                  export use the same motion.
                 </Note>
                 <Divider />
                 <span>Cursor animation style</span>

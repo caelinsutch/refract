@@ -111,3 +111,11 @@ Refract now offers all four cursor choices, using an independently implemented a
 The reference custom picker names its controls Rigidity (stiffness 5–600, step 1), Smoothness (damping 5–200, step 1), and Momentum (mass 0.1–15, step 0.1). Refract now exposes these controls under Customize cursor animation, with reset and preset selection clearing the custom override. The override persists in project appearance data and drives the shared preview/export cursor renderer.
 
 The independent spring solver now handles underdamped, critically damped, and overdamped configurations analytically. Cache entries are keyed by all three parameters and bounded to eight configurations per cursor track. Tests verify finite motion at range extremes, sampling-interval independence, settling, project round trip, and cache updates. All 29 core tests and the production build pass. Native UI and reference-frame comparison of the new controls remain pending; the currently running export-preview bundle predates these animation changes.
+
+## Screen spring motion
+
+Screen zoom scale and target coordinates now use spring checkpoints instead of fixed-duration easing ramps. The observed Focused stiffness/damping/mass is 200/40/2.25; Smooth is 170/50/3. New projects default to Focused, matching the live reference's selected style. Adjacent zooms, auto-zoom clicks, and zoom-out retain the in-flight state and velocity. Instant remains available for existing workflows. The source-time checkpoint model supports deterministic random seeking, uses the shared compositor, and constrains the viewport to valid source bounds.
+
+Tests cover boundary and auto-click continuity, settling, random seeking, instant changes, disabled zooms, and no-click auto zooms. This changes the zoom-out behavior: it begins settling at the end boundary instead of finishing a fixed easing ramp before the boundary. Reference time-series comparison is still needed to establish exact transition scheduling and sampling equivalence. Custom screen spring controls and motion blur remain outstanding.
+
+Validation after screen springs: all 30 tests and the production build pass. Shared MP4/GIF fixtures remain six seconds with 144 frames and correct AAC audio; encoded frame error is 2.345 / 255. The running export-preview app still predates the spring changes.

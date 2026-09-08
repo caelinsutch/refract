@@ -1,5 +1,5 @@
 import type { SpringConfig } from "./spring.js";
-import { smootherstep, followClicks } from "./motion.js";
+import { screenMotionAt } from "./motion.js";
 import type { CropRect } from "./crop.js";
 export type Segment = { id: string; start: number; end: number; speed: number };
 export type Zoom = {
@@ -105,7 +105,7 @@ export const defaults: Appearance = {
   cursorSmooth: true,
   cursorAnimation: "smooth",
   clickEffect: false,
-  animation: "smooth",
+  animation: "focused",
   volume: 1,
   muted: false,
   cameraHidden: false,
@@ -296,39 +296,5 @@ export function formatTime(ms: number, precise = false) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}${precise ? "." + String(Math.floor((ms % 1000) / 10)).padStart(2, "0") : ""}`;
 }
 export function zoomAt(p: Project, t: number) {
-  const z = p.zooms.find((z) => !z.disabled && t >= z.start && t <= z.end);
-  if (!z) return { scale: 1, x: 0.5, y: 0.5 };
-  let target = { x: z.x, y: z.y };
-  if (z.mode === "auto") {
-    const clicks = p.cursor.filter(
-      (c) => c.click && c.time >= z.start && c.time <= z.end,
-    );
-    if (!clicks.length) return { scale: 1, x: 0.5, y: 0.5 };
-    target = followClicks(
-      clicks,
-      t,
-      p.appearance.animation === "instant"
-        ? 0
-        : p.appearance.animation === "focused"
-          ? 180
-          : 350,
-    );
-  }
-  const transition =
-    p.appearance.animation === "instant"
-      ? 0
-      : p.appearance.animation === "focused"
-        ? 220
-        : 500;
-  const edge = transition
-    ? Math.min(1, (t - z.start) / transition, (z.end - t) / transition)
-    : 1;
-  const ease = smootherstep(edge);
-  const scale = 1 + (z.scale - 1) * ease;
-  const limit = 0.5 / scale;
-  return {
-    scale,
-    x: Math.max(limit, Math.min(1 - limit, target.x)),
-    y: Math.max(limit, Math.min(1 - limit, target.y)),
-  };
+  return screenMotionAt(p, t);
 }
