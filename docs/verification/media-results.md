@@ -29,3 +29,7 @@ A real export through the packaged app and native save dialog exposed `SecurityE
 The saved 12-second test project also passed a live numeric trim from 12 to 11 seconds and Undo back to 12, followed by save. Direct pointer dragging was not verified because the computer-control tool returned a coordinate/window lookup error. The latest correction bundle is `release/export-preview/Refract-darwin-arm64/Refract.app`.
 
 After the origin fix, the same native export completed successfully. FFprobe confirms 1920 × 1080 H.264, 30/1 fps, 360 frames, 12.000000 seconds; AAC audio is also 12.000000 seconds. File size is 5,011,158 bytes. This is the first verified packaged desktop MP4 export, using the saved synthetic fixture with a manual zoom. Camera, custom backgrounds, live capture, and native GIF export still require their own end-to-end checks. All 26 core tests and the production build pass.
+
+## Correction: live source-frame verification
+
+The local-caption test revealed that earlier live container metadata checks missed frozen source pixels. The renderer now waits for a submitted video frame as well as a completed seek. A new live 1080p/30 MP4 check verified source timecode 2.000 seconds/frame 60 at output second two, alongside the correct generated caption. See [local caption verification](local-captions.md). Offline compositor/encoder matrices do not by themselves verify Chromium video decoding.

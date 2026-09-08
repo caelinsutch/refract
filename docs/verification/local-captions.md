@@ -14,9 +14,9 @@ The Captions panel offers language selection, generation/regeneration, and cance
 - Real on-device transcription passed on a synthesized 5.447-second English speech fixture: 17 timed words grouped into three captions.
 - Every word timestamp was finite, ordered, positive-length, and within the audio duration. Recognized text included “local caption test.”
 - Tests verify source-time caption selection through cuts and 2× speed changes, punctuation grouping, pause separation, invalid timestamps, and duration clamping.
-- All 33 core tests and TypeScript/production build pass.
+- All 35 core tests and TypeScript/production build pass.
 - Reproduce with `npm run build:native` followed by `node --import tsx scripts/verify-local-captions.ts`. The system Speech service must be accessible; sandboxed CLI runs can falsely report the recognizer unavailable.
-- The current app with unsaved edits was preserved. The new packaged Captions UI, long recordings, other languages, and cancellation during model download still need live checks.
+- Live packaged editor verification imported a spoken MP4, generated three editable captions, displayed the first caption in preview, and saved/reopened the project successfully. Long recordings, other languages, and cancellation during model download still need live checks.
 
 ## Cursor capture
 
@@ -24,8 +24,14 @@ The ScreenCaptureKit recorder sets `showsCursor = false` so the pointer is not b
 
 The capture helper currently reports `permission: required` on this Mac. A permission-enabled live recording with cursor movement has not yet been verified. Polling can miss a press and release occurring between samples, and cursor shape/keyboard-event capture is not complete. These remain explicit gaps rather than evidence of exact reference parity.
 
-The Swift helper inside `release/captions-preview/Refract-darwin-arm64/Refract.app` was also executed successfully against the spoken fixture and returned the same 17 timed words. The packaged editor was not relaunched because the existing app contains unsaved edits.
+The Swift helper inside `release/captions-preview/Refract-darwin-arm64/Refract.app` was also executed successfully against the spoken fixture and returned the same 17 timed words. The previous project was subsequently saved before relaunching the updated editor for the live workflow above.
 
 ## Caption layout
 
 Caption rendering now wraps words within an 84% composition-width box, preserves explicit line breaks, and breaks oversized tokens only at grapheme boundaries. The backing plate grows to fit multiple lines. A rendered portrait fixture confirms the caption stays within horizontal margins and above the bottom edge. All 35 tests, the production build, and the shared MP4/GIF fixture pass after this change. Very large manually entered caption blocks and exact reference caption typography remain outside this check.
+
+## Live captioned export and frame synchronization
+
+A real desktop export exposed stale source pixels despite advancing caption timestamps: waiting only for `seeked` did not ensure Chromium had submitted the new video frame. Export now waits for both seeking and `requestVideoFrameCallback` before sampling the source or camera. See [the frame callback API](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback).
+
+The corrected packaged build exported the 5.44-second spoken project as 1920×1080 H.264 at 30 fps with AAC audio. Inspection at output second two showed the source timecode 00:00:02.000/frame 60 and the second generated caption. This supersedes the earlier container-only live export evidence: an encoded file with the expected duration alone did not prove moving source pixels. The live check covers this short 30 fps MP4; other export rates, camera decoding, and long recordings need equivalent live frame checks.

@@ -1,4 +1,5 @@
 import { SpringControls } from "./components/SpringControls";
+import { seekExportVideo } from "./media/export-video";
 import { screenPresets } from "./core/motion";
 import { cursorPresets } from "./core/cursor";
 import { clipTrimBounds, trimClip } from "./core/timeline";
@@ -803,32 +804,10 @@ export default function App() {
         const t = (i / fps) * 1000,
           source = sourceAt(p, t)!.time / 1000;
         const target = Math.min(source, v.duration - 0.001);
-        if (Math.abs(v.currentTime - target) > 0.0001)
-          await new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(
-              () => reject(Error("Video seek timed out.")),
-              10000,
-            );
-            v.onseeked = () => {
-              clearTimeout(timeout);
-              resolve();
-            };
-            v.currentTime = target;
-          });
+        await seekExportVideo(v, target);
         if (cam) {
           const targetCamera = Math.min(target, cam.duration - 0.001);
-          if (Math.abs(cam.currentTime - targetCamera) > 0.001)
-            await new Promise<void>((resolve, reject) => {
-              const timeout = setTimeout(
-                () => reject(Error("Camera seek timed out.")),
-                10000,
-              );
-              cam!.onseeked = () => {
-                clearTimeout(timeout);
-                resolve();
-              };
-              cam!.currentTime = targetCamera;
-            });
+          await seekExportVideo(cam, targetCamera);
         }
         drawFrame(
           ctx,
@@ -1855,8 +1834,8 @@ export default function App() {
                 ))}
                 <Note>
                   Captions stay aligned to the original recording through cuts
-                  and speed changes. Local speech transcription is not
-                  implemented yet.
+                  and speed changes. Edit the generated text above to correct
+                  any transcription errors.
                 </Note>
               </>
             ) : tab === "camera" ? (
