@@ -8,7 +8,7 @@ export function exportArgs(
   format: "mp4" | "gif",
 ): string[] {
   validateProject(project);
-  if (![24, 30, 60].includes(fps))
+  if (!(format === "gif" ? [24, 30, 50] : [24, 30, 60]).includes(fps))
     throw Error("Unsupported output frame rate.");
   const args = [
     "-hide_banner",

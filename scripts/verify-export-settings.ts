@@ -17,7 +17,7 @@ const results: object[] = [];
 // Short moving fixtures exercise every UI encoder setting without retaining many 4K frames.
 for (const format of ["mp4", "gif"] as const) {
   for (const max of [1280, 1920, 3840]) {
-    for (const fps of [24, 30, 60]) {
+    for (const fps of format === "gif" ? [24, 30, 50] : [24, 30, 60]) {
       const p = createProject({
         file: "unused",
         width: 320,
@@ -102,6 +102,25 @@ for (const format of ["mp4", "gif"] as const) {
         1,
         "silent footage must not invent an audio stream",
       );
+      if (format === "gif") {
+        const timing = await exec(ffprobe, [
+          "-v",
+          "error",
+          "-min_delay",
+          "0",
+          "-show_entries",
+          "frame=duration_time",
+          "-of",
+          "csv=p=0",
+          dest,
+        ]);
+        const delays = timing.stdout.trim().split(/\s+/).map(Number);
+        assert.equal(delays.length, frames);
+        assert.ok(
+          delays.every((delay) => delay >= 0.02),
+          "GIF frame delays must avoid browser 10 ms clamping",
+        );
+      }
       const seconds = Number(probe.format.duration);
       // GIF timestamps are quantized to hundredths of a second.
       assert.ok(

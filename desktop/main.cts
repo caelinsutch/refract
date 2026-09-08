@@ -465,7 +465,7 @@ handle(
     if (job) throw Error("An export is already running.");
     if (!projectDir) throw Error("Import a video first.");
     if (
-      ![24, 30, 60].includes(fps) ||
+      !(format === "gif" ? [24, 30, 50] : [24, 30, 60]).includes(fps) ||
       !["mp4", "gif"].includes(format) ||
       ![width, height].every((n) => Number.isInteger(n) && n > 0 && n <= 4096)
     )

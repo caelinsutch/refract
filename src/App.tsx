@@ -2561,9 +2561,17 @@ export default function App() {
                     <select
                       aria-label="Export format"
                       value={format}
-                      onChange={(e) =>
-                        setFormat(e.target.value as "mp4" | "gif")
-                      }
+                      onChange={(e) => {
+                        const next = e.target.value as "mp4" | "gif";
+                        setFormat(next);
+                        setFps((current) =>
+                          next === "gif" && current === 60
+                            ? 50
+                            : next === "mp4" && current === 50
+                              ? 60
+                              : current,
+                        );
+                      }}
                     >
                       <option value="mp4">MP4 video</option>
                       <option value="gif">Animated GIF</option>
@@ -2590,11 +2598,13 @@ export default function App() {
                       value={fps}
                       onChange={(e) => setFps(Number(e.target.value))}
                     >
-                      {[24, 30, 60].map((n) => (
-                        <option key={n} value={n}>
-                          {n} fps
-                        </option>
-                      ))}
+                      {(format === "gif" ? [24, 30, 50] : [24, 30, 60]).map(
+                        (n) => (
+                          <option key={n} value={n}>
+                            {n} fps
+                          </option>
+                        ),
+                      )}
                     </select>
                   </Row>
                   <Divider />
