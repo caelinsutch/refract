@@ -33,11 +33,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     var pausedAt: CMTime?
     var pauseOffset: CMTime = .zero
     var stopped = false
+    var stoppedAt: CMTime?
     var lastVideo: CMSampleBuffer?
     var lastVideoTime: CMTime = .invalid
     var cursor: [[String: Any]] = []
     var cursorTimer: DispatchSourceTimer?
-    var previousButtons = 0
+    var cursorButtons = CursorButtons()
     var bounds: CGRect = .zero
     var output = ""
     var cameraSession: AVCaptureSession?
@@ -45,7 +46,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     var cameraInput: AVAssetWriterInput?
     let queue = DispatchQueue(label: "com.caelinsutch.refract.capture")
     func hostTime() -> CMTime { CMClockGetTime(CMClockGetHostTimeClock()) }
-    func normalizedTime() -> Double { guard let origin else { return 0 }; return CMTimeGetSeconds(CMTimeSubtract(CMTimeSubtract(pausedAt ?? hostTime(), origin), pauseOffset)) * 1000 }
+    func normalizedTime() -> Double { guard let origin else { return 0 }; return CMTimeGetSeconds(CMTimeSubtract(CMTimeSubtract(pausedAt ?? stoppedAt ?? hostTime(), origin), pauseOffset)) * 1000 }
     func start(_ config: CaptureConfig) async throws {
         output = config.output
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -116,15 +117,15 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         cursorTimer = timer; timer.resume()
     }
     func sampleCursor() {
-        guard origin != nil, pausedAt == nil, !stopped else { return }
+        let recording = origin != nil && pausedAt == nil && !stopped
+        let click = cursorButtons.sample(NSEvent.pressedMouseButtons, recording: recording)
+        guard recording else { return }
         let location = NSEvent.mouseLocation
         let mainHeight = CGDisplayBounds(CGMainDisplayID()).height
         let x = (location.x - bounds.minX) / bounds.width, y = (mainHeight - location.y - bounds.minY) / bounds.height
-        let buttons = NSEvent.pressedMouseButtons
         if x >= 0 && x <= 1 && y >= 0 && y <= 1 {
-            cursor.append(["time": max(0, normalizedTime()), "x": x, "y": y, "click": buttons != 0 && previousButtons == 0])
+            cursor.append(["time": max(0, normalizedTime()), "x": x, "y": y, "click": click])
         }
-        previousButtons = buttons
     }
     func retime(_ sample: CMSampleBuffer, to time: CMTime? = nil) -> CMSampleBuffer? {
         guard let origin else { return nil }
@@ -154,9 +155,9 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     }
     func stream(_ stream: SCStream, didStopWithError error: Error) { emit(["event": "error", "message": error.localizedDescription]) }
     func pause() { queue.async { guard self.pausedAt == nil else { return }; self.pausedAt = self.hostTime(); emit(["event": "paused"]) } }
-    func resume() { queue.async { guard let paused = self.pausedAt else { return }; self.pauseOffset = CMTimeAdd(self.pauseOffset, CMTimeSubtract(self.hostTime(), paused)); self.pausedAt = nil; emit(["event": "resumed"]) } }
+    func resume() { queue.async { guard let paused = self.pausedAt else { return }; self.pauseOffset = CMTimeAdd(self.pauseOffset, CMTimeSubtract(self.hostTime(), paused)); _ = self.cursorButtons.sample(NSEvent.pressedMouseButtons, recording: false); self.pausedAt = nil; emit(["event": "resumed"]) } }
     func stop() async {
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in queue.async { self.stopped = true; self.cursorTimer?.cancel(); continuation.resume() } }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in queue.async { self.stoppedAt = self.pausedAt ?? self.hostTime(); self.stopped = true; self.cursorTimer?.cancel(); continuation.resume() } }
         try? await stream?.stopCapture()
         cameraSession?.stopRunning()
         let length = max(0, normalizedTime())
