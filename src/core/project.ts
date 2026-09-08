@@ -1,3 +1,4 @@
+import type { CameraLayout } from "./camera-layout.js";
 import type { SpringConfig } from "./spring.js";
 import { screenMotionAt } from "./motion.js";
 import type { CropRect } from "./crop.js";
@@ -83,6 +84,7 @@ export type Project = {
   segments: Segment[];
   zooms: Zoom[];
   masks: Mask[];
+  cameraLayouts?: CameraLayout[];
   captions: Caption[];
   cursor: CursorEvent[];
   appearance: Appearance;
@@ -134,6 +136,7 @@ export function createProject(
     segments: [{ id: uid(), start: 0, end: source.duration, speed: 1 }],
     zooms: [],
     masks: [],
+    cameraLayouts: [],
     captions: [],
     cursor: [],
     appearance: { ...defaults },
@@ -235,6 +238,35 @@ export function validateProject(value: unknown): Project {
     )
       throw new Error("The project has invalid cursor data.");
   p.cursor = [...p.cursor].sort((a, b) => a.time - b.time);
+  p.cameraLayouts ??= [];
+  if (!Array.isArray(p.cameraLayouts))
+    throw new Error("Invalid camera layouts.");
+  p.cameraLayouts = [...p.cameraLayouts].sort((a, b) => a.start - b.start);
+  const layoutIds = new Set<string>();
+  let layoutEnd = 0;
+  for (const layout of p.cameraLayouts) {
+    if (
+      !layout ||
+      ![layout.start, layout.end, layout.x, layout.y].every(valid) ||
+      layout.start < layoutEnd ||
+      layout.end <= layout.start ||
+      layout.end > p.source.duration ||
+      !["default", "fullscreen", "hidden"].includes(layout.type) ||
+      layout.x < 0 ||
+      layout.x > 1 ||
+      layout.y < 0 ||
+      layout.y > 1 ||
+      typeof layout.id !== "string" ||
+      !layout.id ||
+      layoutIds.has(layout.id)
+    )
+      throw new Error(
+        "The project has an invalid or overlapping camera layout.",
+      );
+    layoutIds.add(layout.id);
+    layoutEnd = layout.end;
+  }
+
   for (const z of p.zooms)
     if (
       ![z.start, z.end, z.scale, z.x, z.y].every(valid) ||

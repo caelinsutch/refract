@@ -1,3 +1,4 @@
+import { cameraFrameAt } from "./camera-layout";
 import { wrapCaption } from "./captions";
 import {
   animatedCursorAt,
@@ -308,35 +309,45 @@ export function drawFrame(
   }
   c.restore();
   if (camera && p.source.camera && !a.cameraHidden) {
-    const cameraScale = 1 - (1 - a.cameraZoomScale) * Math.min(1, z.scale - 1);
-    const size = Math.min(width, height) * a.cameraSize * cameraScale;
-    const margin = 25 * scale,
-      cx = margin + (width - size - margin * 2) * a.cameraX,
-      cy = margin + (height - size - margin * 2) * a.cameraY;
-    const inputSize = Math.min(p.source.camera.width, p.source.camera.height);
+    const frame = cameraFrameAt(p, source, width, height, z.scale);
+    const {
+      x: cx,
+      y: cy,
+      width: cameraWidth,
+      height: cameraHeight,
+      radius,
+      opacity,
+    } = frame;
+    const fit = Math.max(
+      cameraWidth / p.source.camera.width,
+      cameraHeight / p.source.camera.height,
+    );
+    const inputWidth = cameraWidth / fit,
+      inputHeight = cameraHeight / fit;
     c.save();
+    c.globalAlpha = opacity;
     c.shadowColor = "#0007";
     c.shadowBlur = 20 * scale;
     c.shadowOffsetY = 6 * scale;
-    rounded(c, cx, cy, size, size, size * a.cameraRoundness);
+    rounded(c, cx, cy, cameraWidth, cameraHeight, radius);
     c.fillStyle = "#222";
     c.fill();
     c.shadowColor = "transparent";
     c.clip();
     if (a.cameraMirror) {
-      c.translate(cx + size, cy);
+      c.translate(cx + cameraWidth, cy);
       c.scale(-1, 1);
     } else c.translate(cx, cy);
     c.drawImage(
       camera,
-      (p.source.camera.width - inputSize) / 2,
-      (p.source.camera.height - inputSize) / 2,
-      inputSize,
-      inputSize,
+      (p.source.camera.width - inputWidth) / 2,
+      (p.source.camera.height - inputHeight) / 2,
+      inputWidth,
+      inputHeight,
       0,
       0,
-      size,
-      size,
+      cameraWidth,
+      cameraHeight,
     );
     c.restore();
   }

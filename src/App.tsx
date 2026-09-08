@@ -1,3 +1,4 @@
+import { CameraLayouts } from "./components/CameraLayouts";
 import { StateIcon } from "./components/StateIcon";
 import { SpringControls } from "./components/SpringControls";
 import { seekExportVideo } from "./media/export-video";
@@ -738,6 +739,21 @@ export default function App() {
     const media = [video.current, cameraVideo.current].filter(
       (v): v is HTMLVideoElement => !!v,
     );
+    // loadeddata may precede the decoded texture reaching the compositor.
+    // Frame callbacks invalidate once it is actually available, including while paused.
+    const frameCallbacks = new Map<HTMLVideoElement, number>();
+    let observingFrames = true;
+    const observeFrame = (v: HTMLVideoElement) => {
+      frameCallbacks.set(
+        v,
+        v.requestVideoFrameCallback(() => {
+          if (!observingFrames) return;
+          invalidate();
+          observeFrame(v);
+        }),
+      );
+    };
+    for (const v of media) observeFrame(v);
     const events = ["loadeddata", "seeked", "resize", "timeupdate"];
     for (const v of media)
       for (const event of events) v.addEventListener(event, invalidate);
@@ -758,6 +774,9 @@ export default function App() {
     return () => {
       if (id !== undefined) cancelAnimationFrame(id);
       requestPreview.current = () => {};
+      observingFrames = false;
+      for (const [v, callback] of frameCallbacks)
+        v.cancelVideoFrameCallback(callback);
       resize.disconnect();
       window.removeEventListener("resize", invalidate);
       density.removeEventListener("change", watchDensity);
@@ -2232,6 +2251,12 @@ export default function App() {
                       max={100}
                       unit="%"
                       onChange={(v) => appearance({ cameraZoomScale: v / 100 })}
+                    />
+                    <CameraLayouts
+                      project={project}
+                      time={time}
+                      edit={edit}
+                      seek={seek}
                     />
                   </>
                 )}

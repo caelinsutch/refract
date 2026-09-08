@@ -49,7 +49,7 @@ Reference: Screen Studio 3.7.5-4595. Status: partial implementation with verifie
 - Reference track dimensions and base colors have been corrected. Full editor pixel matching, original assets, and several control arrangements remain open.
 - Live display capture with a separate cursor track and pause/resume passed. Window/area, microphone/system audio, and camera still need end-to-end checks.
 - Retina preview resolution, paused media seeking, local Swift captions, and short 1080p MP4 exports at 30/60 fps have evidence in the verification documents. An intermittent export stall remains unresolved despite a successful retry; cancellation is bounded.
-- Dynamic camera layouts, motion blur, click sounds, audio enhancement/music, captured shortcuts, connected-device capture, recovery, and shareable links are not complete.
+- Timed camera layouts now have sidebar editing and shared render geometry; the dedicated layout timeline and export verification remain open. Motion blur, click sounds, audio enhancement/music, captured shortcuts, connected-device capture, recovery, and shareable links are not complete.
 - Earlier build evidence below is historical; consult the appended dated verification findings for subsequent corrections.
 
 ## Media tests
