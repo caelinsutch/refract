@@ -179,7 +179,7 @@ const s = sx.create({
     width: 119,
   },
   sidebar: {
-    width: 320,
+    width: 340,
     flexShrink: 0,
     backgroundColor: "#13151b",
     borderRadius: 8,
@@ -198,7 +198,12 @@ const s = sx.create({
     borderBottomColor: "#ffffff0d",
     paddingInline: 9,
   },
-  panel: { padding: "16px 14px", overflowY: "auto", flex: 1 },
+  panel: {
+    padding: "32px 24px",
+    overflowY: "auto",
+    scrollbarGutter: "stable",
+    flex: 1,
+  },
   segmented: {
     display: "flex",
     padding: 3,

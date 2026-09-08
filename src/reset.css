@@ -11,10 +11,14 @@
     overflow: hidden;
   }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro", "Segoe UI",
+      sans-serif;
     background: #19191c;
     color: #e6e6e9;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 450;
+    font-synthesis: none;
     -webkit-font-smoothing: antialiased;
   }
   button,
@@ -24,7 +28,7 @@
     font: inherit;
   }
   button {
-    cursor: pointer;
+    cursor: default;
   }
   button:disabled {
     cursor: default;

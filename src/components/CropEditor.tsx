@@ -24,14 +24,14 @@ const s = sx.create({
     height: 720,
     maxHeight: "94vh",
     borderRadius: 16,
-    backgroundColor: "#30322f",
+    backgroundColor: "#454846",
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: "#ffffff25",
     boxShadow: "0 20px 80px #0008",
     display: "flex",
     flexDirection: "column",
-    padding: 20,
+    padding: "10px 28px 20px",
     gap: 20,
   },
   toolbar: {
@@ -63,7 +63,7 @@ const s = sx.create({
     maxWidth: "100%",
     maxHeight: "100%",
     lineHeight: 0,
-    overflow: "hidden",
+    overflow: "visible",
   },
   image: { display: "block", width: "100%", height: "100%" },
   selection: {
@@ -71,10 +71,19 @@ const s = sx.create({
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: "#ffffffa0",
-    boxShadow: "0 0 0 2000px #0008",
     cursor: "move",
     touchAction: "none",
   },
+  mask: { position: "absolute", inset: 0, pointerEvents: "none" },
+  grid: {
+    position: "absolute",
+    pointerEvents: "none",
+    borderColor: "#ffffff26",
+    borderStyle: "dashed",
+    borderWidth: 0,
+  },
+  horizontalGrid: { left: 0, width: "100%", borderTopWidth: 1 },
+  verticalGrid: { top: 0, height: "100%", borderLeftWidth: 1 },
   handle: {
     position: "absolute",
     width: 10,
@@ -311,6 +320,20 @@ export default function CropEditor({
               {...sx.props(s.image)}
               aria-label="Uncropped recording"
             />
+            <svg
+              {...sx.props(s.mask)}
+              width="100%"
+              height="100%"
+              viewBox={`0 0 ${width} ${height}`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <path
+                fill="#0008"
+                fillRule="evenodd"
+                d={`M0 0H${width}V${height}H0Z M${rect.x} ${rect.y}h${rect.width}v${rect.height}h${-rect.width}Z`}
+              />
+            </svg>
             <div
               {...sx.props(s.selection)}
               tabIndex={0}
@@ -325,6 +348,18 @@ export default function CropEditor({
               onPointerDown={(e) => drag(e, "move")}
               onKeyDown={(e) => key(e, "move")}
             >
+              {[25, 50, 75].map((position) => (
+                <span key={position} aria-hidden="true">
+                  <span
+                    {...sx.props(s.grid, s.horizontalGrid)}
+                    style={{ top: `${position}%` }}
+                  />
+                  <span
+                    {...sx.props(s.grid, s.verticalGrid)}
+                    style={{ left: `${position}%` }}
+                  />
+                </span>
+              ))}
               {handles.map(([edge, x, y]) => (
                 <button
                   key={edge}

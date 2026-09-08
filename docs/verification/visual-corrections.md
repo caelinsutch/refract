@@ -123,3 +123,20 @@ Validation after screen springs: all 30 tests and the production build pass. Sha
 ## Custom screen springs
 
 Screen animation now exposes the same Rigidity, Smoothness, and Momentum controls as cursor animation. Both use a shared control component with separate accessible groups. Selecting a screen preset clears the override; reset returns to the selected preset. Custom screen parameters persist in appearance data, are validated on load, and participate in the motion-cache key. Regression coverage verifies saved-project round trip, distinct motion, reset, Undo, and Redo. All 31 tests and the production build pass. Live UI and reference motion comparison remain pending.
+
+## Installed styling inspection: sidebar, type, and crop
+
+Inspected the installed 3.7.5 editor/shared bundles and the live crop window. The reference editor's main screenshot still returns white while its accessibility tree is available, so a complete pixel comparison is not claimed. Vendor resources remain outside this repository.
+
+Observed values and changes:
+
+| Detail | Installed reference evidence | Refract change |
+|---|---|---|
+| Sidebar width | Editor layout constant resolves to 340 px | Increased from 320 to 340 px |
+| Sidebar content spacing | 32 px vertical / 24 px horizontal padding, stable scrollbar gutter | Replaced 16 / 14 px padding and reserved the gutter |
+| Base type | 13 px, weight 450, system/SF font stack, disabled font synthesis | Replaced 12 px default and matched these settings |
+| Surface colors | Main #08090D, sidebar #13151b | Existing matching colors retained |
+| Crop guide | Live crop window shows three fine grid lines in each direction | Added guides at 25%, 50%, 75% |
+| Crop perimeter | Eight circular handles remain fully visible at image edges | Removed clipping; an SVG mask shades only the excluded image area |
+
+The updated packaged editor was opened with the saved spoken-video project. Screenshots verified readable sidebar controls, the new crop grid, and all eight full-frame handles. A temporary width change showed excluded-area shading; Reset restored 1280 px and Discard returned to the editor. AX field text entry was not reliable enough to establish numeric-entry acceptance. The crop surface remains an in-editor modal; the reference uses a separate native window, which remains a parity gap. TypeScript and the production build pass.
