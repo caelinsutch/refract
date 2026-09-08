@@ -37,6 +37,8 @@ export function setupRecorder(
     pausedTotal = 0,
     choice: CaptureChoice | null = null,
     areaDisplayId: number | undefined;
+  let quitAfterCapture = false;
+  let stopWhenStarted = false;
   let state: RecorderState = { phase: "idle", countdown: 3, elapsed: 0 };
   const executable = path.join(
     __dirname,
@@ -125,10 +127,13 @@ export function setupRecorder(
     resize(true);
     child?.kill();
     child = null;
+    stopWhenStarted = false;
+    if (quitAfterCapture) app.quit();
   }
   async function begin(selected: CaptureChoice) {
     if (!["idle", "error"].includes(state.phase)) return;
     choice = selected;
+    stopWhenStarted = false;
     state = { phase: "countdown", countdown: 3, elapsed: 0 };
     resize(false);
     send();
@@ -182,6 +187,7 @@ export function setupRecorder(
                 }
               }, 100);
               send();
+              if (stopWhenStarted) stop();
             } else if (event.event === "paused") {
               state.phase = "paused";
               pauseStarted = Date.now();
@@ -192,6 +198,8 @@ export function setupRecorder(
               send();
             } else if (event.event === "finished") {
               finished = true;
+              state.phase = "stopping";
+              send();
               if (timer) clearInterval(timer);
               timer = null;
               child = null;
@@ -199,9 +207,13 @@ export function setupRecorder(
                 .then(() => {
                   state = { phase: "idle", countdown: 3, elapsed: 0 };
                   send();
-                  bar?.hide();
-                  editor.show();
-                  editor.focus();
+                  if (quitAfterCapture) {
+                    app.quit();
+                  } else {
+                    bar?.hide();
+                    editor.show();
+                    editor.focus();
+                  }
                 })
                 .catch(fail);
             } else if (event.event === "error") fail(event.message);
@@ -220,6 +232,10 @@ export function setupRecorder(
     }
   }
   function stop() {
+    if (state.phase === "starting") {
+      stopWhenStarted = true;
+      return;
+    }
     if (state.phase === "countdown") {
       if (countdownTimer) clearInterval(countdownTimer);
       countdownTimer = null;
@@ -228,6 +244,7 @@ export function setupRecorder(
       return;
     }
     if (!child || !["recording", "paused"].includes(state.phase)) return;
+    stopWhenStarted = false;
     state.phase = "stopping";
     send();
     child.stdin.write("stop\n");
@@ -332,10 +349,16 @@ export function setupRecorder(
     if (state.phase === "recording") child?.stdin.write("pause\n");
     else if (state.phase === "paused") child?.stdin.write("resume\n");
   });
-  app.on("before-quit", () => {
+  app.on("before-quit", (event) => {
+    if (["starting", "recording", "paused", "stopping"].includes(state.phase)) {
+      // Keep Electron alive until capture finalization and project persistence finish.
+      event.preventDefault();
+      quitAfterCapture = true;
+      stop();
+      return;
+    }
     if (countdownTimer) clearInterval(countdownTimer);
     if (timer) clearInterval(timer);
-    child?.stdin.write("stop\n");
     globalShortcut.unregisterAll();
   });
   return { show, stop };
