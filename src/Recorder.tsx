@@ -364,6 +364,14 @@ export default function Recorder() {
       setLoading(false);
     }
   }
+  useEffect(() => {
+    const onFocus = () => {
+      if (!loading && sources?.permission === "required" && panel)
+        void refresh();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [panel, sources?.permission, loading]);
   const pick = async (mode: string) => {
     if (panel === mode) {
       expand(null);
@@ -450,9 +458,21 @@ export default function Recorder() {
               </p>
               <button
                 {...sx.props(s.primary)}
-                onClick={() => api?.recorderPermissions()}
+                disabled={loading}
+                onClick={async () => {
+                  setLoading(true);
+                  setError("");
+                  try {
+                    await api?.recorderPermissions();
+                    await refresh();
+                  } catch (error) {
+                    setError(String(error));
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
               >
-                Open screen recording settings
+                Allow screen recording
                 <ArrowUpRight size={13} />
               </button>
               <button {...sx.props(s.item)} onClick={refresh}>

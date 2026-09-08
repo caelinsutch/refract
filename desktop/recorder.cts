@@ -274,11 +274,17 @@ export function setupRecorder(
     editor.show();
     onImport();
   });
-  register("recorder-permissions", () =>
-    shell.openExternal(
-      "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
-    ),
-  );
+  register("recorder-permissions", async () => {
+    const { stdout } = await run(executable, ["--request-permission"], {
+      timeout: 60000,
+    });
+    const result = JSON.parse(stdout.trim());
+    if (result.permission !== "granted") {
+      await shell.openExternal(
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+      );
+    }
+  });
   register("recorder-area", async (displayId: number) => {
     areaDisplayId = displayId;
     const display =

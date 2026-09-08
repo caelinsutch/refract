@@ -171,6 +171,11 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
 }
 @main struct CaptureMain {
     static func main() async {
+        if CommandLine.arguments.contains("--request-permission") {
+            let granted = CGPreflightScreenCaptureAccess() || CGRequestScreenCaptureAccess()
+            emit(["permission": granted ? "granted" : "required"])
+            return
+        }
         if CommandLine.arguments.contains("--list") {
             guard CGPreflightScreenCaptureAccess() else { emit(["permission": "required", "displays": [], "windows": [], "microphones": [], "cameras": []]); return }
             do { let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
