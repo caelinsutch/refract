@@ -71,3 +71,11 @@ Native compilation and the TypeScript/production build pass. No permission was g
 A completed capture previously relied on the renderer receiving an IPC event and issuing a save request. The desktop process now constructs the project, attaches cursor events and initial zooms, and atomically writes `project.json` before notifying the editor. The renderer loads that persisted project rather than recreating it and launching an unawaited save.
 
 The added regression test serializes/reopens the prepared capture project, verifies click-based zoom intervals, and checks malformed/out-of-range cursor handling. Eighteen tests and the production build pass. Live native capture and crash-recovery behavior remain unverified; this change removes the identified renderer-event dependency from initial project persistence.
+
+## Live candidate verification after user closed the prior app
+
+The old process was confirmed absent, the candidate rebuilt, and the candidate app launched successfully. Its recorder responded and displayed the missing-screen-access explanation. The Allow screen recording action was exercised, but a resulting macOS permission grant was not observed; permission-enabled capture remains unverified.
+
+Imported the generated twelve-second fixture through the native picker. The new background/reset controls and tab order appeared in the editor. Opened Crop, changed width from 1280 to 640, confirmed, and visually verified the composition became 640 × 720 in Auto aspect. One Undo restored the original 1280 × 720 values, confirmed by reopening Crop. Discarded the untouched crop draft and saved; the UI reported Project saved.
+
+The crop screenshot showed edge handles being clipped by the preview container; it also confirmed the remaining overlay-versus-native-window difference. A subsequent close-window check encountered changed editor state (a selected zoom and modified playhead), so window close/activation is not counted as verified. The app was left open rather than risking the newly changed state.
