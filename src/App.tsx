@@ -1,3 +1,4 @@
+import { StateIcon } from "./components/StateIcon";
 import { SpringControls } from "./components/SpringControls";
 import { seekExportVideo } from "./media/export-video";
 import { screenPresets } from "./core/motion";
@@ -415,7 +416,8 @@ export default function App() {
     projectRef = useRef(project),
     timeRef = useRef(time),
     playingRef = useRef(playing),
-    bgImage = useRef<HTMLImageElement | null>(null);
+    bgImage = useRef<HTMLImageElement | null>(null),
+    requestPreview = useRef<() => void>(() => {});
   projectRef.current = project;
   timeRef.current = time;
   playingRef.current = playing;
@@ -621,11 +623,16 @@ export default function App() {
     }
     const im = new Image();
     im.crossOrigin = "anonymous";
+    let cancelled = false;
     im.onload = () => {
+      if (cancelled) return;
       bgImage.current = im;
-      setTime((t) => t + 0.00001);
+      requestPreview.current();
     };
     im.src = img;
+    return () => {
+      cancelled = true;
+    };
   }, [project?.appearance.image]);
   useEffect(() => {
     const v = video.current;
@@ -663,10 +670,11 @@ export default function App() {
     } else v.pause();
   }, [project, time, playing, previewSpeed, cameraUrl]);
   useEffect(() => {
-    let id: number,
+    let id: number | undefined,
       last = performance.now(),
       lastState = last;
     const tick = (now: number) => {
+      id = undefined;
       const p = projectRef.current,
         c = canvas.current,
         v = video.current;
@@ -706,6 +714,10 @@ export default function App() {
         if (next >= duration(p)) {
           next = loop ? 0 : duration(p);
           if (!loop) setPlaying(false);
+          // Always publish the boundary; the throttled update below may not
+          // run again once playback stops.
+          setTime(next);
+          lastState = now;
         }
         timeRef.current = next;
         if (now - lastState > 30) {
@@ -714,11 +726,48 @@ export default function App() {
         }
       }
       last = now;
+      if (playingRef.current) id = requestAnimationFrame(tick);
+    };
+    const invalidate = () => {
+      if (id !== undefined) return;
+      // A new playback run starts now, not at the last frame before pausing.
+      last = performance.now();
       id = requestAnimationFrame(tick);
     };
-    id = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(id);
-  }, [previewSpeed, loop]);
+    requestPreview.current = invalidate;
+    const media = [video.current, cameraVideo.current].filter(
+      (v): v is HTMLVideoElement => !!v,
+    );
+    const events = ["loadeddata", "seeked", "resize", "timeupdate"];
+    for (const v of media)
+      for (const event of events) v.addEventListener(event, invalidate);
+    const resize = new ResizeObserver(invalidate);
+    if (canvas.current?.parentElement)
+      resize.observe(canvas.current.parentElement);
+    window.addEventListener("resize", invalidate);
+    // Moving between displays can change pixel density without changing CSS size.
+    let density: MediaQueryList;
+    const watchDensity = () => {
+      density?.removeEventListener("change", watchDensity);
+      density = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+      density.addEventListener("change", watchDensity);
+      invalidate();
+    };
+    watchDensity();
+    invalidate();
+    return () => {
+      if (id !== undefined) cancelAnimationFrame(id);
+      requestPreview.current = () => {};
+      resize.disconnect();
+      window.removeEventListener("resize", invalidate);
+      density.removeEventListener("change", watchDensity);
+      for (const v of media)
+        for (const event of events) v.removeEventListener(event, invalidate);
+    };
+  }, [previewSpeed, loop, url, cameraUrl, project?.id]);
+  useEffect(() => {
+    requestPreview.current();
+  }, [project, time, playing]);
   useEffect(() => {
     const action = (a: string) => {
       if (cropping) return;
@@ -1372,7 +1421,12 @@ export default function App() {
                 setPlaying((p) => !p);
               }}
             >
-              {playing ? <Pause size={17} /> : <Play size={17} />}
+              <StateIcon
+                active={playing}
+                size={17}
+                on={<Pause size={17} />}
+                off={<Play size={17} />}
+              />
             </Button>
             <Button
               icon
@@ -1385,6 +1439,7 @@ export default function App() {
             <div {...sx.props(s.spacer)} />
             <Button
               active={loop}
+              aria-pressed={loop}
               icon
               title="Loop playback"
               onClick={() => setLoop((v) => !v)}
@@ -1393,15 +1448,21 @@ export default function App() {
             </Button>
             <Button
               icon
-              title="Mute preview and export"
+              title={
+                project?.appearance.muted
+                  ? "Unmute preview and export"
+                  : "Mute preview and export"
+              }
+              aria-pressed={project?.appearance.muted ?? false}
               disabled={!project}
               onClick={() => appearance({ muted: !project?.appearance.muted })}
             >
-              {project?.appearance.muted ? (
-                <VolumeX size={14} />
-              ) : (
-                <Volume2 size={14} />
-              )}
+              <StateIcon
+                active={project?.appearance.muted ?? false}
+                size={14}
+                on={<VolumeX size={14} />}
+                off={<Volume2 size={14} />}
+              />
             </Button>
             <select
               aria-label="Preview speed"

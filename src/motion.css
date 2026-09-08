@@ -118,3 +118,35 @@ dialog[data-command-menu][open] {
     }
   }
 }
+
+[data-state-icon] {
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+[data-state-icon] > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  scale: 0.25;
+  filter: blur(4px);
+  transition:
+    opacity var(--motion-feedback) var(--ease-responsive),
+    scale var(--motion-surface) var(--ease-responsive),
+    filter var(--motion-feedback) var(--ease-responsive);
+}
+[data-state-icon] > span[data-visible="true"] {
+  opacity: 1;
+  scale: 1;
+  filter: blur(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-state-icon] > span {
+    transition: none;
+    scale: 1;
+    filter: none;
+  }
+}

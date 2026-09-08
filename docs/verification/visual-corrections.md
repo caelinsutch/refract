@@ -188,3 +188,14 @@ Added shared motion tokens (90 ms press, 140 ms hover feedback, 180 ms surface e
 Live checks: the timeline popover renders in the expected position; Escape dismisses it and returns focus to Visible timelines. Build passes. Slow-motion frame-by-frame review remains outstanding; screenshots verify final layout, not motion timing.
 
 Cursor Click effect now offers None, Circle, and Ripple. Boolean settings in earlier project files migrate to None/Ripple. Feedback renders beneath the pointer, on the source clock shared by preview and export. Ripple initial radius now scales consistently with output resolution. Pixel tests cover distinct effects, expiration, backward seek determinism, doubled clip speed, and explicit cursor hiding. Live UI selection of Circle and saving succeeded. These are independently implemented effects; exact reference effect easing and hold behavior are not yet claimed.
+
+
+## Transport feedback and paused preview work
+
+Play/pause and mute controls now retain both icon glyphs and transition between them, allowing state reversals without replacing the DOM node. Recorder pause/resume and system-audio icons use the same treatment. Reduced-motion switches glyphs immediately; initial render does not animate. Mute now exposes its pressed state and changes its accessible label to Unmute when enabled. Live recorder audio selection updated the icon/label and was restored to its initial setting.
+
+The preview loop now schedules continuous frames only during playback. Project/time changes, image loading, video seek/readiness events, resize observation, and display-density changes invalidate a paused preview. Event listeners and scheduled frames are cleaned up when media or project changes. This avoids repeatedly compositing a full Retina canvas while idle. The image-loading effect also discards stale completions rather than changing the playhead by a fractional amount to trigger an update.
+
+Live regression checks: End seeks to the decoded source frame at 5.400 seconds; Start returns to the first frame; playback advances; pause holds at 2.70 seconds; resume progresses from that position without including paused wall-clock time. Mute/Unmute updates its label and pressed state. Production build and 47 core tests pass. No quantitative GPU benchmark or slow-motion animation capture is claimed.
+
+A live playback completion check initially exposed a throttled-state boundary issue. The boundary now publishes immediately, and the repeat run stopped at exactly `0:05.44 / 0:05.44` with Play available.

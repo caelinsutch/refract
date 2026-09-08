@@ -99,6 +99,7 @@ export function Button({
   disabled = false,
   icon = false,
   "aria-expanded": expanded,
+  "aria-pressed": pressed,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -108,6 +109,7 @@ export function Button({
   disabled?: boolean;
   icon?: boolean;
   "aria-expanded"?: boolean;
+  "aria-pressed"?: boolean;
 }) {
   return (
     <button
@@ -120,6 +122,7 @@ export function Button({
       onClick={onClick}
       aria-label={title}
       aria-expanded={expanded}
+      aria-pressed={pressed}
       data-active={active || undefined}
       title={title}
       disabled={disabled}

@@ -1,3 +1,4 @@
+import { StateIcon } from "./components/StateIcon";
 import { useEffect, useState, useRef } from "react";
 import * as sx from "@stylexjs/stylex";
 import {
@@ -729,11 +730,12 @@ export default function Recorder() {
                     {...sx.props(s.choice)}
                     onClick={() => api?.recorderPause()}
                   >
-                    {state.phase === "paused" ? (
-                      <Play size={18} />
-                    ) : (
-                      <Pause size={18} />
-                    )}
+                    <StateIcon
+                      active={state.phase === "paused"}
+                      size={18}
+                      on={<Play size={18} />}
+                      off={<Pause size={18} />}
+                    />
                   </button>
                   <button
                     aria-label="Stop recording"
@@ -801,7 +803,12 @@ export default function Recorder() {
               </span>
             </button>
             <button {...sx.props(s.choice)} onClick={() => pick("audio")}>
-              {systemAudio ? <Volume2 size={19} /> : <VolumeX size={19} />}
+              <StateIcon
+                active={systemAudio}
+                size={19}
+                on={<Volume2 size={19} />}
+                off={<VolumeX size={19} />}
+              />
               <span>{systemAudio ? "System audio" : "No system audio"}</span>
             </button>
             <div style={{ flex: 1 }} />
