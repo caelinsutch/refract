@@ -845,29 +845,7 @@ export default function App() {
   useEffect(
     () =>
       window.refract?.onRecordingFinished((result) => {
-        const p = createProject(result.source, result.title);
-        p.cursor = result.cursor;
-        const clicks = result.cursor.filter((c) => c.click);
-        let lastEnd = 0;
-        for (const click of clicks) {
-          if (click.time < lastEnd) continue;
-          const start = Math.max(0, click.time - 300),
-            end = Math.min(p.source.duration, click.time + 2500);
-          p.zooms.push({
-            id: uid(),
-            start,
-            end,
-            scale: 2,
-            x: click.x,
-            y: click.y,
-            mode: "auto",
-            disabled: false,
-          });
-          lastEnd = end;
-        }
-        load(p, result.url, result.cameraUrl);
-        setDirty(true);
-        void window.refract?.saveProject(p);
+        load(validateProject(result.project), result.url, result.cameraUrl);
       }),
     [],
   );

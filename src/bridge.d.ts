@@ -22,6 +22,7 @@ declare global {
       onRecorderState(cb: (state: RecorderState) => void): () => void;
       onRecordingFinished(
         cb: (data: {
+          project: Project;
           source: Project["source"];
           url: string;
           title: string;

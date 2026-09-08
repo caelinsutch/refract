@@ -174,7 +174,17 @@ app.whenReady().then(() => {
       const cursor = JSON.parse(
         await fs.readFile(path.join(dir, "media/cursor.json"), "utf8"),
       );
+      const { recordedProject } = await import("../src/core/recording.js");
+      const project = recordedProject(
+        source,
+        cursor,
+        "Recording " + new Date().toLocaleString(),
+      );
+      const manifest = path.join(dir, "project.json");
+      await fs.writeFile(manifest + ".tmp", JSON.stringify(project, null, 2));
+      await fs.rename(manifest + ".tmp", manifest);
       win.webContents.send("recording-finished", {
+        project,
         source,
         url: expose(file),
         cursor,
