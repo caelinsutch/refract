@@ -1,3 +1,4 @@
+import type { Shortcut } from "./shortcuts.js";
 import type { CameraLayout } from "./camera-layout.js";
 import type { SpringConfig } from "./spring.js";
 import { screenMotionAt } from "./motion.js";
@@ -40,6 +41,9 @@ export type CursorEvent = {
 };
 export type Caption = { id: string; start: number; end: number; text: string };
 export type Appearance = {
+  showShortcuts: boolean;
+  showSingleKeyShortcuts: boolean;
+  shortcutSize: number;
   background: "wallpaper" | "gradient" | "color" | "image";
   color: string;
   color2: string;
@@ -94,10 +98,14 @@ export type Project = {
   masks: Mask[];
   cameraLayouts?: CameraLayout[];
   captions: Caption[];
+  shortcuts?: Shortcut[];
   cursor: CursorEvent[];
   appearance: Appearance;
 };
 export const defaults: Appearance = {
+  showShortcuts: false,
+  showSingleKeyShortcuts: false,
+  shortcutSize: 1,
   background: "wallpaper",
   color: "#6d76e8",
   color2: "#e0b2ed",
@@ -146,6 +154,7 @@ export function createProject(
     masks: [],
     cameraLayouts: [],
     captions: [],
+    shortcuts: [],
     cursor: [],
     appearance: { ...defaults },
   };
@@ -250,6 +259,34 @@ export function validateProject(value: unknown): Project {
     )
       throw new Error("The project has invalid cursor data.");
   p.cursor = [...p.cursor].sort((a, b) => a.time - b.time);
+  p.shortcuts ??= [];
+  if (!Array.isArray(p.shortcuts)) throw new Error("Invalid shortcut track.");
+  const shortcutIds = new Set<string>();
+  for (const shortcut of p.shortcuts) {
+    if (
+      !shortcut ||
+      typeof shortcut.id !== "string" ||
+      !shortcut.id ||
+      shortcutIds.has(shortcut.id) ||
+      ![shortcut.start, shortcut.end].every(valid) ||
+      shortcut.start < 0 ||
+      shortcut.end <= shortcut.start ||
+      shortcut.end > p.source.duration ||
+      typeof shortcut.key !== "string" ||
+      !shortcut.key.trim() ||
+      shortcut.key.length > 32 ||
+      !Array.isArray(shortcut.modifiers) ||
+      new Set(shortcut.modifiers).size !== shortcut.modifiers.length ||
+      shortcut.modifiers.some(
+        (m) => !["control", "option", "shift", "command"].includes(m),
+      ) ||
+      (shortcut.disabled !== undefined &&
+        typeof shortcut.disabled !== "boolean")
+    )
+      throw new Error("The project has invalid shortcut data.");
+    shortcutIds.add(shortcut.id);
+  }
+  p.shortcuts = [...p.shortcuts].sort((a, b) => a.start - b.start);
   p.cameraLayouts ??= [];
   if (!Array.isArray(p.cameraLayouts))
     throw new Error("Invalid camera layouts.");
@@ -317,6 +354,14 @@ export function validateProject(value: unknown): Project {
     )
   )
     throw new Error("The project has an invalid cursor animation style.");
+  if (
+    typeof p.appearance.showShortcuts !== "boolean" ||
+    typeof p.appearance.showSingleKeyShortcuts !== "boolean" ||
+    !valid(p.appearance.shortcutSize) ||
+    p.appearance.shortcutSize < 0.5 ||
+    p.appearance.shortcutSize > 2
+  )
+    throw new Error("The project has invalid shortcut settings.");
   for (const key of ["cursorSpring", "screenSpring"] as const) {
     const config = p.appearance[key];
     if (!config) continue;

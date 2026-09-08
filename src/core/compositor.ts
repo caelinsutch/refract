@@ -1,3 +1,4 @@
+import { drawShortcut } from "./shortcuts";
 import { cameraFrameAt } from "./camera-layout";
 import { wrapCaption } from "./captions";
 import {
@@ -353,6 +354,7 @@ export function drawFrame(
     c.restore();
   }
   const caption = p.captions.find((s) => source >= s.start && source < s.end);
+  let shortcutBottom = 33 * scale;
   if (caption) {
     c.font = `600 ${30 * scale}px -apple-system, sans-serif`;
     c.textAlign = "center";
@@ -369,6 +371,7 @@ export function drawFrame(
     const boxHeight = lines.length * lineHeight + 14 * scale;
     const bottom = 33 * scale;
     const top = height - bottom - boxHeight;
+    shortcutBottom += boxHeight + 12 * scale;
     c.fillStyle = "#000b";
     rounded(
       c,
@@ -384,5 +387,6 @@ export function drawFrame(
       c.fillText(line, width / 2, top + 7 * scale + lineHeight * (index + 0.5)),
     );
   }
+  drawShortcut(c, p, t, width, height, shortcutBottom);
   c.restore();
 }

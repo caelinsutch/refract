@@ -1,3 +1,4 @@
+import { ShortcutSettings } from "./components/ShortcutSettings";
 import { clipAudioGain } from "./core/audio";
 import { CameraLayouts } from "./components/CameraLayouts";
 import { StateIcon } from "./components/StateIcon";
@@ -2343,24 +2344,10 @@ export default function App() {
                   </>
                 )}
               </>
+            ) : project ? (
+              <ShortcutSettings project={project} edit={edit} seek={seek} />
             ) : (
-              <>
-                <Heading>Shortcuts</Heading>
-                <Note>
-                  This video has no captured keyboard events. Keyboard event
-                  capture is still in development.
-                </Note>
-                <Divider />
-                <Row>
-                  <span>Play / pause</span>
-                  <kbd>Space</kbd>
-                </Row>
-                <Divider />
-                <Row>
-                  <span>Cut at playhead</span>
-                  <kbd>C</kbd>
-                </Row>
-              </>
+              <Note>Open a recording to edit its shortcuts.</Note>
             )}
           </div>
         </aside>

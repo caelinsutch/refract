@@ -45,7 +45,7 @@ Reference: Screen Studio 3.7.5-4595. Status: partial implementation with verifie
 
 ## Current gaps and priorities
 
-- Timeline now supports Zooms, Camera layouts, and Masks with interval creation/trimming; the shortcut track remains open.
+- Timeline now supports Zooms, Camera layouts, and Masks with interval creation/trimming. Shortcut overlays and inspector controls now work with saved event data; native event capture and the shortcut timeline lane remain open. See [shortcut verification](shortcuts.md).
 - Reference track dimensions and base colors have been corrected. Full editor pixel matching, original assets, and several control arrangements remain open.
 - Live display capture with a separate cursor track and pause/resume passed. Window/area, microphone/system audio, and camera still need end-to-end checks.
 - Per-clip volume and mute now have saved controls and an actual FFmpeg gain/timing check; see [clip audio](clip-audio.md).
