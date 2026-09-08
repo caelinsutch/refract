@@ -1,5 +1,7 @@
 /* Shared UI tokens. Video composition colors belong to the project, not this theme. */
 :root {
+  color-scheme: dark;
+  --surface-native-window: #505650b8;
   --track-shortcut: #565c67;
   --track-shortcut-hover: #676e7b;
   --track-shortcut-outline: #a0a9bb66;
@@ -103,4 +105,76 @@
   --font-ui:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro", "Segoe UI",
     sans-serif;
+}
+
+/* Follow macOS appearance live; composition colors intentionally remain unchanged. */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --surface-native-window: #f2f3f4b8;
+    --surface-app: #e9ebef;
+    --surface-panel: #f7f8fa;
+    --surface-raised: #ffffff;
+    --surface-popover: #f8f9fbed;
+    --surface-control: #e1e4e9;
+    --surface-modal: #f7f8faf0;
+    --surface-opaque: #f7f8fa;
+    --surface-recorder: #f5f6f8e8;
+    --surface-recorder-panel: #f7f8faf5;
+    --surface-area-hint: #f6f7f9ec;
+    --surface-area-label: #f6f7f9ee;
+    --surface-crop: #e0e3e4;
+    --surface-crop-toolbar: #d9dddf;
+    --text-primary: #22262d;
+    --text-secondary: #3e4550;
+    --text-muted: #596270;
+    --text-subtle: #636d7b;
+    --text-inverse: #f5f6f8;
+    --border-strong: #bbc1cb;
+    --slider-track: #b8bec8;
+    --slider-thumb: #ffffff;
+    --scrollbar: #a7aeba;
+    --contrast-border: #68717f;
+    --focus: #637387;
+    --selection-ring: #637387;
+    --accent: #087f8c;
+    --badge-surface: #d9eef0;
+    --track-clip: #f0c46e;
+    --track-clip-border: #b18436;
+    --track-mask: #eeb6d0;
+    --track-mask-border: #b56b8e;
+    --track-camera: #a7d6f0;
+    --track-camera-border: #568eaf;
+    --track-shortcut: #ccd2dc;
+    --track-shortcut-hover: #bfc8d5;
+    --track-shortcut-outline: #78869966;
+    --white-a0a: #0000000a;
+    --white-a06: #00000006;
+    --white-a0d: #0000000d;
+    --white-a0b: #0000000b;
+    --white-a24: #00000024;
+    --white-a14: #00000014;
+    --white-a09: #00000009;
+    --white-a00: #00000000;
+    --white-a1c: #0000001c;
+    --white-a16: #00000016;
+    --white-a99: #00000099;
+    --white-a13: #00000013;
+    --white-a2d: #0000002d;
+    --white-a17: #00000017;
+    --white-a25: #00000025;
+    --white-a03: #00000003;
+    --white-a27: #00000027;
+    --white-a12: #00000012;
+    --white-a08: #00000008;
+    --white-a0c: #0000000c;
+    --white-a15: #00000015;
+    --white-a20: #00000020;
+    --white-a05: #00000005;
+    --white-a55: #00000055;
+    --white-aa0: #000000a0;
+    --white-a26: #00000026;
+    --white-a1a: #0000001a;
+    --white-a66: #00000066;
+  }
 }

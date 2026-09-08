@@ -42,7 +42,7 @@ const s = sx.create({
     height: 38,
     color: "var(--text-primary)",
   },
-  label: { color: "var(--white-a55)", marginInline: 6 },
+  label: { color: "var(--text-muted)", marginInline: 6 },
   stage: {
     flex: 1,
     minHeight: 0,
@@ -115,17 +115,23 @@ export default function CropEditor({
   video,
   onConfirm,
   onCancel,
+  nativeWindow = false,
 }: {
   width: number;
   height: number;
   initial?: CropRect;
-  video: HTMLVideoElement | null;
+  nativeWindow?: boolean;
+  video: HTMLVideoElement | HTMLImageElement | null;
   onConfirm: (crop: CropRect) => void;
   onCancel: () => void;
 }) {
   const [rect, setRect] = useState<CropRect>(
     initial ?? { x: 0, y: 0, width, height },
   );
+  const [fieldDraft, setFieldDraft] = useState<{
+    key: keyof CropRect;
+    value: string;
+  } | null>(null);
   const [size, setSize] = useState({ width: 900, height: 506 });
   const canvas = useRef<HTMLCanvasElement>(null),
     stage = useRef<HTMLDivElement>(null);
@@ -146,7 +152,11 @@ export default function CropEditor({
   }, [width, height]);
   useEffect(() => {
     const c = canvas.current?.getContext("2d");
-    if (c && video && video.readyState >= 2)
+    if (
+      c &&
+      video &&
+      (!(video instanceof HTMLVideoElement) || video.readyState >= 2)
+    )
       c.drawImage(video, 0, 0, width, height);
   }, [video, width, height]);
   const update = (key: keyof CropRect, value: number) => {
@@ -196,11 +206,12 @@ export default function CropEditor({
   }
   return (
     <Modal
+      nativeWindow={nativeWindow}
       aria-label="Crop recording"
       onDismiss={onCancel}
       {...sx.props(s.dialog)}
     >
-      <div {...sx.props(s.toolbar)}>
+      <div data-window-toolbar {...sx.props(s.toolbar)}>
         <span {...sx.props(s.label)}>Size</span>
         {(["width", "height"] as const).map((key, i) => (
           <span
@@ -214,8 +225,12 @@ export default function CropEditor({
               aria-label={`Crop ${key}`}
               min={1}
               max={key === "width" ? width : height}
-              value={rect[key]}
-              onChange={(e) => update(key, Number(e.target.value))}
+              value={fieldDraft?.key === key ? fieldDraft.value : rect[key]}
+              onBlur={() => setFieldDraft(null)}
+              onChange={(e) => {
+                setFieldDraft({ key, value: e.target.value });
+                update(key, Number(e.target.value));
+              }}
             />
           </span>
         ))}
@@ -259,8 +274,12 @@ export default function CropEditor({
             aria-label={`Crop ${key}`}
             type="number"
             min={0}
-            value={rect[key]}
-            onChange={(e) => update(key, Number(e.target.value))}
+            value={fieldDraft?.key === key ? fieldDraft.value : rect[key]}
+            onBlur={() => setFieldDraft(null)}
+            onChange={(e) => {
+              setFieldDraft({ key, value: e.target.value });
+              update(key, Number(e.target.value));
+            }}
           />
         ))}
         <Button onClick={() => setRect({ x: 0, y: 0, width, height })}>

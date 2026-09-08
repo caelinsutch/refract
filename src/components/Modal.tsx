@@ -4,11 +4,13 @@ export function Modal({
   children,
   onDismiss,
   dismissible = true,
+  nativeWindow = false,
   ...props
 }: {
   children: ReactNode;
   onDismiss: () => void;
   dismissible?: boolean;
+  nativeWindow?: boolean;
 } & Pick<ComponentProps<"dialog">, "className" | "style" | "aria-label">) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -30,6 +32,7 @@ export function Modal({
     <dialog
       ref={ref}
       tabIndex={-1}
+      data-native-window={nativeWindow || undefined}
       data-app-dialog
       data-floating-surface="dialog"
       {...props}

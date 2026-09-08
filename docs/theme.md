@@ -11,3 +11,7 @@ These tokens style the application chrome. Project backgrounds, cursor artwork, 
 Verification: production TypeScript/StyleX build passed; all UI token references resolve and no literal hex colors remain in the editor, recorder, components, or reset stylesheet. Live desktop inspection confirmed teal Export, enabled cursor switches, and zoom timeline with retained layout. Recording stop remains red and clip/mask tracks retain distinct semantic colors.
 
 Interaction timings and easings are also tokens. `src/motion.css` applies them to hover/press feedback and floating surfaces, with reduced-motion overrides. Avoid animating timeline positions or dimensions during direct manipulation.
+
+## System appearance
+
+The interface now follows macOS Light/Dark/Auto through `prefers-color-scheme`. Light overrides cover surfaces, controls, text, borders, track colors and native task-window tint. Native window background updates follow Electron `nativeTheme`. Recorded composition colors are independent of application appearance. See [native window verification](verification/native-windows.md) for checked behavior and remaining visual QA.

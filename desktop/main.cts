@@ -1,7 +1,9 @@
+import { setupCropWindow } from "./crop-window.cjs";
 import { setupRecorder } from "./recorder.cjs";
 import {
   app,
   BrowserWindow,
+  nativeTheme,
   ipcMain,
   dialog,
   protocol,
@@ -118,7 +120,7 @@ app.whenReady().then(() => {
     minHeight: 660,
     title: "Refract",
     show: false,
-    backgroundColor: "#08090d",
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#08090d" : "#e9ebef",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 17, y: 18 },
     webPreferences: {
@@ -132,6 +134,13 @@ app.whenReady().then(() => {
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   if (process.env.REFRACT_DEV_URL) win.loadURL(process.env.REFRACT_DEV_URL);
   else win.loadFile(path.join(__dirname, "../../dist/index.html"));
+  nativeTheme.on("updated", () => {
+    if (!win.isDestroyed())
+      win.setBackgroundColor(
+        nativeTheme.shouldUseDarkColors ? "#08090d" : "#e9ebef",
+      );
+  });
+  setupCropWindow(win);
   const send = (action: string) => win.webContents.send("menu-action", action);
   const recorder = setupRecorder(
     win,

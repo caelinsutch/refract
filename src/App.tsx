@@ -1093,6 +1093,43 @@ export default function App() {
     edit({ ...project, captions: parsed });
     tell(`Imported ${parsed.length} captions.`);
   }
+  const openCrop = async () => {
+    if (!project || cropping) return;
+    setPlaying(false);
+    if (!window.refract) {
+      setCropping(true);
+      return;
+    }
+    if (!video.current || video.current.readyState < 2) {
+      tell("Wait for the video frame to load.");
+      return;
+    }
+    const previousFocus = document.activeElement;
+    const frame = document.createElement("canvas");
+    frame.width = project.source.width;
+    frame.height = project.source.height;
+    frame
+      .getContext("2d")!
+      .drawImage(video.current, 0, 0, frame.width, frame.height);
+    setCropping(true);
+    try {
+      const crop = await window.refract.cropOpen({
+        width: frame.width,
+        height: frame.height,
+        initial: project.crop,
+        image: frame.toDataURL("image/png"),
+      });
+      if (crop) edit({ ...project, crop });
+    } catch (error) {
+      tell(String(error));
+    } finally {
+      setCropping(false);
+      requestAnimationFrame(() => {
+        if (previousFocus instanceof HTMLElement && previousFocus.isConnected)
+          previousFocus.focus({ preventScroll: true });
+      });
+    }
+  };
   const commands: EditorCommand[] = [
     {
       id: "record",
@@ -1184,7 +1221,7 @@ export default function App() {
       label: "Crop recording…",
       group: "Editing",
       disabled: !project,
-      run: () => setCropping(true),
+      run: () => void openCrop(),
     },
     {
       id: "copy-frame",
@@ -1224,14 +1261,14 @@ export default function App() {
     })),
   ];
   return (
-    <div {...sx.props(s.app)}>
+    <div {...sx.props(s.app)} inert={cropping && !!window.refract}>
       {commandOpen && (
         <CommandMenu
           commands={commands}
           onClose={() => setCommandOpen(false)}
         />
       )}
-      {cropping && project && (
+      {cropping && project && !window.refract && (
         <CropEditor
           width={project.source.width}
           height={project.source.height}
@@ -1353,7 +1390,7 @@ export default function App() {
                   <Button
                     onClick={() => {
                       setPlaying(false);
-                      setCropping(true);
+                      void openCrop();
                     }}
                     title="Crop recording"
                   >

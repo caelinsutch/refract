@@ -7,6 +7,21 @@ import type { Project } from "./core/project";
 declare global {
   interface Window {
     refract?: {
+      cropOpen: (data: {
+        width: number;
+        height: number;
+        initial?: import("./core/crop").CropRect;
+        image: string;
+      }) => Promise<import("./core/crop").CropRect | null>;
+      cropState: () => Promise<{
+        width: number;
+        height: number;
+        initial?: import("./core/crop").CropRect;
+        image: string;
+      }>;
+      cropFinish: (
+        crop: import("./core/crop").CropRect | null,
+      ) => Promise<void>;
       generateCaptions(
         project: Project,
         locale: string,

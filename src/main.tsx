@@ -1,3 +1,4 @@
+import { CropWindow } from "./components/CropWindow";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
@@ -27,9 +28,13 @@ document.addEventListener(
 );
 if (location.hash === "#recorder" || location.hash === "#area")
   document.documentElement.classList.add("recorder-surface");
+if (location.hash === "#crop")
+  document.documentElement.classList.add("native-window");
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {location.hash === "#recorder" ? (
+    {location.hash === "#crop" ? (
+      <CropWindow />
+    ) : location.hash === "#recorder" ? (
       <Recorder />
     ) : location.hash === "#area" ? (
       <AreaPicker />

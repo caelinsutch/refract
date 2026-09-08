@@ -15,3 +15,5 @@ Focus styling uses a neutral ring rather than the primary accent; selected swatc
 ## Reference crop window
 
 The installed Screen Studio crop UI was inspected directly. It opens a separate macOS window with traffic lights, a 960×720 surface, a muted gray material, dimensions/position across the top, and confirmation/discard actions at the bottom. Refract's crop editor is still an in-page dialog; this batch fixes behavior but does not establish native-window or Liquid Glass parity. A screenshot does not prove use of Apple's Liquid Glass API. A dedicated macOS crop window remains the next implementation task.
+
+Follow-up: crop now has a dedicated macOS window using a reusable task-window shell; see [native windows](native-windows.md). The browser fallback retains the shared HTML dialog.

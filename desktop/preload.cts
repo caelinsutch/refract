@@ -3,6 +3,9 @@ import type { Project } from "../src/core/project.js" with {
   "resolution-mode": "import",
 };
 contextBridge.exposeInMainWorld("refract", {
+  cropOpen: (data: unknown) => ipcRenderer.invoke("crop-open", data),
+  cropState: () => ipcRenderer.invoke("crop-state"),
+  cropFinish: (crop: unknown) => ipcRenderer.invoke("crop-finish", crop),
   generateCaptions: (project: Project, locale: string) =>
     ipcRenderer.invoke("captions-generate", project, locale),
   cancelCaptions: () => ipcRenderer.invoke("captions-cancel"),

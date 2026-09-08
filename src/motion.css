@@ -236,3 +236,30 @@ html[data-focus-mode="quiet"]
     outline: 2px solid Highlight;
   }
 }
+html.native-window,
+.native-window body,
+.native-window #root {
+  background: transparent;
+}
+dialog[data-native-window="true"] {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--surface-native-window);
+  animation: none;
+}
+dialog[data-native-window="true"]::backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+[data-native-window="true"] [data-window-toolbar] {
+  -webkit-app-region: drag;
+  padding-left: 85px;
+}
+[data-window-toolbar] :is(button, input, select) {
+  -webkit-app-region: no-drag;
+}
