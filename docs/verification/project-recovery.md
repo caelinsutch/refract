@@ -15,3 +15,9 @@ Save captures its destination before asynchronous work, so opening another proje
 ## Still open
 
 This is not autosave, unsaved-edit recovery, recovery of an interrupted video encoder, or proof of power-loss durability. Flushing the file and atomic rename reduce partial-write exposure; directory metadata is not explicitly synced. First saves have no prior backup. Unsaved-close/quit prompts, renderer-crash restoration, and interrupted native recording recovery remain to be implemented and exercised.
+
+## Unsaved project replacement
+
+Open Project and Import Video now ask Save / Don't Save / Cancel through a native message box before replacing an edited project. Save is the default Return action; Escape maps to Cancel. Failed/cancelled saves prevent replacement. If the project snapshot changes while the dialog or save is pending, replacement stops so newer edits are not discarded. Duplicate Open/Import requests share a synchronous in-flight guard. Native theme and keyboard behavior come from the platform dialog; they still need live interaction verification.
+
+All 66 core tests and production compilation pass. A decision-flow test exercises all three responses, cancelled/failed saving, and a newer edit arriving during the prompt/save. This does not verify native dialog rendering or IPC delivery. Quit, closing the editor, starting a recording through all entry points, and crash recovery of unsaved edits are still outstanding.

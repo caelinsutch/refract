@@ -61,6 +61,7 @@ declare global {
         url: string;
         title: string;
       } | null>;
+      confirmUnsaved(title: string): Promise<"save" | "discard" | "cancel">;
       openProject(): Promise<{
         project: Project;
         url: string;

@@ -337,6 +337,18 @@ app.whenReady().then(() => {
     ]),
   );
 });
+handle("confirm-unsaved", async (title: string) => {
+  const result = await dialog.showMessageBox(win, {
+    type: "question",
+    message: `Save changes to “${String(title).slice(0, 200)}”?`,
+    detail: "Your changes will be lost if you don't save them.",
+    buttons: ["Save", "Don't Save", "Cancel"],
+    defaultId: 0,
+    cancelId: 2,
+    noLink: true,
+  });
+  return ["save", "discard", "cancel"][result.response] ?? "cancel";
+});
 handle("import-video", async () => {
   const chosen = await dialog.showOpenDialog(win, {
     properties: ["openFile"],

@@ -1,3 +1,4 @@
+import { confirmProjectReplacement } from "./core/unsaved-project";
 import { Modal } from "./components/Modal";
 import { ShortcutSettings } from "./components/ShortcutSettings";
 import { clipAudioGain } from "./core/audio";
@@ -411,11 +412,14 @@ export default function App() {
     captionInput = useRef<HTMLInputElement>(null),
     cancelExport = useRef(false),
     projectRef = useRef(project),
+    dirtyRef = useRef(dirty),
+    replacingProject = useRef(false),
     timeRef = useRef(time),
     playingRef = useRef(playing),
     bgImage = useRef<HTMLImageElement | null>(null),
     requestPreview = useRef<() => void>(() => {});
   projectRef.current = project;
+  dirtyRef.current = dirty;
   timeRef.current = time;
   playingRef.current = playing;
   useEffect(() => {
@@ -456,8 +460,28 @@ export default function App() {
     setDirty(false);
     setTab("background");
   }
+  async function allowProjectReplacement() {
+    const current = projectRef.current;
+    if (!current || !dirtyRef.current) return true;
+    if (!window.refract) return window.confirm("Discard unsaved changes?");
+    const result = await confirmProjectReplacement({
+      snapshot: current,
+      current: () => projectRef.current,
+      choose: () => window.refract!.confirmUnsaved(current.title),
+      save: () => window.refract!.saveProject(current),
+    });
+    if (result.saved) {
+      dirtyRef.current = false;
+      setDirty(false);
+    }
+    return result.proceed;
+  }
+
   async function importVideo() {
+    if (replacingProject.current) return;
+    replacingProject.current = true;
     try {
+      if (!(await allowProjectReplacement())) return;
       if (window.refract) {
         const result = await window.refract.importVideo();
         if (result)
@@ -465,6 +489,8 @@ export default function App() {
       } else input.current?.click();
     } catch (e) {
       tell(String(e));
+    } finally {
+      replacingProject.current = false;
     }
   }
   async function importBrowser(e: ChangeEvent<HTMLInputElement>) {
@@ -494,15 +520,20 @@ export default function App() {
     e.target.value = "";
   }
   async function open() {
+    if (replacingProject.current) return;
+    replacingProject.current = true;
     try {
       if (!window.refract) {
         tell("Open saved projects in the Refract desktop application.");
         return;
       }
+      if (!(await allowProjectReplacement())) return;
       const r = await window.refract.openProject();
       if (r) load(validateProject(r.project), r.url, r.cameraUrl);
     } catch (e) {
       tell(String(e));
+    } finally {
+      replacingProject.current = false;
     }
   }
   async function save(saveAs = false) {

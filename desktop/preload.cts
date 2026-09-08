@@ -45,6 +45,8 @@ contextBridge.exposeInMainWorld("refract", {
   },
 
   importVideo: () => ipcRenderer.invoke("import-video"),
+  confirmUnsaved: (title: string) =>
+    ipcRenderer.invoke("confirm-unsaved", title),
   openProject: () => ipcRenderer.invoke("open-project"),
   saveProject: (project: Project, saveAs?: boolean) =>
     ipcRenderer.invoke("save-project", project, saveAs),
