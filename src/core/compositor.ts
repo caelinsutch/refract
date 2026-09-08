@@ -1,5 +1,5 @@
 import { wrapCaption } from "./captions";
-import { animatedCursorAt, recentClicks } from "./cursor";
+import { animatedCursorAt, recentClicks, cursorVisibleAt } from "./cursor";
 import { type Project, sourceAt, zoomAt } from "./project";
 export const wallpapers = [
   ["#bacdf4", "#527acf", "#ded6fb"],
@@ -202,7 +202,7 @@ export function drawFrame(
       c.fillRect(mx, my, mw, mh);
     }
   }
-  if (!a.hideCursor && p.cursor.length) {
+  if (!a.hideCursor && cursorVisibleAt(p.cursor, source, a.cursorIdleMs)) {
     const { x: px, y: py } = animatedCursorAt(
       p.cursor,
       source,

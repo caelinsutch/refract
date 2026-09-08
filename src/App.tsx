@@ -1642,6 +1642,28 @@ export default function App() {
                       value={project.appearance.clickEffect}
                       onChange={(clickEffect) => appearance({ clickEffect })}
                     />
+                    <Toggle
+                      label="Hide cursor if not moving"
+                      value={project.appearance.cursorIdleMs !== null}
+                      onChange={(enabled) =>
+                        appearance({ cursorIdleMs: enabled ? 2000 : null })
+                      }
+                    />
+                    {project.appearance.cursorIdleMs !== null && (
+                      <Range
+                        label="Hide not moving cursor after"
+                        value={project.appearance.cursorIdleMs / 1000}
+                        min={0.5}
+                        max={5}
+                        step={0.1}
+                        unit="s"
+                        onChange={(seconds) =>
+                          appearance({
+                            cursorIdleMs: Math.round(seconds * 1000),
+                          })
+                        }
+                      />
+                    )}
                   </>
                 )}
               </>

@@ -40,6 +40,29 @@ export function recentClicks(
     .filter((e) => e.click);
 }
 
+const activityTracks = new WeakMap<CursorEvent[], number[]>();
+/** Repeated position samples do not restart the idle clock. Clicks reveal the pointer. */
+export function cursorVisibleAt(
+  events: CursorEvent[],
+  time: number,
+  idleMs: number | null,
+) {
+  if (!events.length) return false;
+  if (idleMs == null) return true;
+  let activity = activityTracks.get(events);
+  if (!activity) {
+    let last = events[0].time;
+    activity = events.map((event, i) => {
+      const previous = events[Math.max(0, i - 1)];
+      if (event.click || event.x !== previous.x || event.y !== previous.y)
+        last = event.time;
+      return last;
+    });
+    activityTracks.set(events, activity);
+  }
+  return time - activity[Math.max(0, after(events, time) - 1)] < idleMs;
+}
+
 export type CursorStyle = "smooth" | "medium" | "rapid" | "none";
 export const cursorPresets = {
   smooth: { stiffness: 470, damping: 70, mass: 3 },

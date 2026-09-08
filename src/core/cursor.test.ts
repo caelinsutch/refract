@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cursorAt, recentClicks } from "./cursor";
+import { cursorAt, recentClicks, cursorVisibleAt } from "./cursor";
 import { createProject, validateProject } from "./project";
 const events = [
   { time: 100, x: 0.1, y: 0.2, click: true },
@@ -8,6 +8,48 @@ const events = [
   { time: 200, x: 0.7, y: 0.6, click: true },
   { time: 400, x: 0.3, y: 0.4, click: true },
 ];
+test("idle cursor ignores repeated samples and reveals on movement or click after arbitrary seeks", () => {
+  const track = [
+    { time: 0, x: 0.5, y: 0.5 },
+    { time: 900, x: 0.5, y: 0.5 },
+    { time: 1100, x: 0.5, y: 0.5 },
+    { time: 1400, x: 0.5, y: 0.5, click: true },
+    { time: 2500, x: 0.6, y: 0.5 },
+  ];
+  for (const [time, expected] of [
+    [1100, false],
+    [0, true],
+    [1400, true],
+    [2400, false],
+    [2500, true],
+    [999, true],
+    [1000, false],
+  ] as const)
+    assert.equal(cursorVisibleAt(track, time, 1000), expected);
+  assert.equal(cursorVisibleAt(track, 100000, null), true);
+  assert.equal(cursorVisibleAt([], 0, null), false);
+});
+test("cursor idle delay persists, rejects invalid values, and defaults off for older projects", () => {
+  const p = createProject({
+    file: "screen.mp4",
+    width: 1280,
+    height: 720,
+    duration: 4000,
+    hasAudio: false,
+  });
+  p.appearance.cursorIdleMs = 1500;
+  assert.equal(
+    validateProject(JSON.parse(JSON.stringify(p))).appearance.cursorIdleMs,
+    1500,
+  );
+  const legacy = JSON.parse(JSON.stringify(p));
+  delete legacy.appearance.cursorIdleMs;
+  assert.equal(validateProject(legacy).appearance.cursorIdleMs, null);
+  for (const value of [-1, 0, 499, 5001, Infinity]) {
+    p.appearance.cursorIdleMs = value;
+    assert.throws(() => validateProject(structuredClone(p)), /idle delay/);
+  }
+});
 test("cursor sampling is bounded, deterministic after seeking, and resolves duplicate times", () => {
   assert.equal(cursorAt([], 0, true), null);
   assert.deepEqual(cursorAt(events, 0, true), { x: 0.1, y: 0.2 });

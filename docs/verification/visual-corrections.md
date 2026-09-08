@@ -140,3 +140,11 @@ Observed values and changes:
 | Crop perimeter | Eight circular handles remain fully visible at image edges | Removed clipping; an SVG mask shades only the excluded image area |
 
 The updated packaged editor was opened with the saved spoken-video project. Screenshots verified readable sidebar controls, the new crop grid, and all eight full-frame handles. A temporary width change showed excluded-area shading; Reset restored 1280 px and Discard returned to the editor. AX field text entry was not reliable enough to establish numeric-entry acceptance. The crop surface remains an in-editor modal; the reference uses a separate native window, which remains a parity gap. TypeScript and the production build pass.
+
+## Idle cursor visibility
+
+The installed cursor-settings module exposes “Hide cursor if not moving” and a 500–5000 ms delay. Its initial enabled delay resolves to 2000 ms. Refract now offers the same option and range, with a two-second initial delay. The shared compositor hides the pointer after source-time inactivity and reveals it on a changed position or click. Repeated 16 ms samples at identical coordinates do not keep it visible. Cached activity checkpoints make seeking deterministic without scanning the full recording each frame. The setting persists in projects; older projects default to disabled, and invalid delays are rejected.
+
+All 37 core tests and the TypeScript/production build pass. Tests include pause-like stationary intervals, held positions, clicks without movement, arbitrary seek order, persistence, and invalid configuration. Exact reference fade timing and interaction acceptance remain unverified.
+
+A separate temporary AppKit mouse-down monitor installed successfully and stopped after 30 seconds, reporting zero observed events during an accessibility-driven editor click. This does not establish event delivery or permission readiness. It was not substituted for the recorder's sampled click path.
