@@ -14,6 +14,10 @@ export function cursorExposure(p: Project, time: number) {
 
 type Point = { x: number; y: number };
 type Surface = HTMLCanvasElement | OffscreenCanvas;
+const surfaces = new WeakMap<
+  CanvasRenderingContext2D,
+  { size: number; texture: Surface; layer: Surface }
+>();
 function surface(
   c: CanvasRenderingContext2D,
   width: number,
@@ -77,13 +81,23 @@ export function drawCursorExposure(
     return;
   }
   const pad = Math.ceil(size * 2 + 2);
-  const texture = surface(
-    c,
-    Math.ceil(20 * size + pad * 2),
-    Math.ceil(28 * size + pad * 2),
-  );
-  const tc = texture.getContext("2d") as CanvasRenderingContext2D;
-  pointer(tc, pad, pad, size);
+  let cached = surfaces.get(c);
+  if (!cached || cached.size !== size) {
+    const texture = surface(
+      c,
+      Math.ceil(20 * size + pad * 2),
+      Math.ceil(28 * size + pad * 2),
+    );
+    pointer(
+      texture.getContext("2d") as CanvasRenderingContext2D,
+      pad,
+      pad,
+      size,
+    );
+    cached = { size, texture, layer: surface(c, 1, 1) };
+    surfaces.set(c, cached);
+  }
+  const { texture, layer } = cached;
   const left = Math.floor(Math.min(...points.map((p) => p.x))) - pad;
   const top = Math.floor(Math.min(...points.map((p) => p.y))) - pad;
   const width = Math.ceil(
@@ -92,8 +106,10 @@ export function drawCursorExposure(
   const height = Math.ceil(
     Math.max(...points.map((p) => p.y)) - top + texture.height,
   );
-  const layer = surface(c, width, height);
+  if (layer.width < width) layer.width = Math.ceil(width / 64) * 64;
+  if (layer.height < height) layer.height = Math.ceil(height / 64) * 64;
   const lc = layer.getContext("2d") as CanvasRenderingContext2D;
+  lc.clearRect(0, 0, layer.width, layer.height);
   lc.globalCompositeOperation = "lighter";
   lc.globalAlpha = 1 / points.length;
   for (const p of points)
