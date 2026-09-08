@@ -22,7 +22,7 @@ StyleX owns component styles, tokens, dynamic dimensions, and interactive states
 
 ## Project format
 
-Each `.framestudio` project is a directory containing `project.json`, `media/`, `events/`, and optional `assets/`. Project JSON contains schema version, ID, title, timestamps, source descriptors, edit segments, zooms, masks, camera layouts, captions, and composition settings. All project media paths are relative and must resolve inside the package. Imported videos are copied into the package to avoid broken links when the original moves.
+Each `.glissade` project is a directory containing `project.json`, `media/`, `events/`, and optional `assets/`. Project JSON contains schema version, ID, title, timestamps, source descriptors, edit segments, zooms, masks, camera layouts, captions, and composition settings. All project media paths are relative and must resolve inside the package. Imported videos are copied into the package to avoid broken links when the original moves.
 
 Sources are immutable. Editing commands produce a new edit decision list and history entry; undo and redo operate on these commands. Save writes a temporary manifest and atomically renames it. An autosave journal records recoverable editor changes. Incomplete capture uses a distinct session status so it cannot be mistaken for a finalized source.
 

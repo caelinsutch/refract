@@ -1,4 +1,4 @@
-# Frame Studio
+# Glissade
 
 A macOS recording and editing application being built against Screen Studio 3.7.5's observed interface and workflows. The implementation uses React, StyleX, Electron, and a native Swift capture helper.
 
