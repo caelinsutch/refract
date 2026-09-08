@@ -26,6 +26,28 @@ export function dimensions(p: Project, max = 1280) {
     ? { width: max, height: Math.round(max / ratio / 2) * 2 }
     : { width: Math.round((max * ratio) / 2) * 2, height: max };
 }
+/** Fit the preview in CSS pixels, then rasterize vectors at display resolution. */
+export function previewDimensions(
+  p: Project,
+  availableWidth: number,
+  availableHeight: number,
+  pixelRatio: number,
+) {
+  const natural = dimensions(p);
+  const fit = Math.min(
+    Math.max(1, availableWidth) / natural.width,
+    Math.max(1, availableHeight) / natural.height,
+  );
+  const cssWidth = natural.width * fit;
+  const cssHeight = natural.height * fit;
+  const density = Math.max(1, pixelRatio || 1);
+  return {
+    cssWidth,
+    cssHeight,
+    width: Math.max(1, Math.round(cssWidth * density)),
+    height: Math.max(1, Math.round(cssHeight * density)),
+  };
+}
 const rounded = (
   c: CanvasRenderingContext2D,
   x: number,

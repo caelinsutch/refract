@@ -65,6 +65,7 @@ import {
 } from "./core/project";
 import {
   dimensions,
+  previewDimensions,
   drawFrame,
   sourcePointAt,
   wallpapers,
@@ -652,7 +653,17 @@ export default function App() {
         c = canvas.current,
         v = video.current;
       if (p && c && v && v.readyState >= 2) {
-        const d = dimensions(p, 1280);
+        const holder = c.parentElement!;
+        const d = previewDimensions(
+          p,
+          holder.clientWidth - 28,
+          holder.clientHeight - 22,
+          window.devicePixelRatio,
+        );
+        const cssWidth = `${d.cssWidth}px`,
+          cssHeight = `${d.cssHeight}px`;
+        if (c.style.width !== cssWidth) c.style.width = cssWidth;
+        if (c.style.height !== cssHeight) c.style.height = cssHeight;
         if (c.width !== d.width || c.height !== d.height) {
           c.width = d.width;
           c.height = d.height;

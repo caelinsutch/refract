@@ -63,3 +63,9 @@ The completed native-dialog export (`work/media-seeking/range-cancel-diagnostic.
 ## Draggable recording controller
 
 The controller background and left grab handle use Electron's native draggable region. Buttons and their descendants are excluded so source selection and recording actions remain clickable. Menu expansion/collapse preserves the window's bottom edge and horizontal position, clamped to its current display, rather than recentering on the primary display. The built controller's handle was visible, a drag gesture was delivered, and Recording options opened afterward. The UI tool does not expose window coordinates in its returned accessibility text, so the exact displacement was not independently measured. See [Electron custom draggable regions](https://www.electronjs.org/docs/latest/tutorial/custom-window-interactions#custom-draggable-regions).
+
+## Retina cursor preview
+
+The preview previously rasterized every composition at a fixed 1280-pixel maximum dimension, regardless of the canvas's on-screen size or macOS display density. It now fits the available editor area in CSS pixels and allocates the canvas at that size multiplied by `devicePixelRatio`. Resizing or changing displays updates the backing pixels without changing the composition's apparent size. The cursor remains a vector path drawn directly into that backing canvas; it is not a bitmap enlarged after rendering. Export rendering still uses the requested output resolution.
+
+Landscape, portrait, standard-density, Retina, and fractional-density sizing checks pass, alongside the existing compositor tests (43 tests total). The production build passed and the saved cursor fixture reopened in the updated desktop build with matching framing and a visible cursor. The UI screenshot is scaled by the inspection tool, so it is not an independent per-device-pixel sharpness measurement.
