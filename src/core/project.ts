@@ -49,6 +49,7 @@ export type Appearance = {
   cursorSize: number;
   hideCursor: boolean;
   cursorSmooth: boolean;
+  cursorAnimation: "smooth" | "medium" | "rapid" | "none";
   clickEffect: boolean;
   animation: "smooth" | "focused" | "instant";
   volume: number;
@@ -100,6 +101,7 @@ export const defaults: Appearance = {
   cursorSize: 1.5,
   hideCursor: false,
   cursorSmooth: true,
+  cursorAnimation: "smooth",
   clickEffect: false,
   animation: "smooth",
   volume: 1,
@@ -252,6 +254,12 @@ export function validateProject(value: unknown): Project {
       throw new Error("The project has an invalid crop.");
   }
   p.appearance = { ...defaults, ...p.appearance };
+  if (
+    !["smooth", "medium", "rapid", "none"].includes(
+      p.appearance.cursorAnimation,
+    )
+  )
+    throw new Error("The project has an invalid cursor animation style.");
   for (const k of [
     "padding",
     "radius",

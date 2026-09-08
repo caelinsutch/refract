@@ -1607,7 +1607,16 @@ export default function App() {
                     <Toggle
                       label="Smooth movement"
                       value={project.appearance.cursorSmooth}
-                      onChange={(cursorSmooth) => appearance({ cursorSmooth })}
+                      onChange={(cursorSmooth) =>
+                        appearance({
+                          cursorSmooth,
+                          cursorAnimation:
+                            cursorSmooth &&
+                            project.appearance.cursorAnimation === "none"
+                              ? "smooth"
+                              : project.appearance.cursorAnimation,
+                        })
+                      }
                     />
                     <Toggle
                       label="Click ripple"
@@ -1658,6 +1667,34 @@ export default function App() {
                 <Note>
                   Choose a transition style for your zooms. The preview and
                   exporter use the same animation curve.
+                </Note>
+                <Divider />
+                <span>Cursor animation style</span>
+                <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
+                  {(["smooth", "medium", "rapid", "none"] as const).map(
+                    (style) => (
+                      <button
+                        key={style}
+                        {...sx.props(
+                          s.segment,
+                          (project.appearance.cursorSmooth
+                            ? project.appearance.cursorAnimation
+                            : "none") === style && s.segmentActive,
+                        )}
+                        onClick={() =>
+                          appearance({
+                            cursorAnimation: style,
+                            cursorSmooth: style !== "none",
+                          })
+                        }
+                      >
+                        {style[0].toUpperCase() + style.slice(1)}
+                      </button>
+                    ),
+                  )}
+                </div>
+                <Note>
+                  Choose how the cursor settles into each new position.
                 </Note>
               </>
             ) : tab === "captions" ? (

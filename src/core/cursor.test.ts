@@ -31,3 +31,35 @@ test("loaded cursor tracks are ordered and invalid coordinates rejected", () => 
   p.cursor = [{ ...events[0], x: NaN }];
   assert.throws(() => validateProject(p), /invalid cursor/);
 });
+
+test("cursor spring presets retain momentum and give deterministic seek results", async () => {
+  const { animatedCursorAt } = await import("./cursor");
+  const track = [
+    { time: 0, x: 0.2, y: 0.2, click: false },
+    { time: 100, x: 0.8, y: 0.8, click: false },
+    { time: 250, x: 0.4, y: 0.6, click: false },
+  ];
+  for (const style of ["smooth", "medium", "rapid"] as const) {
+    const before = animatedCursorAt(track, 249.999, style)!;
+    const after = animatedCursorAt(track, 250.001, style)!;
+    assert.ok(
+      Math.abs(before.x - after.x) < 0.0001,
+      "retarget must preserve position continuity",
+    );
+    const expected = animatedCursorAt(track, 350, style);
+    animatedCursorAt(track, 5000, style);
+    animatedCursorAt(track, 0, style);
+    assert.deepEqual(animatedCursorAt(track, 350, style), expected);
+    // An extra sample at the same target must not change spring evolution.
+    const subdivided = [track[0], { ...track[0], time: 50 }, ...track.slice(1)];
+    assert.deepEqual(animatedCursorAt(subdivided, 350, style), expected);
+    const settled = animatedCursorAt(track, 5000, style)!;
+    assert.ok(Math.abs(settled.x - 0.4) < 0.00001);
+    assert.ok(Math.abs(settled.y - 0.6) < 0.00001);
+  }
+  assert.ok(
+    animatedCursorAt(track, 200, "rapid")!.x >
+      animatedCursorAt(track, 200, "smooth")!.x,
+  );
+  assert.deepEqual(animatedCursorAt(track, 100, "none"), { x: 0.8, y: 0.8 });
+});

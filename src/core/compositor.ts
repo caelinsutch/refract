@@ -1,4 +1,4 @@
-import { cursorAt, recentClicks } from "./cursor";
+import { animatedCursorAt, recentClicks } from "./cursor";
 import { type Project, sourceAt, zoomAt } from "./project";
 export const wallpapers = [
   ["#bacdf4", "#527acf", "#ded6fb"],
@@ -202,7 +202,11 @@ export function drawFrame(
     }
   }
   if (!a.hideCursor && p.cursor.length) {
-    const { x: px, y: py } = cursorAt(p.cursor, source, a.cursorSmooth)!;
+    const { x: px, y: py } = animatedCursorAt(
+      p.cursor,
+      source,
+      a.cursorSmooth ? a.cursorAnimation : "none",
+    )!;
     const cx = x + ((px * sw - sx) / cw) * w,
       cy = y + ((py * sh - sy) / ch) * h;
     c.save();
