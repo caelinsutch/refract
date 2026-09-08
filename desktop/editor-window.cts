@@ -42,7 +42,7 @@ export function createEditorWindow(
   });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (e) => e.preventDefault());
-  window.webContents.on("page-title-updated", (e) => e.preventDefault());
+  window.on("page-title-updated", (e) => e.preventDefault());
   window.webContents.on("render-process-gone", () => {
     if (!window.isDestroyed()) window.close();
   });

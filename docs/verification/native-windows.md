@@ -22,3 +22,7 @@ Light colors include separate text, controls, borders, tracks and translucent ma
 ## Light-theme follow-up
 
 The current editor empty state, compact recorder, and expanded recording options were visually inspected in macOS Light appearance. Corrected pale clip/mask text, the recorder's white-on-white close control, and its fixed white countdown. Static token contrast ratios are 9.27:1 for light clip labels, 8.85:1 for light mask labels, and 5.70:1 for the light recorder close icon. Corresponding dark clip/mask text remains 4.57:1 and 6.99:1. Production build and whitespace checks passed. Loaded editor tracks and all hover/focus combinations still need a complete visual pass; token calculations are not a substitute for that inspection.
+
+## Numeric-entry and lifecycle follow-up
+
+Empty and intermediate numeric strings now preserve the existing crop instead of coercing an empty string to zero and clamping it to one pixel. A core regression check covers cleared fields, incomplete values, valid replacement, and out-of-bounds clamping. Production build and 59 core tests passed. After restarting the final native host, opening crop and dismissing it with Escape returned focus to the editor's Crop button. The title override listener was corrected to listen on BrowserWindow rather than webContents. Full numeric replacement through the UI tool remains inconclusive; no claim of a successful 1000-pixel entry is made.

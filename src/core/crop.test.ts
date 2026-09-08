@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clampCrop, resizeCrop } from "./crop";
+import { clampCrop, resizeCrop, editCropField } from "./crop";
 import { createProject, validateProject } from "./project";
 import { dimensions } from "./compositor";
 test("crop movement and handles stay inside the source without inverted edges", () => {
@@ -37,4 +37,20 @@ test("saved crop determines Auto aspect ratio and invalid crops are rejected", (
   );
   p.crop.x = 1000;
   assert.throws(() => validateProject(p), /invalid crop/);
+});
+
+test("editing a crop number tolerates cleared and incomplete fields without destroying geometry", () => {
+  const rect = { x: 120, y: 40, width: 800, height: 600 };
+  assert.deepEqual(editCropField(rect, "width", "", 1280, 720), rect);
+  assert.deepEqual(editCropField(rect, "width", "-", 1280, 720), rect);
+  assert.deepEqual(editCropField(rect, "width", "1e", 1280, 720), rect);
+  assert.deepEqual(editCropField(rect, "width", "1000", 1280, 720), {
+    ...rect,
+    width: 1000,
+  });
+  assert.deepEqual(editCropField(rect, "width", "1600", 1280, 720), {
+    ...rect,
+    x: 0,
+    width: 1280,
+  });
 });

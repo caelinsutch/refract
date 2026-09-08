@@ -7,7 +7,12 @@ import {
   type KeyboardEvent,
 } from "react";
 import * as sx from "@stylexjs/stylex";
-import { clampCrop, resizeCrop, type CropRect } from "../core/crop";
+import {
+  clampCrop,
+  resizeCrop,
+  editCropField,
+  type CropRect,
+} from "../core/crop";
 import { Button } from "./ui";
 const s = sx.create({
   dialog: {
@@ -159,9 +164,8 @@ export default function CropEditor({
     )
       c.drawImage(video, 0, 0, width, height);
   }, [video, width, height]);
-  const update = (key: keyof CropRect, value: number) => {
-    if (Number.isFinite(value))
-      setRect((r) => clampCrop({ ...r, [key]: value }, width, height));
+  const update = (key: keyof CropRect, value: string) => {
+    setRect((r) => editCropField(r, key, value, width, height));
   };
   function drag(e: PointerEvent, edge: string) {
     e.preventDefault();
@@ -229,7 +233,7 @@ export default function CropEditor({
               onBlur={() => setFieldDraft(null)}
               onChange={(e) => {
                 setFieldDraft({ key, value: e.target.value });
-                update(key, Number(e.target.value));
+                update(key, e.target.value);
               }}
             />
           </span>
@@ -278,7 +282,7 @@ export default function CropEditor({
             onBlur={() => setFieldDraft(null)}
             onChange={(e) => {
               setFieldDraft({ key, value: e.target.value });
-              update(key, Number(e.target.value));
+              update(key, e.target.value);
             }}
           />
         ))}

@@ -43,3 +43,17 @@ export function resizeCrop(
     height,
   );
 }
+
+/** Empty/intermediate numeric input must not collapse the current selection. */
+export function editCropField(
+  rect: CropRect,
+  key: keyof CropRect,
+  text: string,
+  width: number,
+  height: number,
+): CropRect {
+  if (!text.trim()) return rect;
+  const value = Number(text);
+  if (!Number.isFinite(value)) return rect;
+  return clampCrop({ ...rect, [key]: value }, width, height);
+}
