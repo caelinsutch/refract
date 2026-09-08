@@ -655,6 +655,22 @@ export default function Recorder() {
             <>
               <button
                 {...sx.props(s.item)}
+                onClick={async () => {
+                  try {
+                    await api?.recorderKeyboardPermissions();
+                    await refresh();
+                  } catch (error) {
+                    setError(String(error));
+                  }
+                }}
+              >
+                <Keyboard size={17} />{" "}
+                {sources?.keyboardPermission === "granted"
+                  ? "Keyboard shortcuts enabled"
+                  : "Enable keyboard shortcut capture…"}
+              </button>
+              <button
+                {...sx.props(s.item)}
                 onClick={() => api?.recorderImport()}
               >
                 <FolderOpen size={17} />

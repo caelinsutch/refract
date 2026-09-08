@@ -38,6 +38,7 @@ declare global {
       recorderClose(): Promise<void>;
       recorderImport(): Promise<void>;
       recorderPermissions(): Promise<void>;
+      recorderKeyboardPermissions(): Promise<void>;
       recorderArea(id: number): Promise<void>;
       recorderAreaSelected(area: CaptureChoice["area"] | null): Promise<void>;
       onRecorderState(cb: (state: RecorderState) => void): () => void;

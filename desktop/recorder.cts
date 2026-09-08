@@ -192,6 +192,7 @@ export function setupRecorder(
           try {
             const event = JSON.parse(line);
             if (event.event === "started") {
+              state.keyboardStatus = event.keyboardStatus;
               state = { phase: "recording", countdown: 0, elapsed: 0 };
               started = Date.now();
               pausedTotal = 0;
@@ -305,6 +306,18 @@ export function setupRecorder(
     bar?.hide();
     editor.show();
     onImport();
+  });
+  register("recorder-keyboard-permissions", async () => {
+    const { stdout } = await run(
+      executable,
+      ["--request-keyboard-permission"],
+      { timeout: 60000 },
+    );
+    const result = JSON.parse(stdout.trim());
+    if (result.keyboardPermission !== "granted")
+      await shell.openExternal(
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent",
+      );
   });
   register("recorder-permissions", async () => {
     const { stdout } = await run(executable, ["--request-permission"], {

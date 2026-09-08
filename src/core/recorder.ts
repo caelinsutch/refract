@@ -6,6 +6,7 @@ export type CaptureSource = {
   app?: string;
 };
 export type CaptureSources = {
+  keyboardPermission?: "granted" | "required";
   permission: "granted" | "required";
   displays: CaptureSource[];
   windows: CaptureSource[];
@@ -22,6 +23,7 @@ export type CaptureChoice = {
   cameraId?: string;
 };
 export type RecorderState = {
+  keyboardStatus?: "available" | "permission-required" | "unavailable";
   phase:
     | "idle"
     | "countdown"

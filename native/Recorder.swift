@@ -37,6 +37,10 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     var lastVideo: CMSampleBuffer?
     var lastVideoTime: CMTime = .invalid
     var cursor: [[String: Any]] = []
+    var keyboard: [[String: Any]] = []
+    var keyboardCapture: KeyboardCapture?
+    var keyboardStatus = "unavailable"
+    var keyboardAfter: Double = 0
     var cursorTimer: DispatchSourceTimer?
     var cursorButtons = CursorButtons()
     var bounds: CGRect = .zero
@@ -110,7 +114,18 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         if config.systemAudio { try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: queue) }
         if #available(macOS 15.0, *), config.microphoneId != nil { try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: queue) }
         try await stream.startCapture()
-        emit(["event": "started", "width": settings.width, "height": settings.height])
+        let keyboardCapture = KeyboardCapture { [weak self] event, timestamp in
+            guard let self else { return }
+            self.queue.async {
+                guard let origin = self.origin, self.pausedAt == nil, !self.stopped, timestamp >= self.keyboardAfter else { return }
+                let time = (timestamp - CMTimeGetSeconds(origin) - CMTimeGetSeconds(self.pauseOffset)) * 1000
+                guard time >= 0 else { return }
+                var sample = event; sample["time"] = time; self.keyboard.append(sample)
+            }
+        }
+        self.keyboardCapture = keyboardCapture
+        keyboardStatus = keyboardCapture.start()
+        emit(["event": "started", "width": settings.width, "height": settings.height, "keyboardStatus": keyboardStatus])
         let timer = DispatchSource.makeTimerSource(queue: queue)
         timer.schedule(deadline: .now(), repeating: .milliseconds(16))
         timer.setEventHandler { [weak self] in self?.sampleCursor() }
@@ -155,8 +170,9 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     }
     func stream(_ stream: SCStream, didStopWithError error: Error) { emit(["event": "error", "message": error.localizedDescription]) }
     func pause() { queue.async { guard self.pausedAt == nil else { return }; self.pausedAt = self.hostTime(); emit(["event": "paused"]) } }
-    func resume() { queue.async { guard let paused = self.pausedAt else { return }; self.pauseOffset = CMTimeAdd(self.pauseOffset, CMTimeSubtract(self.hostTime(), paused)); _ = self.cursorButtons.sample(NSEvent.pressedMouseButtons, recording: false); self.pausedAt = nil; emit(["event": "resumed"]) } }
+    func resume() { queue.async { guard let paused = self.pausedAt else { return }; self.pauseOffset = CMTimeAdd(self.pauseOffset, CMTimeSubtract(self.hostTime(), paused)); _ = self.cursorButtons.sample(NSEvent.pressedMouseButtons, recording: false); self.keyboardAfter = CMTimeGetSeconds(self.hostTime()); self.pausedAt = nil; emit(["event": "resumed"]) } }
     func stop() async {
+        keyboardCapture?.stop()
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in queue.async { self.stoppedAt = self.pausedAt ?? self.hostTime(); self.stopped = true; self.cursorTimer?.cancel(); continuation.resume() } }
         try? await stream?.stopCapture()
         cameraSession?.stopRunning()
@@ -167,24 +183,32 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         if let micWriter, micWriter.status == .writing { await micWriter.finishWriting() }
         if let cameraWriter, cameraWriter.status == .writing { await cameraWriter.finishWriting() }
         if let writer, writer.status == .failed { emit(["event": "error", "message": writer.error?.localizedDescription ?? "Recording could not be saved."]); return }
-        do { let data = try JSONSerialization.data(withJSONObject: cursor); try data.write(to: URL(fileURLWithPath: output).appendingPathComponent("cursor.json")); emit(["event": "finished", "duration": length, "output": output]) } catch { emit(["event": "error", "message": error.localizedDescription]) }
+        do { let data = try JSONSerialization.data(withJSONObject: cursor); try data.write(to: URL(fileURLWithPath: output).appendingPathComponent("cursor.json")); let keyData = try JSONSerialization.data(withJSONObject: keyboard); try keyData.write(to: URL(fileURLWithPath: output).appendingPathComponent("keyboard.json")); emit(["event": "finished", "duration": length, "output": output]) } catch { emit(["event": "error", "message": error.localizedDescription]) }
     }
 }
 @main struct CaptureMain {
     static func main() async {
+        if CommandLine.arguments.contains("--keyboard-permission") {
+            emit(["keyboardPermission": CGPreflightListenEventAccess() ? "granted" : "required"])
+            return
+        }
+        if CommandLine.arguments.contains("--request-keyboard-permission") {
+            emit(["keyboardPermission": (CGPreflightListenEventAccess() || CGRequestListenEventAccess()) ? "granted" : "required"])
+            return
+        }
         if CommandLine.arguments.contains("--request-permission") {
             let granted = CGPreflightScreenCaptureAccess() || CGRequestScreenCaptureAccess()
             emit(["permission": granted ? "granted" : "required"])
             return
         }
         if CommandLine.arguments.contains("--list") {
-            guard CGPreflightScreenCaptureAccess() else { emit(["permission": "required", "displays": [], "windows": [], "microphones": [], "cameras": []]); return }
+            guard CGPreflightScreenCaptureAccess() else { emit(["keyboardPermission": CGPreflightListenEventAccess() ? "granted" : "required", "permission": "required", "displays": [], "windows": [], "microphones": [], "cameras": []]); return }
             do { let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
                 let displays = content.displays.map { ["id": $0.displayID, "name": "Display \($0.displayID)", "width": $0.width, "height": $0.height] as [String: Any] }
                 let windows = content.windows.filter { $0.frame.width > 100 && $0.frame.height > 60 && $0.owningApplication?.bundleIdentifier != "com.github.Electron" && $0.owningApplication?.bundleIdentifier != "com.caelinsutch.refract" }.map { ["id": $0.windowID, "name": $0.title ?? "Untitled", "app": $0.owningApplication?.applicationName ?? "", "width": $0.frame.width, "height": $0.frame.height] as [String: Any] }
                 let microphones = AVCaptureDevice.DiscoverySession(deviceTypes: [.microphone], mediaType: .audio, position: .unspecified).devices.map { ["id": $0.uniqueID, "name": $0.localizedName] }
                 let cameras = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified).devices.map { ["id": $0.uniqueID, "name": $0.localizedName] }
-                emit(["permission": "granted", "displays": displays, "windows": windows, "microphones": microphones, "cameras": cameras])
+                emit(["keyboardPermission": CGPreflightListenEventAccess() ? "granted" : "required", "permission": "granted", "displays": displays, "windows": windows, "microphones": microphones, "cameras": cameras])
             } catch { emit(["event": "error", "message": error.localizedDescription]) }
             return
         }

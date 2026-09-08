@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld("refract", {
   recorderStop: () => ipcRenderer.invoke("recorder-stop"),
   recorderClose: () => ipcRenderer.invoke("recorder-close"),
   recorderImport: () => ipcRenderer.invoke("recorder-import"),
+  recorderKeyboardPermissions: () =>
+    ipcRenderer.invoke("recorder-keyboard-permissions"),
   recorderPermissions: () => ipcRenderer.invoke("recorder-permissions"),
   recorderArea: (id: number) => ipcRenderer.invoke("recorder-area", id),
   recorderAreaSelected: (area: unknown) =>
