@@ -589,6 +589,7 @@ export default function App() {
       return;
     }
     const im = new Image();
+    im.crossOrigin = "anonymous";
     im.onload = () => {
       bgImage.current = im;
       setTime((t) => t + 0.00001);
@@ -745,6 +746,7 @@ export default function App() {
       setExporting(true);
       setProgress(0);
       const v = document.createElement("video");
+      v.crossOrigin = "anonymous";
       v.muted = true;
       v.preload = "auto";
       v.src = url;
@@ -755,6 +757,7 @@ export default function App() {
       let cam: HTMLVideoElement | undefined;
       if (cameraUrl) {
         cam = document.createElement("video");
+        cam.crossOrigin = "anonymous";
         cam.muted = true;
         cam.src = cameraUrl;
         await new Promise<void>((resolve, reject) => {
@@ -1811,6 +1814,7 @@ export default function App() {
         />
       )}
       <video
+        crossOrigin="anonymous"
         ref={cameraVideo}
         src={cameraUrl || undefined}
         style={{ display: "none" }}
@@ -1818,6 +1822,7 @@ export default function App() {
         playsInline
       />
       <video
+        crossOrigin="anonymous"
         ref={video}
         src={url || undefined}
         style={{ display: "none" }}

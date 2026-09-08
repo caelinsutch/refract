@@ -51,6 +51,7 @@ protocol.registerSchemesAsPrivileged([
       secure: true,
       stream: true,
       supportFetchAPI: true,
+      corsEnabled: true,
     },
   },
 ]);
@@ -98,12 +99,25 @@ const handle = (name: string, fn: (...args: any[]) => unknown) =>
     return fn(...args);
   });
 app.whenReady().then(() => {
-  protocol.handle("refract-media", (request) => {
+  protocol.handle("refract-media", async (request) => {
     const id = new URL(request.url).pathname.slice(1),
       file = media.get(id);
-    return file
-      ? net.fetch(pathToFileURL(file).toString())
-      : new Response("Not found", { status: 404 });
+    if (!file) return new Response("Not found", { status: 404 });
+    const origin = request.headers.get("Origin") ?? "null";
+    if (
+      !["null", "http://127.0.0.1:5173", "http://localhost:5173"].includes(
+        origin,
+      )
+    )
+      return new Response("Forbidden", { status: 403 });
+    const range = request.headers.get("Range");
+    const response = await net.fetch(pathToFileURL(file).toString(), {
+      headers: range ? { Range: range } : undefined,
+    });
+    const headers = new Headers(response.headers);
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Vary", "Origin");
+    return new Response(response.body, { status: response.status, headers });
   });
   win = new BrowserWindow({
     width: 1320,
