@@ -114,3 +114,53 @@ export function trimClip(
   const next = { ...clip, [side]: value };
   return { ...p, segments: p.segments.map((s) => (s.id === id ? next : s)) };
 }
+
+/** Camera intervals cannot overlap; clamp direct manipulation at neighboring layouts. */
+export function dragCameraRange(
+  p: Project,
+  layout: import("./camera-layout").CameraLayout,
+  side: "start" | "end" | "move",
+  delta: number,
+) {
+  const range = visibleRange(p, layout);
+  if (!range) return layout;
+  const others = (p.cameraLayouts ?? []).filter((l) => l.id !== layout.id);
+  const previous = others
+    .filter((l) => l.end <= layout.start)
+    .sort((a, b) => b.end - a.end)[0];
+  const next = others
+    .filter((l) => l.start >= layout.end)
+    .sort((a, b) => a.start - b.start)[0];
+  const lower = previous
+    ? (visibleRange(p, { start: 0, end: previous.end })?.end ?? 0)
+    : 0;
+  const upper = next
+    ? (visibleRange(p, { start: 0, end: next.start })?.end ?? 0)
+    : duration(p);
+  if (side !== "end") delta = Math.max(delta, lower - range.start);
+  if (side !== "start") delta = Math.min(delta, upper - range.end);
+  const result = dragZoomRange(p, layout, side, delta);
+  return others.some((l) => l.start < result.end && result.start < l.end)
+    ? layout
+    : result;
+}
+
+export function createCameraRange(p: Project, anchor: number, target: number) {
+  const source = sourceAt(p, anchor)?.time ?? 0;
+  const layouts = p.cameraLayouts ?? [];
+  if (layouts.some((l) => l.start <= source && source < l.end)) return null;
+  const range = createTimelineRange(p, anchor, target);
+  if (!range) return null;
+  const before = layouts
+    .filter((l) => l.end <= source)
+    .sort((a, b) => b.end - a.end)[0];
+  const after = layouts
+    .filter((l) => l.start >= source)
+    .sort((a, b) => a.start - b.start)[0];
+  const next = {
+    start: Math.max(range.start, before?.end ?? 0),
+    end: Math.min(range.end, after?.start ?? p.source.duration),
+  };
+  const visible = visibleRange(p, next);
+  return visible && visible.end - visible.start >= 100 ? next : null;
+}

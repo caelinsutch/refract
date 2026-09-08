@@ -1,7 +1,7 @@
 import { CameraLayouts } from "./components/CameraLayouts";
 import { StateIcon } from "./components/StateIcon";
 import { SpringControls } from "./components/SpringControls";
-import { seekExportVideo } from "./media/export-video";
+import { loadExportVideo, seekExportVideo } from "./media/export-video";
 import { screenPresets } from "./core/motion";
 import { cursorPresets } from "./core/cursor";
 import { clipTrimBounds, trimClip } from "./core/timeline";
@@ -385,6 +385,7 @@ export default function App() {
     [timelineTracks, setTimelineTracks] = useState<TimelineTracks>({
       zoom: true,
       mask: false,
+      camera: false,
     }),
     [modal, setModal] = useState<"export" | "presets" | null>(null),
     [commandOpen, setCommandOpen] = useState(false),
@@ -422,6 +423,12 @@ export default function App() {
   projectRef.current = project;
   timeRef.current = time;
   playingRef.current = playing;
+  useEffect(() => {
+    if (project?.cameraLayouts?.length)
+      setTimelineTracks((v) => ({ ...v, camera: true }));
+    else if (!project?.source.camera)
+      setTimelineTracks((v) => ({ ...v, camera: false }));
+  }, [project?.id, project?.cameraLayouts?.length, project?.source.camera]);
   const tell = (message: string) => {
     setStatus(message);
   };
@@ -572,6 +579,13 @@ export default function App() {
       edit({
         ...project,
         zooms: project.zooms.filter((z) => z.id !== selection.id),
+      });
+    else if (selection.type === "camera")
+      edit({
+        ...project,
+        cameraLayouts: (project.cameraLayouts ?? []).filter(
+          (l) => l.id !== selection.id,
+        ),
       });
     else
       edit({
@@ -834,9 +848,11 @@ export default function App() {
         !e.metaKey &&
         !e.ctrlKey &&
         !e.altKey &&
-        (e.key === "1" || e.key === "4")
+        (e.key === "1" || e.key === "2" || e.key === "4")
       ) {
-        const track = e.key === "1" ? "zoom" : "mask";
+        const track =
+          e.key === "1" ? "zoom" : e.key === "2" ? "camera" : "mask";
+        if (track === "camera" && !project?.source.camera) return;
         setTimelineTracks((t) => ({ ...t, [track]: !t[track] }));
       }
       if (e.key.toLowerCase() === "c" && !e.metaKey && !e.ctrlKey) cut();
@@ -909,20 +925,12 @@ export default function App() {
       v.crossOrigin = "anonymous";
       v.muted = true;
       v.preload = "auto";
-      v.src = url;
-      await new Promise<void>((resolve, reject) => {
-        v!.onloadeddata = () => resolve();
-        v!.onerror = () => reject(Error("Cannot decode source video."));
-      });
+      await loadExportVideo(v, url);
       if (cameraUrl) {
         cam = document.createElement("video");
         cam.crossOrigin = "anonymous";
         cam.muted = true;
-        cam.src = cameraUrl;
-        await new Promise<void>((resolve, reject) => {
-          cam!.onloadeddata = () => resolve();
-          cam!.onerror = () => reject(Error("Cannot decode camera video."));
-        });
+        await loadExportVideo(cam, cameraUrl);
       }
       const out = document.createElement("canvas");
       out.width = size.width;
@@ -1413,6 +1421,7 @@ export default function App() {
             {project && (
               <TimelineVisibility
                 tracks={timelineTracks}
+                hasCamera={!!project.source.camera}
                 onChange={setTimelineTracks}
               />
             )}
@@ -2253,6 +2262,12 @@ export default function App() {
                       onChange={(v) => appearance({ cameraZoomScale: v / 100 })}
                     />
                     <CameraLayouts
+                      selectedId={
+                        selection?.type === "camera" ? selection.id : undefined
+                      }
+                      onReveal={() =>
+                        setTimelineTracks((v) => ({ ...v, camera: true }))
+                      }
                       project={project}
                       time={time}
                       edit={edit}
@@ -2291,7 +2306,10 @@ export default function App() {
           seek={seek}
           edit={edit}
           selection={selection}
-          select={setSelection}
+          select={(next) => {
+            setSelection(next);
+            if (next?.type === "camera") setTab("camera");
+          }}
           zoom={timelineZoom}
           setZoom={setTimelineZoom}
           cut={cut}

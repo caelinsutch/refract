@@ -1,5 +1,8 @@
 /* Shared UI tokens. Video composition colors belong to the project, not this theme. */
 :root {
+  --track-camera: #225f88;
+  --track-camera-border: #4e9cc9;
+  --track-camera-subtle: #225f881a;
   --motion-press: 90ms;
   --motion-feedback: 140ms;
   --motion-surface: 180ms;

@@ -1,3 +1,4 @@
+import { CameraTimeline } from "./CameraTimeline";
 import * as sx from "@stylexjs/stylex";
 import { useEffect, useRef, useState } from "react";
 import { Scissors, Plus, ZoomIn } from "lucide-react";
@@ -18,7 +19,10 @@ import {
   trimClip,
   createTimelineRange,
 } from "../core/timeline";
-export type Selection = { type: "clip" | "zoom" | "mask"; id: string } | null;
+export type Selection = {
+  type: "clip" | "zoom" | "mask" | "camera";
+  id: string;
+} | null;
 const s = sx.create({
   root: {
     backgroundColor: "var(--surface-app)",
@@ -375,7 +379,12 @@ export default function Timeline({
     <div
       {...sx.props(s.root)}
       data-timeline
-      style={{ height: 145 + 60 * (Number(tracks.zoom) + Number(tracks.mask)) }}
+      style={{
+        height:
+          145 +
+          60 *
+            (Number(tracks.zoom) + Number(tracks.mask) + Number(tracks.camera)),
+      }}
     >
       <div {...sx.props(s.tools)}>
         <Button title="Cut at playhead (C)" onClick={cut} icon>
@@ -561,12 +570,23 @@ export default function Timeline({
               )}
             </div>
           )}
+          {tracks.camera && (
+            <CameraTimeline
+              project={project}
+              px={px}
+              top={100 + 60 * Number(tracks.zoom)}
+              selection={selection}
+              select={select}
+              edit={edit}
+              seek={seek}
+            />
+          )}
           {tracks.mask && (
             <div
               {...sx.props(s.zoomTrack)}
               aria-label="Mask timeline"
               style={{
-                top: tracks.zoom ? 160 : 100,
+                top: 100 + 60 * (Number(tracks.zoom) + Number(tracks.camera)),
                 backgroundColor: "var(--track-mask-subtle)",
                 borderColor: "var(--track-mask-outline)",
               }}

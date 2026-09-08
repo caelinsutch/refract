@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type Project, duration, uid } from "../core/project";
 import { type CameraLayout } from "../core/camera-layout";
 import {
@@ -12,14 +12,24 @@ export function CameraLayouts({
   time,
   edit,
   seek,
+  onReveal,
+  selectedId,
 }: {
   project: Project;
+  onReveal?: () => void;
+  selectedId?: string;
   time: number;
   edit: (project: Project, group?: string) => void;
   seek: (time: number) => void;
 }) {
   const [error, setError] = useState("");
   const layouts = project.cameraLayouts ?? [];
+  useEffect(() => {
+    if (selectedId)
+      document
+        .getElementById(`camera-layout-${selectedId}`)
+        ?.scrollIntoView({ block: "nearest", behavior: "instant" });
+  }, [selectedId]);
   const change = (next: CameraLayout, group?: string) => {
     if (
       layouts.some(
@@ -43,6 +53,7 @@ export function CameraLayouts({
     );
   };
   const add = () => {
+    onReveal?.();
     const range = createTimelineRange(
       project,
       time,
@@ -91,6 +102,7 @@ export function CameraLayouts({
         return (
           <section
             key={layout.id}
+            id={`camera-layout-${layout.id}`}
             aria-label={`Camera layout ${index + 1}`}
             style={{
               marginTop: 16,

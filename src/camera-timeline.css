@@ -1,0 +1,55 @@
+[data-camera-track] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  border: 1px dashed var(--track-camera-border);
+  border-radius: var(--radius-item);
+  background: var(--track-camera-subtle);
+  cursor: crosshair;
+}
+[data-camera-interval] {
+  position: absolute;
+  top: 0;
+  height: 46px;
+  border: 1px solid var(--track-camera-border);
+  border-radius: var(--radius-item);
+  background: var(--track-camera);
+  color: var(--text-primary);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+[data-camera-interval][data-selected="true"] {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+[data-camera-interval]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.camera-trim {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  border: 0;
+  padding: 0;
+  background: var(--white-a15);
+  cursor: ew-resize;
+  touch-action: none;
+}
+.camera-track-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-subtle);
+  font-size: 11px;
+  pointer-events: none;
+}

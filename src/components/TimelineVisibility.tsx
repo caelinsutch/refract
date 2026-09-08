@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import * as sx from "@stylexjs/stylex";
-import { Layers, ChevronDown, ZoomIn, Scan } from "lucide-react";
+import { Layers, ChevronDown, ZoomIn, Scan, Video } from "lucide-react";
 import { Button } from "./ui";
-export type TimelineTracks = { zoom: boolean; mask: boolean };
+export type TimelineTracks = { zoom: boolean; mask: boolean; camera: boolean };
 const s = sx.create({
   root: { position: "relative", flexShrink: 0 },
   menu: {
@@ -34,8 +34,10 @@ const s = sx.create({
 export function TimelineVisibility({
   tracks,
   onChange,
+  hasCamera = false,
 }: {
   tracks: TimelineTracks;
+  hasCamera?: boolean;
   onChange: (tracks: TimelineTracks) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -54,7 +56,8 @@ export function TimelineVisibility({
     node.style.bottom = `${window.innerHeight - rect.top + 6}px`;
     node.showPopover();
   };
-  const count = Number(tracks.zoom) + Number(tracks.mask);
+  const count =
+    Number(tracks.zoom) + Number(tracks.mask) + Number(tracks.camera);
   return (
     <div ref={root} {...sx.props(s.root)}>
       <Button onClick={toggle} aria-expanded={open} title="Visible timelines">
@@ -74,6 +77,7 @@ export function TimelineVisibility({
         {(
           [
             { id: "zoom", label: "Zooms", key: "1", Icon: ZoomIn },
+            { id: "camera", label: "Camera layouts", key: "2", Icon: Video },
             { id: "mask", label: "Masks", key: "4", Icon: Scan },
           ] as const
         ).map(({ id, label, key, Icon }) => (
@@ -83,6 +87,7 @@ export function TimelineVisibility({
             <kbd>{key}</kbd>
             <input
               type="checkbox"
+              disabled={id === "camera" && !hasCamera}
               checked={tracks[id]}
               onChange={(e) => onChange({ ...tracks, [id]: e.target.checked })}
             />

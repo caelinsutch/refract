@@ -137,3 +137,49 @@ test("mask range gestures retain geometry and follow the edited clock", () => {
     start: 3750,
   });
 });
+
+test("camera gestures stop at neighbors and retain their edited duration across cuts", async () => {
+  const { dragCameraRange, createCameraRange } = await import("./timeline");
+  const p = createProject({
+    file: "test",
+    width: 1280,
+    height: 720,
+    duration: 10000,
+    hasAudio: false,
+  });
+  p.segments = [
+    { id: "a", start: 0, end: 4000, speed: 2 },
+    { id: "b", start: 6000, end: 10000, speed: 1 },
+  ];
+  const layout = {
+    id: "middle",
+    start: 2000,
+    end: 3000,
+    type: "fullscreen" as const,
+    x: 1,
+    y: 1,
+  };
+  p.cameraLayouts = [
+    { ...layout, id: "first", start: 0, end: 1000 },
+    layout,
+    { ...layout, id: "last", start: 8000, end: 9000 },
+  ];
+  const left = dragCameraRange(p, layout, "move", -10000);
+  assert.equal(left.start, 1000);
+  assert.equal(left.end, 2000);
+  const right = dragCameraRange(p, layout, "move", 10000);
+  assert.equal(right.start, 7500);
+  assert.equal(right.end, 8000);
+  assert.equal(dragCameraRange(p, layout, "start", -10000).start, 1000);
+  assert.equal(dragCameraRange(p, layout, "end", 10000).end, 8000);
+  assert.equal(
+    createCameraRange(p, 200, 1200),
+    null,
+    "Cannot start a layout on an existing interval",
+  );
+  assert.deepEqual(createCameraRange(p, 1750, 5000), {
+    start: 3500,
+    end: 8000,
+  });
+  assert.deepEqual(createCameraRange(p, 1750, 0), { start: 3000, end: 3500 });
+});
