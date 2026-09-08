@@ -1,3 +1,4 @@
+import { Modal } from "./components/Modal";
 import { ShortcutSettings } from "./components/ShortcutSettings";
 import { clipAudioGain } from "./core/audio";
 import { CameraLayouts } from "./components/CameraLayouts";
@@ -252,7 +253,7 @@ const s = sx.create({
     backgroundImage: `linear-gradient(125deg, ${a}, ${b} 56%, ${c})`,
     cursor: "pointer",
   }),
-  chosen: { outline: "2px solid var(--focus)", outlineOffset: 2 },
+  chosen: { outline: "2px solid var(--selection-ring)", outlineOffset: 0 },
   empty: {
     display: "flex",
     flexDirection: "column",
@@ -287,16 +288,7 @@ const s = sx.create({
     maxWidth: 300,
     margin: 0,
   },
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    backgroundColor: "var(--black-a88)",
-    backdropFilter: "blur(6px)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 30,
-  },
+
   modal: {
     width: 470,
     backgroundColor: "var(--surface-modal)",
@@ -806,7 +798,7 @@ export default function App() {
   }, [project, time, playing]);
   useEffect(() => {
     const action = (a: string) => {
-      if (cropping) return;
+      if (cropping || modal) return;
       if (a === "commands" && !exporting && !modal) {
         setPlaying(false);
         setCommandOpen((v) => !v);
@@ -2435,194 +2427,187 @@ export default function App() {
         }}
       />
       {modal ? (
-        <div
-          {...sx.props(s.overlay)}
-          onClick={() => {
-            if (!exporting) setModal(null);
-          }}
+        <Modal
+          aria-label={modal === "export" ? "Export video" : "Presets"}
+          {...sx.props(s.modal)}
+          dismissible={!exporting}
+          onDismiss={() => setModal(null)}
         >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-label={modal === "export" ? "Export video" : "Presets"}
-            {...sx.props(s.modal)}
-            data-floating-surface="dialog"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Row>
-              <h2 {...sx.props(s.modalTitle)}>
-                {modal === "export" ? "Export video" : "Presets"}
-              </h2>
-              <Button
-                icon
-                title="Close dialog"
-                disabled={exporting}
-                onClick={() => setModal(null)}
-              >
-                <X size={16} />
-              </Button>
-            </Row>
-            {modal === "export" ? (
-              <>
-                {!exporting ? (
-                  <>
-                    {exportError && <p role="alert">{exportError}</p>}
-                    <Row>
-                      <span>Export as</span>
-                      <select
-                        aria-label="Export format"
-                        value={format}
-                        onChange={(e) =>
-                          setFormat(e.target.value as "mp4" | "gif")
-                        }
-                      >
-                        <option value="mp4">MP4 video</option>
-                        <option value="gif">Animated GIF</option>
-                      </select>
-                    </Row>
-                    <Divider />
-                    <Row>
-                      <span>Output size</span>
-                      <select
-                        aria-label="Output size"
-                        value={resolution}
-                        onChange={(e) => setResolution(Number(e.target.value))}
-                      >
-                        <option value={1280}>HD · 1280</option>
-                        <option value={1920}>Full HD · 1920</option>
-                        <option value={3840}>4K · 3840</option>
-                      </select>
-                    </Row>
-                    <Divider />
-                    <Row>
-                      <span>Frame rate</span>
-                      <select
-                        aria-label="Frame rate"
-                        value={fps}
-                        onChange={(e) => setFps(Number(e.target.value))}
-                      >
-                        {[24, 30, 60].map((n) => (
-                          <option key={n} value={n}>
-                            {n} fps
-                          </option>
-                        ))}
-                      </select>
-                    </Row>
-                    <Divider />
-                    <Note>
-                      {project
-                        ? `${dimensions(project, resolution).width} × ${dimensions(project, resolution).height} · ${formatTime(duration(project), true)}`
-                        : ""}
-                      <br />
-                      {format === "gif"
-                        ? "Your framing, zooms, masks, captions, and cuts are included. GIF exports are silent."
-                        : "Your framing, zooms, masks, captions, cuts, and audio settings are included."}
-                    </Note>
-                    <Row>
-                      <Button onClick={() => setModal(null)}>Cancel</Button>
-                      <Button primary onClick={exportVideo}>
-                        <Upload size={14} />
-                        Export to file
-                      </Button>
-                    </Row>
-                  </>
-                ) : (
-                  <>
-                    <p>
-                      {progress < 96
-                        ? "Rendering your video…"
-                        : "Finishing export…"}
-                    </p>
-                    <div {...sx.props(s.progress)}>
-                      <div {...sx.props(s.bar(progress))} />
-                    </div>
-                    <Row>
-                      <span>{Math.round(progress)}%</span>
-                      <Button
-                        onClick={() => {
-                          cancelExport.current = true;
-                          void window.refract
-                            ?.exportCancel()
-                            .catch((error) => tell(String(error)));
-                        }}
-                      >
-                        Cancel export
-                      </Button>
-                    </Row>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <Note>
-                  Save appearance settings and reuse them across recordings.
-                </Note>
-                {presets.map((p, i) => (
-                  <div key={p.name + i} {...sx.props(s.box)}>
-                    <Row>
-                      <Button
-                        onClick={() => {
-                          appearance(p.appearance);
-                          setModal(null);
-                        }}
-                      >
-                        {p.name}
-                      </Button>
-                      <Button
-                        title="Remove preset"
-                        icon
-                        onClick={() => {
-                          const next = presets.filter((_, j) => i !== j);
-                          setPresets(next);
-                          localStorage.setItem(
-                            "refract-presets",
-                            JSON.stringify(next),
-                          );
-                        }}
-                      >
-                        <Trash2 size={13} />
-                      </Button>
-                    </Row>
+          <Row>
+            <h2 {...sx.props(s.modalTitle)}>
+              {modal === "export" ? "Export video" : "Presets"}
+            </h2>
+            <Button
+              icon
+              title="Close dialog"
+              disabled={exporting}
+              onClick={() => setModal(null)}
+            >
+              <X size={16} />
+            </Button>
+          </Row>
+          {modal === "export" ? (
+            <>
+              {!exporting ? (
+                <>
+                  {exportError && <p role="alert">{exportError}</p>}
+                  <Row>
+                    <span>Export as</span>
+                    <select
+                      aria-label="Export format"
+                      value={format}
+                      onChange={(e) =>
+                        setFormat(e.target.value as "mp4" | "gif")
+                      }
+                    >
+                      <option value="mp4">MP4 video</option>
+                      <option value="gif">Animated GIF</option>
+                    </select>
+                  </Row>
+                  <Divider />
+                  <Row>
+                    <span>Output size</span>
+                    <select
+                      aria-label="Output size"
+                      value={resolution}
+                      onChange={(e) => setResolution(Number(e.target.value))}
+                    >
+                      <option value={1280}>HD · 1280</option>
+                      <option value={1920}>Full HD · 1920</option>
+                      <option value={3840}>4K · 3840</option>
+                    </select>
+                  </Row>
+                  <Divider />
+                  <Row>
+                    <span>Frame rate</span>
+                    <select
+                      aria-label="Frame rate"
+                      value={fps}
+                      onChange={(e) => setFps(Number(e.target.value))}
+                    >
+                      {[24, 30, 60].map((n) => (
+                        <option key={n} value={n}>
+                          {n} fps
+                        </option>
+                      ))}
+                    </select>
+                  </Row>
+                  <Divider />
+                  <Note>
+                    {project
+                      ? `${dimensions(project, resolution).width} × ${dimensions(project, resolution).height} · ${formatTime(duration(project), true)}`
+                      : ""}
+                    <br />
+                    {format === "gif"
+                      ? "Your framing, zooms, masks, captions, and cuts are included. GIF exports are silent."
+                      : "Your framing, zooms, masks, captions, cuts, and audio settings are included."}
+                  </Note>
+                  <Row>
+                    <Button onClick={() => setModal(null)}>Cancel</Button>
+                    <Button primary defaultAction onClick={exportVideo}>
+                      <Upload size={14} />
+                      Export to file
+                    </Button>
+                  </Row>
+                </>
+              ) : (
+                <>
+                  <p>
+                    {progress < 96
+                      ? "Rendering your video…"
+                      : "Finishing export…"}
+                  </p>
+                  <div {...sx.props(s.progress)}>
+                    <div {...sx.props(s.bar(progress))} />
                   </div>
-                ))}
-                <Divider />
-                <Row>
-                  <input
-                    aria-label="Preset name"
-                    type="text"
-                    placeholder="Preset name"
-                    value={presetName}
-                    onChange={(e) => setPresetName(e.target.value)}
-                  />
-                  <Button
-                    primary
-                    disabled={!presetName.trim()}
-                    onClick={() => {
-                      if (project) {
-                        const next = [
-                          ...presets,
-                          {
-                            name: presetName.trim(),
-                            appearance: project.appearance,
-                          },
-                        ];
+                  <Row>
+                    <span>{Math.round(progress)}%</span>
+                    <Button
+                      onClick={() => {
+                        cancelExport.current = true;
+                        void window.refract
+                          ?.exportCancel()
+                          .catch((error) => tell(String(error)));
+                      }}
+                    >
+                      Cancel export
+                    </Button>
+                  </Row>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <Note>
+                Save appearance settings and reuse them across recordings.
+              </Note>
+              {presets.map((p, i) => (
+                <div key={p.name + i} {...sx.props(s.box)}>
+                  <Row>
+                    <Button
+                      onClick={() => {
+                        appearance(p.appearance);
+                        setModal(null);
+                      }}
+                    >
+                      {p.name}
+                    </Button>
+                    <Button
+                      title="Remove preset"
+                      icon
+                      onClick={() => {
+                        const next = presets.filter((_, j) => i !== j);
                         setPresets(next);
                         localStorage.setItem(
                           "refract-presets",
                           JSON.stringify(next),
                         );
-                        setPresetName("");
-                        tell("Preset saved.");
-                      }
-                    }}
-                  >
-                    Save
-                  </Button>
-                </Row>
-              </>
-            )}
-          </section>
-        </div>
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </Button>
+                  </Row>
+                </div>
+              ))}
+              <Divider />
+              <Row>
+                <input
+                  data-dialog-initial
+                  aria-label="Preset name"
+                  type="text"
+                  placeholder="Preset name"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                />
+                <Button
+                  primary
+                  defaultAction
+                  disabled={!presetName.trim()}
+                  onClick={() => {
+                    if (project) {
+                      const next = [
+                        ...presets,
+                        {
+                          name: presetName.trim(),
+                          appearance: project.appearance,
+                        },
+                      ];
+                      setPresets(next);
+                      localStorage.setItem(
+                        "refract-presets",
+                        JSON.stringify(next),
+                      );
+                      setPresetName("");
+                      tell("Preset saved.");
+                    }
+                  }}
+                >
+                  Save
+                </Button>
+              </Row>
+            </>
+          )}
+        </Modal>
       ) : null}
       {status ? (
         <div role="status" {...sx.props(s.status)}>

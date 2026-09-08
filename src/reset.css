@@ -43,7 +43,7 @@
   select:focus-visible,
   textarea:focus-visible {
     outline: 2px solid var(--focus);
-    outline-offset: 2px;
+    outline-offset: 1px;
   }
   button {
     color: inherit;

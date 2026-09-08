@@ -1,3 +1,4 @@
+import { Modal } from "./Modal";
 import {
   useEffect,
   useRef,
@@ -9,15 +10,6 @@ import * as sx from "@stylexjs/stylex";
 import { clampCrop, resizeCrop, type CropRect } from "../core/crop";
 import { Button } from "./ui";
 const s = sx.create({
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    zIndex: 100,
-    backgroundColor: "var(--black-a88)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
   dialog: {
     width: 960,
     maxWidth: "96vw",
@@ -136,13 +128,7 @@ export default function CropEditor({
   );
   const [size, setSize] = useState({ width: 900, height: 506 });
   const canvas = useRef<HTMLCanvasElement>(null),
-    stage = useRef<HTMLDivElement>(null),
-    dialog = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    dialog.current?.focus();
-    return () => previous?.focus();
-  }, []);
+    stage = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const node = stage.current;
     if (!node) return;
@@ -209,181 +195,150 @@ export default function CropEditor({
     }
   }
   return (
-    <div {...sx.props(s.overlay)}>
-      <div
-        ref={dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Crop recording"
-        tabIndex={-1}
-        {...sx.props(s.dialog)}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            e.preventDefault();
-            onCancel();
-          }
-          if (e.key === "Enter" && e.target === dialog.current) onConfirm(rect);
-          if (e.key === "Tab") {
-            const nodes = dialog.current?.querySelectorAll<HTMLElement>(
-              'button,input,select,[tabindex="0"]',
-            );
-            if (!nodes?.length) return;
-            const first = nodes[0],
-              last = nodes[nodes.length - 1];
-            if (
-              e.shiftKey &&
-              (document.activeElement === first ||
-                document.activeElement === dialog.current)
-            ) {
-              e.preventDefault();
-              last.focus();
-            } else if (!e.shiftKey && document.activeElement === last) {
-              e.preventDefault();
-              first.focus();
-            }
-          }
-        }}
-      >
-        <div {...sx.props(s.toolbar)}>
-          <span {...sx.props(s.label)}>Size</span>
-          {(["width", "height"] as const).map((key, i) => (
-            <span
-              key={key}
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
-            >
-              {i === 1 && <span>×</span>}
-              <input
-                {...sx.props(s.field)}
-                type="number"
-                aria-label={`Crop ${key}`}
-                min={1}
-                max={key === "width" ? width : height}
-                value={rect[key]}
-                onChange={(e) => update(key, Number(e.target.value))}
-              />
-            </span>
-          ))}
-          <select
-            aria-label="Crop aspect ratio"
-            defaultValue=""
-            onChange={(e) => {
-              if (!e.target.value) return;
-              const ratio = Number(e.target.value);
-              let w = rect.width,
-                h = w / ratio;
-              if (h > height) {
-                h = height;
-                w = h * ratio;
-              }
-              setRect(
-                clampCrop(
-                  {
-                    x: rect.x + (rect.width - w) / 2,
-                    y: rect.y + (rect.height - h) / 2,
-                    width: w,
-                    height: h,
-                  },
-                  width,
-                  height,
-                ),
-              );
-            }}
+    <Modal
+      aria-label="Crop recording"
+      onDismiss={onCancel}
+      {...sx.props(s.dialog)}
+    >
+      <div {...sx.props(s.toolbar)}>
+        <span {...sx.props(s.label)}>Size</span>
+        {(["width", "height"] as const).map((key, i) => (
+          <span
+            key={key}
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
           >
-            <option value="">Select…</option>
-            <option value={16 / 9}>16:9</option>
-            <option value={9 / 16}>9:16</option>
-            <option value={1}>1:1</option>
-            <option value={4 / 3}>4:3</option>
-          </select>
-          <span {...sx.props(s.label)}>Position</span>
-          {(["x", "y"] as const).map((key) => (
+            {i === 1 && <span>×</span>}
             <input
-              key={key}
               {...sx.props(s.field)}
-              aria-label={`Crop ${key}`}
               type="number"
-              min={0}
+              aria-label={`Crop ${key}`}
+              min={1}
+              max={key === "width" ? width : height}
               value={rect[key]}
               onChange={(e) => update(key, Number(e.target.value))}
             />
-          ))}
-          <Button onClick={() => setRect({ x: 0, y: 0, width, height })}>
-            Reset
-          </Button>
-        </div>
-        <div ref={stage} {...sx.props(s.stage)}>
-          <div {...sx.props(s.preview)} style={size}>
-            <canvas
-              ref={canvas}
-              width={width}
-              height={height}
-              {...sx.props(s.image)}
-              aria-label="Uncropped recording"
+          </span>
+        ))}
+        <select
+          aria-label="Crop aspect ratio"
+          defaultValue=""
+          onChange={(e) => {
+            if (!e.target.value) return;
+            const ratio = Number(e.target.value);
+            let w = rect.width,
+              h = w / ratio;
+            if (h > height) {
+              h = height;
+              w = h * ratio;
+            }
+            setRect(
+              clampCrop(
+                {
+                  x: rect.x + (rect.width - w) / 2,
+                  y: rect.y + (rect.height - h) / 2,
+                  width: w,
+                  height: h,
+                },
+                width,
+                height,
+              ),
+            );
+          }}
+        >
+          <option value="">Select…</option>
+          <option value={16 / 9}>16:9</option>
+          <option value={9 / 16}>9:16</option>
+          <option value={1}>1:1</option>
+          <option value={4 / 3}>4:3</option>
+        </select>
+        <span {...sx.props(s.label)}>Position</span>
+        {(["x", "y"] as const).map((key) => (
+          <input
+            key={key}
+            {...sx.props(s.field)}
+            aria-label={`Crop ${key}`}
+            type="number"
+            min={0}
+            value={rect[key]}
+            onChange={(e) => update(key, Number(e.target.value))}
+          />
+        ))}
+        <Button onClick={() => setRect({ x: 0, y: 0, width, height })}>
+          Reset
+        </Button>
+      </div>
+      <div ref={stage} {...sx.props(s.stage)}>
+        <div {...sx.props(s.preview)} style={size}>
+          <canvas
+            ref={canvas}
+            width={width}
+            height={height}
+            {...sx.props(s.image)}
+            aria-label="Uncropped recording"
+          />
+          <svg
+            {...sx.props(s.mask)}
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${width} ${height}`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path
+              fill="var(--black-a88)"
+              fillRule="evenodd"
+              d={`M0 0H${width}V${height}H0Z M${rect.x} ${rect.y}h${rect.width}v${rect.height}h${-rect.width}Z`}
             />
-            <svg
-              {...sx.props(s.mask)}
-              width="100%"
-              height="100%"
-              viewBox={`0 0 ${width} ${height}`}
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <path
-                fill="var(--black-a88)"
-                fillRule="evenodd"
-                d={`M0 0H${width}V${height}H0Z M${rect.x} ${rect.y}h${rect.width}v${rect.height}h${-rect.width}Z`}
-              />
-            </svg>
-            <div
-              {...sx.props(s.selection)}
-              tabIndex={0}
-              role="group"
-              aria-label="Crop selection. Use arrow keys to move."
-              style={{
-                left: `${(rect.x / width) * 100}%`,
-                top: `${(rect.y / height) * 100}%`,
-                width: `${(rect.width / width) * 100}%`,
-                height: `${(rect.height / height) * 100}%`,
-              }}
-              onPointerDown={(e) => drag(e, "move")}
-              onKeyDown={(e) => key(e, "move")}
-            >
-              {[25, 50, 75].map((position) => (
-                <span key={position} aria-hidden="true">
-                  <span
-                    {...sx.props(s.grid, s.horizontalGrid)}
-                    style={{ top: `${position}%` }}
-                  />
-                  <span
-                    {...sx.props(s.grid, s.verticalGrid)}
-                    style={{ left: `${position}%` }}
-                  />
-                </span>
-              ))}
-              {handles.map(([edge, x, y]) => (
-                <button
-                  key={edge}
-                  {...sx.props(s.handle)}
-                  style={{
-                    left: `${x}%`,
-                    top: `${y}%`,
-                    cursor: `${edge}-resize`,
-                  }}
-                  aria-label={`Resize crop ${edge}. Use arrow keys.`}
-                  onPointerDown={(e) => drag(e, edge)}
-                  onKeyDown={(e) => key(e, edge)}
+          </svg>
+          <div
+            {...sx.props(s.selection)}
+            tabIndex={0}
+            role="group"
+            aria-label="Crop selection. Use arrow keys to move."
+            style={{
+              left: `${(rect.x / width) * 100}%`,
+              top: `${(rect.y / height) * 100}%`,
+              width: `${(rect.width / width) * 100}%`,
+              height: `${(rect.height / height) * 100}%`,
+            }}
+            onPointerDown={(e) => drag(e, "move")}
+            onKeyDown={(e) => key(e, "move")}
+          >
+            {[25, 50, 75].map((position) => (
+              <span key={position} aria-hidden="true">
+                <span
+                  {...sx.props(s.grid, s.horizontalGrid)}
+                  style={{ top: `${position}%` }}
                 />
-              ))}
-            </div>
+                <span
+                  {...sx.props(s.grid, s.verticalGrid)}
+                  style={{ left: `${position}%` }}
+                />
+              </span>
+            ))}
+            {handles.map(([edge, x, y]) => (
+              <button
+                key={edge}
+                {...sx.props(s.handle)}
+                style={{
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  cursor: `${edge}-resize`,
+                }}
+                aria-label={`Resize crop ${edge}. Use arrow keys.`}
+                onPointerDown={(e) => drag(e, edge)}
+                onKeyDown={(e) => key(e, edge)}
+              />
+            ))}
           </div>
         </div>
-        <div {...sx.props(s.footer)}>
-          <Button primary onClick={() => onConfirm(rect)}>
-            Confirm changes ↵
-          </Button>
-          <Button onClick={onCancel}>Discard changes</Button>
-        </div>
       </div>
-    </div>
+      <div {...sx.props(s.footer)}>
+        <Button primary defaultAction onClick={() => onConfirm(rect)}>
+          Confirm changes ↵
+        </Button>
+        <Button onClick={onCancel}>Discard changes</Button>
+      </div>
+    </Modal>
   );
 }

@@ -96,6 +96,7 @@ export function Button({
   title,
   active = false,
   primary = false,
+  defaultAction = false,
   disabled = false,
   icon = false,
   "aria-expanded": expanded,
@@ -106,6 +107,7 @@ export function Button({
   title?: string;
   active?: boolean;
   primary?: boolean;
+  defaultAction?: boolean;
   disabled?: boolean;
   icon?: boolean;
   "aria-expanded"?: boolean;
@@ -113,6 +115,8 @@ export function Button({
 }) {
   return (
     <button
+      type="button"
+      data-dialog-default={defaultAction || undefined}
       {...sx.props(
         s.button,
         active && s.active,

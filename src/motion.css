@@ -181,3 +181,58 @@ dialog[data-command-menu][open] {
   color: var(--primary-text);
   outline: none;
 }
+
+/* Focus belongs to the control shape; sliders use their thumb, not a track box. */
+input[type="range"]:focus-visible {
+  outline: none;
+}
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 2px var(--surface-raised),
+    0 0 0 4px var(--focus);
+}
+[data-clip-menu] button:focus-visible {
+  background: var(--white-a12);
+  color: var(--text-primary);
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+[data-clip-menu] button:hover {
+  background: var(--white-a12);
+  color: var(--text-primary);
+}
+dialog[data-app-dialog] {
+  margin: auto;
+  color: var(--text-primary);
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  outline: none;
+}
+dialog[data-app-dialog]::backdrop {
+  background: var(--black-a88);
+  backdrop-filter: blur(6px);
+}
+@media (forced-colors: active) {
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+html[data-focus-mode="quiet"]
+  :is(button, input, select, textarea):focus-visible {
+  outline: none;
+}
+html[data-focus-mode="quiet"]
+  input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 1px 4px var(--black-a88);
+}
+@media (forced-colors: active) {
+  html[data-focus-mode="quiet"]
+    :is(button, input, select, textarea):focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
