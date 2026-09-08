@@ -1638,6 +1638,32 @@ export default function App() {
                       }
                     />
                     <Toggle
+                      label="Loop cursor position"
+                      value={project.appearance.cursorLoopMs !== null}
+                      onChange={(enabled) =>
+                        appearance({ cursorLoopMs: enabled ? 1000 : null })
+                      }
+                    />
+                    <Note>
+                      Near the end of the video, the cursor returns to its
+                      starting position.
+                    </Note>
+                    {project.appearance.cursorLoopMs !== null && (
+                      <Range
+                        label="Loop cursor position duration"
+                        value={project.appearance.cursorLoopMs / 1000}
+                        min={1}
+                        max={4}
+                        step={0.1}
+                        unit="s"
+                        onChange={(seconds) =>
+                          appearance({
+                            cursorLoopMs: Math.round(seconds * 1000),
+                          })
+                        }
+                      />
+                    )}
+                    <Toggle
                       label="Click ripple"
                       value={project.appearance.clickEffect}
                       onChange={(clickEffect) => appearance({ clickEffect })}

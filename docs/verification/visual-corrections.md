@@ -148,3 +148,9 @@ The installed cursor-settings module exposes “Hide cursor if not moving” and
 All 37 core tests and the TypeScript/production build pass. Tests include pause-like stationary intervals, held positions, clicks without movement, arbitrary seek order, persistence, and invalid configuration. Exact reference fade timing and interaction acceptance remain unverified.
 
 A separate temporary AppKit mouse-down monitor installed successfully and stopped after 30 seconds, reporting zero observed events during an accessibility-driven editor click. This does not establish event delivery or permission readiness. It was not substituted for the recorder's sampled click path.
+
+## Cursor position loop
+
+The installed cursor panel exposes “Loop cursor position,” a 1000–4000 ms duration, and an initial value resolving to 1000 ms. Refract now exposes that switch and duration. Its shared compositor returns the pointer to the first retained source position over the final retained source-time interval, so trimming the beginning changes the return target. The path is deterministic when seeking, clamps on short clips, and reaches the exact starting coordinates at the endpoint. Older projects keep the option disabled.
+
+All 38 tests and the production build pass, including loop boundaries, a trimmed starting target, an interval longer than the retained clip, disabled mode, and absent cursor data. This is an independently implemented smoothstep return, not verified reference motion equivalence. Live control interaction, exact reference easing, and the interaction between looping and idle hiding remain open checks.

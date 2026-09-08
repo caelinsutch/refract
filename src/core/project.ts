@@ -50,6 +50,7 @@ export type Appearance = {
   cursorSize: number;
   hideCursor: boolean;
   cursorIdleMs: number | null;
+  cursorLoopMs: number | null;
   cursorSmooth: boolean;
   cursorSpring?: SpringConfig;
   screenSpring?: SpringConfig;
@@ -105,6 +106,7 @@ export const defaults: Appearance = {
   cursorSize: 1.5,
   hideCursor: false,
   cursorIdleMs: null,
+  cursorLoopMs: null,
   cursorSmooth: true,
   cursorAnimation: "smooth",
   clickEffect: false,
@@ -289,6 +291,13 @@ export function validateProject(value: unknown): Project {
       p.appearance.cursorIdleMs > 5000)
   )
     throw new Error("The project has an invalid cursor idle delay.");
+  if (
+    p.appearance.cursorLoopMs !== null &&
+    (!valid(p.appearance.cursorLoopMs) ||
+      p.appearance.cursorLoopMs < 1000 ||
+      p.appearance.cursorLoopMs > 4000)
+  )
+    throw new Error("The project has an invalid cursor loop duration.");
   for (const k of [
     "padding",
     "radius",

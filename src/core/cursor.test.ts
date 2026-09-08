@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cursorAt, recentClicks, cursorVisibleAt } from "./cursor";
+import {
+  cursorAt,
+  recentClicks,
+  cursorVisibleAt,
+  loopedCursorAt,
+} from "./cursor";
 import { createProject, validateProject } from "./project";
 const events = [
   { time: 100, x: 0.1, y: 0.2, click: true },
@@ -8,6 +13,30 @@ const events = [
   { time: 200, x: 0.7, y: 0.6, click: true },
   { time: 400, x: 0.3, y: 0.4, click: true },
 ];
+test("cursor loop returns to the first retained position with deterministic boundaries", () => {
+  const track = [
+    { time: 0, x: 0, y: 0 },
+    { time: 1000, x: 0.2, y: 0.3 },
+    { time: 2500, x: 0.8, y: 0.9 },
+    { time: 3900, x: 1, y: 1 },
+  ];
+  const at = (time: number) =>
+    loopedCursorAt(track, time, 1000, 4000, 1000, "none");
+  assert.deepEqual(at(4000), {
+    x: 0.2,
+    y: 0.3,
+  });
+  assert.deepEqual(at(3000), { x: 0.8, y: 0.9 });
+  assert.ok(Math.abs(at(3500)!.x - 0.5) < 1e-9);
+  assert.deepEqual(at(4500), at(4000));
+  assert.ok(Math.abs(at(3000.001)!.x - at(3000)!.x) < 1e-6);
+  assert.deepEqual(loopedCursorAt(track, 2000, 1000, 2000, 4000, "none"), { x: 0.2, y: 0.3 });
+  assert.deepEqual(loopedCursorAt(track, 4000, 1000, 4000, null, "none"), {
+    x: 1,
+    y: 1,
+  });
+  assert.equal(loopedCursorAt([], 0, 0, 1000, 1000, "smooth"), null);
+});
 test("idle cursor ignores repeated samples and reveals on movement or click after arbitrary seeks", () => {
   const track = [
     { time: 0, x: 0.5, y: 0.5 },

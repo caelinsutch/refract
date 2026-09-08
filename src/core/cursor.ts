@@ -64,6 +64,30 @@ export function cursorVisibleAt(
 }
 
 export type CursorStyle = "smooth" | "medium" | "rapid" | "none";
+/** Return toward the first retained source position over the final source-time interval. */
+export function loopedCursorAt(
+  events: CursorEvent[],
+  time: number,
+  start: number,
+  end: number,
+  loopMs: number | null,
+  style: CursorStyle,
+  custom?: SpringConfig,
+) {
+  const current = animatedCursorAt(events, time, style, custom);
+  if (!current || loopMs == null || end <= start) return current;
+  const begins = Math.max(start, end - loopMs);
+  if (time <= begins) return current;
+  const from = animatedCursorAt(events, begins, style, custom)!;
+  const to = animatedCursorAt(events, start, style, custom)!;
+  if (time >= end) return to;
+  const progress = Math.max(0, Math.min(1, (time - begins) / (end - begins)));
+  const blend = progress * progress * (3 - 2 * progress);
+  return {
+    x: from.x + (to.x - from.x) * blend,
+    y: from.y + (to.y - from.y) * blend,
+  };
+}
 export const cursorPresets = {
   smooth: { stiffness: 470, damping: 70, mass: 3 },
   medium: { stiffness: 340, damping: 60, mass: 3 },
