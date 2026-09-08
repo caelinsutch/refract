@@ -1,3 +1,4 @@
+import { cursorExposure, drawCursorExposure } from "./cursor-render";
 import { drawShortcut } from "./shortcuts";
 import { cameraFrameAt } from "./camera-layout";
 import { wrapCaption } from "./captions";
@@ -290,24 +291,30 @@ export function drawFrame(
         }
       }
     }
-    c.save();
-    c.translate(cx, cy);
-    c.scale(a.cursorSize * scale, a.cursorSize * scale);
-    c.beginPath();
-    c.moveTo(0, 0);
-    c.lineTo(0, 23);
-    c.lineTo(6, 17);
-    c.lineTo(11, 27);
-    c.lineTo(15, 25);
-    c.lineTo(10, 15);
-    c.lineTo(19, 15);
-    c.closePath();
-    c.fillStyle = "#101010";
-    c.strokeStyle = "white";
-    c.lineWidth = 1.5;
-    c.fill();
-    c.stroke();
-    c.restore();
+    const points = cursorExposure(p, t).flatMap((sample) => {
+      const point = loopedCursorAt(
+        p.cursor,
+        sample,
+        firstSource,
+        lastSource,
+        a.cursorLoopMs,
+        cursorStyle,
+        a.cursorSpring,
+      );
+      return point
+        ? [
+            {
+              x: x + ((point.x * sw - sx) / cw) * w,
+              y: y + ((point.y * sh - sy) / ch) * h,
+            },
+          ]
+        : [];
+    });
+    drawCursorExposure(
+      c,
+      points.length ? points : [{ x: cx, y: cy }],
+      a.cursorSize * scale,
+    );
   }
   c.restore();
   if (camera && p.source.camera && !a.cameraHidden) {

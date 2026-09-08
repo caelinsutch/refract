@@ -61,6 +61,7 @@ export type Appearance = {
   blur: number;
   ratio: string;
   cursorSize: number;
+  cursorMotionBlur?: number;
   hideCursor: boolean;
   cursorIdleMs: number | null;
   cursorLoopMs: number | null;
@@ -342,6 +343,13 @@ export function validateProject(value: unknown): Project {
       throw new Error("The project has an invalid crop.");
   }
   p.appearance = { ...defaults, ...p.appearance };
+  if (
+    p.appearance.cursorMotionBlur !== undefined &&
+    (!valid(p.appearance.cursorMotionBlur) ||
+      p.appearance.cursorMotionBlur < 0 ||
+      p.appearance.cursorMotionBlur > 1)
+  )
+    throw new Error("Invalid cursor motion blur strength.");
   // Earlier projects stored a boolean ripple toggle.
   const legacyClickEffect: unknown = p.appearance.clickEffect;
   if (typeof legacyClickEffect === "boolean")

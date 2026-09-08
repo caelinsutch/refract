@@ -2239,6 +2239,17 @@ export default function App() {
                   />
                 )}
                 <Divider />
+                <Range
+                  label="Cursor motion blur"
+                  value={(project.appearance.cursorMotionBlur ?? 0) * 100}
+                  min={0}
+                  max={100}
+                  step={1}
+                  unit="%"
+                  onChange={(value) =>
+                    appearance({ cursorMotionBlur: value / 100 })
+                  }
+                />
                 <span>Cursor animation style</span>
                 <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
                   {(["smooth", "medium", "rapid", "none"] as const).map(

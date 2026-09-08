@@ -53,7 +53,7 @@ Reference: Screen Studio 3.7.5-4595. Status: partial implementation with verifie
 - Retina preview resolution, paused media seeking, local Swift captions, and short 1080p MP4 exports at 30/60 fps have evidence in the verification documents. An intermittent export stall remains unresolved despite a successful retry; cancellation is bounded.
 - Timed camera layouts now have sidebar/timeline editing and a verified short 1080p30 MP4 export; exact reference motion and physical camera capture remain open. Motion blur, click sounds, audio enhancement/music, captured shortcuts, connected-device capture, recovery, and shareable links are not complete.
 - Saved manifests now have serialized atomic writes, a validated previous-version backup, and a recovery prompt. Native prompt verification, unsaved-edit recovery, and interrupted-video recovery remain open; see [project recovery](project-recovery.md).
-- Motion blur requirements and compositor constraints are documented in [the investigation](../research/motion-blur.md); implementation and live comparison remain open.
+- Cursor-only motion blur now has an optional shared-compositor implementation and pixel checks. Screen movement/zoom blur, performance profiling, exports, and live comparison remain open; see [the investigation](../research/motion-blur.md).
 - Earlier build evidence below is historical; consult the appended dated verification findings for subsequent corrections.
 
 ## Media tests

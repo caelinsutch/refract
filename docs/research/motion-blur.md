@@ -28,3 +28,11 @@ Pixel checks must cover zero-strength identity, stationary identity, directional
 ## Status
 
 This investigation establishes the layer boundaries and acceptance checks. Motion blur is not implemented yet. The Mac remains locked for live reference inspection. No blur sliders or placeholder controls have been exposed.
+
+## Cursor implementation follow-up
+
+Cursor-only motion blur is now implemented in the shared compositor and exposed as a 0–100% slider under Animations. It defaults to off, including for existing projects. Twelve source-time samples span up to 1/60 second of output time, adjusted for clip speed and clamped to the active segment start. The shutter duration and sample count are implementation choices, not measured reference values.
+
+The pointer is drawn into a transparent texture, accumulated with equal premultiplied weights, then composited once over the recording. Stationary samples use the original vector path directly. The current screen transform is held fixed for this cursor pass; screen movement and zoom blur remain unimplemented. The implementation currently allocates intermediate surfaces for moving exposures; Retina performance profiling and surface reuse are still needed.
+
+71 tests and production compilation pass. New checks cover source-cut boundaries, double-speed exposure, invalid saved strength, stationary identity, half-alpha non-overlapping pointer samples, a moving compositor fixture, zero-boundary identity and random-seek determinism. A rendered sharp/blur comparison was visually inspected: motion creates a directional trail while the unblurred pointer retains its vector outline. Strong motion can show discrete samples; adaptive quality and exact reference matching remain open. Native slider interaction and an actual exported blurred-cursor video still require verification.
