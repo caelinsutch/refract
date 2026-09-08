@@ -29,3 +29,11 @@ Every recorder start request now asks the owning editor to resolve unsaved chang
 The native request uses an opaque identifier and accepts results only from the editor's webContents. Reload, renderer failure or window destruction rejects the pending request. Duplicate starts are suppressed while the decision/permissions are pending. Closing the recorder during that interval prevents the delayed start. The editor refuses a replacement request during another project switch, crop/modal interaction or export. Its native save prompt brings the editor forward if it was hidden.
 
 Production compilation passes. The shared decision-flow tests cover save/cancel/failure/newer edits, but IPC and live recording integration still need an unlocked Mac. This does not yet guard edits made after recording starts, quit, or editor close; completion-time project replacement and those lifecycle paths remain open.
+
+## Completed recording handoff
+
+Recording finalization now persists the new project's manifest before asking to replace the editor. The existing project's save directory remains active throughout the guard, so Save in that prompt writes the existing edits to their own project. Only an approved replacement switches the active directory and delivers the new recording to the renderer.
+
+If replacement is refused, the new recording remains saved, is registered with macOS recent documents, and a native notice offers to reveal its project folder in Finder. The editor remains on the existing project. A quit pending capture completion is cancelled on this path rather than discarding the retained edits immediately afterward.
+
+Production TypeScript/StyleX compilation passes. The UI tool still reports the Mac locked, so actual completion, prompt dismissal, Finder reveal, and quit-during-capture interactions remain unverified. A separately opened/reloaded editor and simultaneous project actions still need lifecycle QA. Ordinary quit/close protection remains outstanding. Starting with Don't Save and finishing with the same dirty editor may prompt twice; that interaction still needs refinement against the reference.

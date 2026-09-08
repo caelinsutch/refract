@@ -5,6 +5,7 @@ import {
   app,
   BrowserWindow,
   nativeTheme,
+  shell,
   ipcMain,
   dialog,
   protocol,
@@ -185,7 +186,6 @@ app.whenReady().then(() => {
       }
       const source = await probe(file);
       source.file = "media/" + path.basename(file);
-      projectDir = dir;
       let cameraUrl: string | undefined;
       try {
         const cameraFile = path.join(dir, "media/camera.mp4");
@@ -223,6 +223,22 @@ app.whenReady().then(() => {
       const { writeProjectManifest } =
         await import("../src/core/project-storage.js");
       await writeProjectManifest(dir, project);
+      app.addRecentDocument(dir);
+      if (!(await guardProject())) {
+        quitting = false;
+        const decision = await dialog.showMessageBox(win, {
+          type: "info",
+          message: "Your recording is saved.",
+          detail:
+            "The current project is still open. You can open the new recording later from its project folder.",
+          buttons: ["Keep Editing", "Show Recording in Finder"],
+          defaultId: 0,
+          cancelId: 0,
+        });
+        if (decision.response === 1) shell.showItemInFolder(dir);
+        return false;
+      }
+      projectDir = dir;
       win.webContents.send("recording-finished", {
         project,
         source,

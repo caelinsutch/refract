@@ -24,7 +24,7 @@ import type {
 const run = promisify(execFile);
 export function setupRecorder(
   editor: BrowserWindow,
-  onFinished: (dir: string) => Promise<void>,
+  onFinished: (dir: string) => Promise<void | boolean>,
   onImport: () => void,
   beforeStart: () => Promise<boolean>,
 ) {
@@ -222,12 +222,13 @@ export function setupRecorder(
               timer = null;
               child = null;
               void onFinished(root)
-                .then(() => {
+                .then((opened) => {
                   state = { phase: "idle", countdown: 3, elapsed: 0 };
                   send();
-                  if (quitAfterCapture) {
+                  if (quitAfterCapture && opened !== false) {
                     app.quit();
                   } else {
+                    quitAfterCapture = false;
                     bar?.hide();
                     editor.show();
                     editor.focus();
