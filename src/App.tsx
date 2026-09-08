@@ -1,3 +1,5 @@
+import { SpringControls } from "./components/SpringControls";
+import { screenPresets } from "./core/motion";
 import { cursorPresets } from "./core/cursor";
 import { clipTrimBounds, trimClip } from "./core/timeline";
 import {
@@ -1664,9 +1666,13 @@ export default function App() {
                       key={v}
                       {...sx.props(
                         s.segment,
-                        project.appearance.animation === v && s.segmentActive,
+                        !project.appearance.screenSpring &&
+                          project.appearance.animation === v &&
+                          s.segmentActive,
                       )}
-                      onClick={() => appearance({ animation: v })}
+                      onClick={() =>
+                        appearance({ animation: v, screenSpring: undefined })
+                      }
                     >
                       {v[0].toUpperCase() + v.slice(1)}
                     </button>
@@ -1676,6 +1682,17 @@ export default function App() {
                   Choose how screen movement settles between zooms. Preview and
                   export use the same motion.
                 </Note>
+                {project.appearance.animation !== "instant" && (
+                  <SpringControls
+                    target="screen"
+                    value={
+                      project.appearance.screenSpring ??
+                      screenPresets[project.appearance.animation]
+                    }
+                    onChange={(screenSpring) => appearance({ screenSpring })}
+                    onReset={() => appearance({ screenSpring: undefined })}
+                  />
+                )}
                 <Divider />
                 <span>Cursor animation style</span>
                 <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
@@ -1709,50 +1726,12 @@ export default function App() {
                 </Note>
                 {project.appearance.cursorSmooth &&
                   project.appearance.cursorAnimation !== "none" && (
-                    <details style={{ marginTop: 12 }}>
-                      <summary>Customize cursor animation</summary>
-                      <Range
-                        label="Rigidity"
-                        value={cursorSpring.stiffness}
-                        min={5}
-                        max={600}
-                        step={1}
-                        onChange={(stiffness) =>
-                          appearance({
-                            cursorSpring: { ...cursorSpring, stiffness },
-                          })
-                        }
-                      />
-                      <Range
-                        label="Smoothness"
-                        value={cursorSpring.damping}
-                        min={5}
-                        max={200}
-                        step={1}
-                        onChange={(damping) =>
-                          appearance({
-                            cursorSpring: { ...cursorSpring, damping },
-                          })
-                        }
-                      />
-                      <Range
-                        label="Momentum"
-                        value={cursorSpring.mass}
-                        min={0.1}
-                        max={15}
-                        step={0.1}
-                        onChange={(mass) =>
-                          appearance({
-                            cursorSpring: { ...cursorSpring, mass },
-                          })
-                        }
-                      />
-                      <Button
-                        onClick={() => appearance({ cursorSpring: undefined })}
-                      >
-                        Reset cursor animation
-                      </Button>
-                    </details>
+                    <SpringControls
+                      target="cursor"
+                      value={cursorSpring}
+                      onChange={(cursorSpring) => appearance({ cursorSpring })}
+                      onReset={() => appearance({ cursorSpring: undefined })}
+                    />
                   )}
               </>
             ) : tab === "captions" ? (

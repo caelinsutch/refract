@@ -51,6 +51,7 @@ export type Appearance = {
   hideCursor: boolean;
   cursorSmooth: boolean;
   cursorSpring?: SpringConfig;
+  screenSpring?: SpringConfig;
   cursorAnimation: "smooth" | "medium" | "rapid" | "none";
   clickEffect: boolean;
   animation: "smooth" | "focused" | "instant";
@@ -262,8 +263,10 @@ export function validateProject(value: unknown): Project {
     )
   )
     throw new Error("The project has an invalid cursor animation style.");
-  if (p.appearance.cursorSpring) {
-    const { stiffness, damping, mass } = p.appearance.cursorSpring;
+  for (const key of ["cursorSpring", "screenSpring"] as const) {
+    const config = p.appearance[key];
+    if (!config) continue;
+    const { stiffness, damping, mass } = config;
     if (
       ![stiffness, damping, mass].every(valid) ||
       stiffness < 5 ||
@@ -273,7 +276,9 @@ export function validateProject(value: unknown): Project {
       mass < 0.1 ||
       mass > 15
     )
-      throw new Error("The project has an invalid cursor spring.");
+      throw new Error(
+        `The project has an invalid ${key === "cursorSpring" ? "cursor" : "screen"} spring.`,
+      );
   }
   for (const k of [
     "padding",

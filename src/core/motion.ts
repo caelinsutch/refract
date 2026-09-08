@@ -43,8 +43,9 @@ function advance(
 /** Spring checkpoints make zoom boundaries and retargets independent of playback order. */
 export function screenMotionAt(p: Project, time: number): Target {
   const config =
+    p.appearance.screenSpring ??
     screenPresets[p.appearance.animation === "smooth" ? "smooth" : "focused"];
-  const key = p.appearance.animation;
+  const key = `${p.appearance.animation}/${config.stiffness}/${config.damping}/${config.mass}`;
   let entry = cache.get(p);
   if (
     !entry ||
@@ -69,14 +70,15 @@ export function screenMotionAt(p: Project, time: number): Target {
       times.add(z.end);
       for (const c of clicks) times.add(c.time);
     }
+    const orderedTimes = [...times].sort((a, b) => a - b);
     let point: Checkpoint = {
-      time: Math.min(0, ...times),
+      time: orderedTimes[0],
       target: neutral(),
       position: neutral(),
       velocity: { scale: 0, x: 0, y: 0 },
     };
     const checkpoints: Checkpoint[] = [];
-    for (const t of [...times].sort((a, b) => a - b)) {
+    for (const t of orderedTimes) {
       point = advance(point, t, config);
       const active = zooms.find(
         ({ z, clicks }) =>

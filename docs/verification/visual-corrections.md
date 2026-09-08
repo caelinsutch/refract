@@ -119,3 +119,7 @@ Screen zoom scale and target coordinates now use spring checkpoints instead of f
 Tests cover boundary and auto-click continuity, settling, random seeking, instant changes, disabled zooms, and no-click auto zooms. This changes the zoom-out behavior: it begins settling at the end boundary instead of finishing a fixed easing ramp before the boundary. Reference time-series comparison is still needed to establish exact transition scheduling and sampling equivalence. Custom screen spring controls and motion blur remain outstanding.
 
 Validation after screen springs: all 30 tests and the production build pass. Shared MP4/GIF fixtures remain six seconds with 144 frames and correct AAC audio; encoded frame error is 2.345 / 255. The running export-preview app still predates the spring changes.
+
+## Custom screen springs
+
+Screen animation now exposes the same Rigidity, Smoothness, and Momentum controls as cursor animation. Both use a shared control component with separate accessible groups. Selecting a screen preset clears the override; reset returns to the selected preset. Custom screen parameters persist in appearance data, are validated on load, and participate in the motion-cache key. Regression coverage verifies saved-project round trip, distinct motion, reset, Undo, and Redo. All 31 tests and the production build pass. Live UI and reference motion comparison remain pending.

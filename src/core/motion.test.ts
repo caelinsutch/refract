@@ -76,3 +76,33 @@ test("automatic zoom retargets preserve motion at click timestamps", () => {
   assert.ok(Math.abs(before.y - after.y) < 0.0001);
   assert.ok(Math.abs(zoomAt(p, 4000).x - 0.3) < 0.001);
 });
+
+test("custom screen springs persist, reset to presets, and restore with undo", async () => {
+  const { validateProject } = await import("./project");
+  const { reduceHistory, emptyHistory } = await import("./history");
+  const p = fixture();
+  const preset = zoomAt(p, 1300);
+  const custom = {
+    ...p,
+    appearance: {
+      ...p.appearance,
+      screenSpring: { stiffness: 30, damping: 100, mass: 5 },
+    },
+  };
+  const restored = validateProject(JSON.parse(JSON.stringify(custom)));
+  assert.deepEqual(zoomAt(restored, 1300), zoomAt(custom, 1300));
+  assert.notDeepEqual(zoomAt(custom, 1300), preset);
+  let history = reduceHistory(emptyHistory, { type: "load", project: p });
+  history = reduceHistory(history, { type: "edit", project: custom, now: 1 });
+  history = reduceHistory(history, { type: "undo" });
+  assert.deepEqual(zoomAt(history.present!, 1300), preset);
+  history = reduceHistory(history, { type: "redo" });
+  assert.deepEqual(zoomAt(history.present!, 1300), zoomAt(custom, 1300));
+  const reset = {
+    ...custom,
+    appearance: { ...custom.appearance, screenSpring: undefined },
+  };
+  assert.deepEqual(zoomAt(reset, 1300), preset);
+  restored.appearance.screenSpring!.damping = 0;
+  assert.throws(() => validateProject(restored), /invalid screen spring/);
+});
