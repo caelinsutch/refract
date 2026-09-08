@@ -87,3 +87,7 @@ Clip blocks now have draggable start/end handles. Dragging changes source in/out
 Zoom easing now uses a quintic curve with zero velocity and acceleration at its endpoints. Automatic panning retargets from the current in-flight position when another click arrives, removing the previous position jump. Instant mode remains immediate. Preview and export share these functions. These are motion refinements, not verified equivalence to Screen Studio's spring solver.
 
 Twenty-one tests pass, including clip trim bounds/speed, smooth easing endpoints, and continuity under rapid retargeting. Production build passes. The running candidate predates these last changes and has not been replaced while it is being used.
+
+## Preview zoom targeting
+
+Preview clicks now map through the same destination rectangle and source sampling rectangle used by the compositor. This accounts for background padding, letterboxing, crop offsets, and the active zoom before storing the manual source target. Clicks outside the recording rectangle leave the target unchanged. A rendered landmark regression verifies the resolved source pixel under a cropped, padded, 2× zoom. All 23 core tests, the TypeScript/production build, and MP4/GIF media verification pass. This fixes coordinate accuracy; live interaction and reference motion equivalence remain unverified.

@@ -30,6 +30,58 @@ const rounded = (
   c.beginPath();
   c.roundRect(x, y, w, h, Math.min(r, w / 2, h / 2));
 };
+/** The source sampling rectangle and its destination in the composition. */
+export function videoGeometry(
+  p: Project,
+  t: number,
+  width: number,
+  height: number,
+) {
+  const a = p.appearance,
+    sw = p.source.width,
+    sh = p.source.height;
+  const padding = (Math.min(width, height) * a.padding) / 100;
+  const crop = p.crop ?? { x: 0, y: 0, width: sw, height: sh };
+  const fit = Math.min(
+    (width - padding * 2) / crop.width,
+    (height - padding * 2) / crop.height,
+  );
+  const w = crop.width * fit,
+    h = crop.height * fit,
+    x = (width - w) / 2,
+    y = (height - h) / 2;
+  const source = sourceAt(p, t)?.time ?? 0;
+  const z = zoomAt(p, source);
+  const cw = crop.width / z.scale,
+    ch = crop.height / z.scale,
+    sx = Math.max(
+      crop.x,
+      Math.min(crop.x + crop.width - cw, z.x * sw - cw / 2),
+    ),
+    sy = Math.max(
+      crop.y,
+      Math.min(crop.y + crop.height - ch, z.y * sh - ch / 2),
+    );
+  return { x, y, w, h, sx, sy, cw, ch, z, source };
+}
+
+/** Resolve a composition pixel to the visible source pixel; ignore background clicks. */
+export function sourcePointAt(
+  p: Project,
+  t: number,
+  width: number,
+  height: number,
+  px: number,
+  py: number,
+) {
+  const g = videoGeometry(p, t, width, height);
+  if (px < g.x || py < g.y || px > g.x + g.w || py > g.y + g.h) return null;
+  return {
+    x: (g.sx + ((px - g.x) / g.w) * g.cw) / p.source.width,
+    y: (g.sy + ((py - g.y) / g.h) * g.ch) / p.source.height,
+  };
+}
+
 export function drawFrame(
   c: CanvasRenderingContext2D,
   video: CanvasImageSource,
@@ -105,17 +157,13 @@ export function drawFrame(
     }
   }
   c.restore();
-  const padding = (Math.min(width, height) * a.padding) / 100;
-  const crop = p.crop ?? { x: 0, y: 0, width: sw, height: sh };
-  const fit = Math.min(
-    (width - padding * 2) / crop.width,
-    (height - padding * 2) / crop.height,
+  const { x, y, w, h, sx, sy, cw, ch, z, source } = videoGeometry(
+    p,
+    t,
+    width,
+    height,
   );
-  const w = crop.width * fit,
-    h = crop.height * fit,
-    x = (width - w) / 2,
-    y = (height - h) / 2,
-    r = a.radius * scale;
+  const r = a.radius * scale;
   const inset = a.inset * scale;
   c.shadowColor = `rgba(0,0,0,${a.shadow * 0.6})`;
   c.shadowBlur = a.shadowBlur * 2 * scale;
@@ -133,18 +181,6 @@ export function drawFrame(
   c.save();
   rounded(c, x, y, w, h, r);
   c.clip();
-  const source = sourceAt(p, t)?.time ?? 0;
-  const z = zoomAt(p, source);
-  const cw = crop.width / z.scale,
-    ch = crop.height / z.scale,
-    sx = Math.max(
-      crop.x,
-      Math.min(crop.x + crop.width - cw, z.x * sw - cw / 2),
-    ),
-    sy = Math.max(
-      crop.y,
-      Math.min(crop.y + crop.height - ch, z.y * sh - ch / 2),
-    );
   c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
   for (const m of p.masks.filter((m) => source >= m.start && source <= m.end)) {
     const mx = x + ((m.x * sw - sx) / cw) * w,

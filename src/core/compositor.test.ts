@@ -132,3 +132,53 @@ test("crop removes source pixels in the shared compositor, including during zoom
     assert.deepEqual([...c.getImageData(50, 100, 1, 1).data], [0, 0, 255, 255]);
   }
 });
+
+test("preview targeting resolves the visible source through padding, crop, and zoom", async () => {
+  const { sourcePointAt } = await import("./compositor");
+  const p = createProject({
+    file: "test",
+    width: 1000,
+    height: 500,
+    duration: 4000,
+    hasAudio: false,
+  });
+  p.crop = { x: 200, y: 100, width: 400, height: 200 };
+  p.appearance.padding = 10;
+  p.appearance.radius = 0;
+  p.appearance.animation = "instant";
+  p.zooms = [
+    {
+      id: "zoom",
+      start: 0,
+      end: 4000,
+      scale: 2,
+      x: 0.5,
+      y: 0.4,
+      mode: "manual",
+    },
+  ];
+  assert.deepEqual(sourcePointAt(p, 1000, 1000, 1000, 300, 400), {
+    x: 0.45,
+    y: 0.35,
+  });
+  assert.equal(sourcePointAt(p, 1000, 1000, 1000, 50, 500), null);
+  assert.equal(sourcePointAt(p, 1000, 1000, 1000, 500, 100), null);
+  // Independently render a known source landmark at the queried preview position.
+  const source = createCanvas(1000, 500),
+    sc = source.getContext("2d");
+  sc.fillStyle = "red";
+  sc.fillRect(0, 0, 1000, 500);
+  sc.fillStyle = "lime";
+  sc.fillRect(449, 174, 3, 3);
+  const output = createCanvas(1000, 1000),
+    c = output.getContext("2d");
+  drawFrame(
+    c as unknown as CanvasRenderingContext2D,
+    source as unknown as CanvasImageSource,
+    p,
+    1000,
+    1000,
+    1000,
+  );
+  assert.deepEqual([...c.getImageData(300, 400, 1, 1).data], [0, 255, 0, 255]);
+});

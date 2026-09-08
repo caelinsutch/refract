@@ -58,7 +58,12 @@ import {
   uid,
   validateProject,
 } from "./core/project";
-import { dimensions, drawFrame, wallpapers } from "./core/compositor";
+import {
+  dimensions,
+  drawFrame,
+  sourcePointAt,
+  wallpapers,
+} from "./core/compositor";
 import { emptyHistory, reduceHistory } from "./core/history";
 import CropEditor from "./components/CropEditor";
 import Timeline, { type Selection } from "./components/Timeline";
@@ -1052,17 +1057,17 @@ export default function App() {
                   onClick={(e) => {
                     if (z) {
                       const rect = e.currentTarget.getBoundingClientRect();
-                      zoomEdit({
-                        x: Math.max(
-                          0,
-                          Math.min(1, (e.clientX - rect.left) / rect.width),
-                        ),
-                        y: Math.max(
-                          0,
-                          Math.min(1, (e.clientY - rect.top) / rect.height),
-                        ),
-                        mode: "manual",
-                      });
+                      const point = sourcePointAt(
+                        project,
+                        time,
+                        e.currentTarget.width,
+                        e.currentTarget.height,
+                        ((e.clientX - rect.left) / rect.width) *
+                          e.currentTarget.width,
+                        ((e.clientY - rect.top) / rect.height) *
+                          e.currentTarget.height,
+                      );
+                      if (point) zoomEdit({ ...point, mode: "manual" });
                     }
                   }}
                 />
