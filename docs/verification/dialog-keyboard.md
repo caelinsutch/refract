@@ -17,3 +17,9 @@ Focus styling uses a neutral ring rather than the primary accent; selected swatc
 The installed Screen Studio crop UI was inspected directly. It opens a separate macOS window with traffic lights, a 960×720 surface, a muted gray material, dimensions/position across the top, and confirmation/discard actions at the bottom. Refract's crop editor is still an in-page dialog; this batch fixes behavior but does not establish native-window or Liquid Glass parity. A screenshot does not prove use of Apple's Liquid Glass API. A dedicated macOS crop window remains the next implementation task.
 
 Follow-up: crop now has a dedicated macOS window using a reusable task-window shell; see [native windows](native-windows.md). The browser fallback retains the shared HTML dialog.
+
+## Native text undo routing
+
+Undo/Redo menu actions now follow the focused window. Child windows use Chromium's native text editing stack. The editor routes text inputs, textareas and editable content to native undo before its modal guard; project history remains the path when focus is outside text editing. Range, color, checkbox and other non-text inputs do not divert project undo. The IPC endpoint accepts only Undo/Redo and only the main editor sender.
+
+After restarting the packaged app, command search received `a`; Command-Z cleared it and Shift-Command-Z restored it. This is live evidence of native text undo/redo through the actual menu accelerators. Child-window numeric undo and all text-field types still need separate checks. Production TypeScript/StyleX build and whitespace validation passed.

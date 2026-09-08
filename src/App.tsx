@@ -798,6 +798,24 @@ export default function App() {
   }, [project, time, playing]);
   useEffect(() => {
     const action = (a: string) => {
+      const focused = document.activeElement;
+      const editingText =
+        focused instanceof HTMLTextAreaElement ||
+        (focused instanceof HTMLInputElement &&
+          ![
+            "range",
+            "checkbox",
+            "radio",
+            "button",
+            "submit",
+            "file",
+            "color",
+          ].includes(focused.type)) ||
+        (focused instanceof HTMLElement && focused.isContentEditable);
+      if ((a === "undo" || a === "redo") && editingText) {
+        void window.refract?.editText(a).catch((error) => tell(String(error)));
+        return;
+      }
       if (cropping || modal) return;
       if (a === "commands" && !exporting && !modal) {
         setPlaying(false);

@@ -142,6 +142,18 @@ app.whenReady().then(() => {
   });
   setupCropWindow(win);
   const send = (action: string) => win.webContents.send("menu-action", action);
+  const editAction = (action: "undo" | "redo") => {
+    const focused = BrowserWindow.getFocusedWindow();
+    if (!focused || focused.isDestroyed()) return;
+    if (focused !== win) focused.webContents[action]();
+    else send(action);
+  };
+  handle("edit-text", (action: string) => {
+    if (action === "undo") win.webContents.undo();
+    else if (action === "redo") win.webContents.redo();
+    else throw Error("Unsupported text editing action");
+  });
+
   const recorder = setupRecorder(
     win,
     async (dir) => {
@@ -282,12 +294,12 @@ app.whenReady().then(() => {
           {
             label: "Undo",
             accelerator: "CmdOrCtrl+Z",
-            click: () => send("undo"),
+            click: () => editAction("undo"),
           },
           {
             label: "Redo",
             accelerator: "CmdOrCtrl+Shift+Z",
-            click: () => send("redo"),
+            click: () => editAction("redo"),
           },
           { type: "separator" },
           { role: "cut" },

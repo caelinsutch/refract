@@ -7,6 +7,7 @@ import type { Project } from "./core/project";
 declare global {
   interface Window {
     refract?: {
+      editText: (action: "undo" | "redo") => Promise<void>;
       cropOpen: (data: {
         width: number;
         height: number;
