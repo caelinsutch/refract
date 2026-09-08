@@ -16,9 +16,9 @@ The Shortcuts inspector supports global visibility, label size, single-key visib
 - New tests cover source/output boundaries through cuts and 2× speed, global/event/single-key visibility, migration and malformed track rejection, and deterministic shared-compositor pixel output after backward seeking.
 - Live packaged app opened a synthetic fixture with two ⌘C events and one K event. The ⌘C badge rendered in the composition. Hide all ⌘C disabled both switches and removed the badge; Undo restored both. Enabling single-key shortcuts and seeking to K displayed its badge at 3.00 seconds.
 
-## Remaining
+## Remaining verification
 
-Native keyboard-event capture and its macOS permission handling, typing suppression, reference transition/style comparison, and a real MP4 export containing shortcut labels remain unverified/unimplemented. The current fixture is synthetic and is not evidence of captured keyboard input. No global input listener was added in this batch.
+The follow-up work below adds native capture, permission handling and typing suppression, and verifies an MP4 with synthetic shortcut events. Live captured-event delivery, pause alignment, permission UI, and reference transition/style comparison remain unverified. The synthetic fixture does not establish native capture correctness.
 
 Apple's [event-monitor documentation](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/MonitoringEvents/MonitoringEvents.html) specifies accessibility trust for global keyboard monitoring. Capture integration must report unavailable permission accurately and stop observing when recording stops.
 
@@ -47,3 +47,17 @@ The recorder writes `keyboard.json` alongside cursor data and reports available/
 Swift native compilation, TypeScript/StyleX build and all 63 core tests passed. Running the development helper's read-only permission query returned `required`. This is not a packaged-app permission check. Live event delivery, timestamp alignment, pause exclusion, shutdown, keyboard layouts/function keys, and permission UI still need verification. No real captured-keystroke result is claimed yet.
 
 Implementation references: [Apple passive event taps](https://developer.apple.com/documentation/coregraphics/cgeventtapoptions/listenonly), [event-tap creation and run-loop source](https://developer.apple.com/documentation/coregraphics/cgevent/tapcreate(tap:place:options:eventsofinterest:callback:userinfo:)), and [listen-access preflight](https://developer.apple.com/documentation/coregraphics/cgpreflightlisteneventaccess()).
+
+
+## Native key label normalization
+
+AppKit delivers function keys as private Unicode scalars. The capture adapter now maps F1–F35 to readable labels, preserves explicit navigation/Return/Enter labels, and rejects unsupported private or control characters instead of drawing an unreadable badge. Ordinary letters still use the active keyboard layout's characters, normalized to uppercase.
+
+The native verifier compiles against AppKit and passes all 35 function-key labels, navigation/Return/Enter/Space, Latin and non-Latin text, missing input and unsupported characters. The full native capture/transcription build also passes. This is label-conversion evidence, not proof of event-tap delivery or live keyboard-layout behavior.
+
+Run from the repository root:
+
+```sh
+swiftc -parse-as-library -module-cache-path native/.build/module-cache native/KeyboardLabel.swift scripts/verify-keyboard-labels.swift -o work/verify-keyboard-labels -framework AppKit
+work/verify-keyboard-labels
+```

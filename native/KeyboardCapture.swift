@@ -50,9 +50,7 @@ final class KeyboardCapture: @unchecked Sendable {
     }
     private func keyDown(_ event: CGEvent) {
         guard let key = NSEvent(cgEvent: event) else { return }
-        let special: [UInt16: String] = [36:"Return",76:"Enter",48:"Tab",49:"Space",53:"Esc",51:"⌫",117:"⌦",123:"←",124:"→",125:"↓",126:"↑",115:"Home",119:"End",116:"Page Up",121:"Page Down"]
-        let label = special[key.keyCode] ?? (key.charactersIgnoringModifiers ?? "").uppercased()
-        guard !label.isEmpty, label.count <= 16, !label.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else { return }
+        guard let label = keyboardLabel(keyCode: key.keyCode, characters: key.charactersIgnoringModifiers) else { return }
         var modifiers: [String] = []
         for (flag, name) in [(NSEvent.ModifierFlags.control,"control"),(.option,"option"),(.shift,"shift"),(.command,"command")] {
             if key.modifierFlags.contains(flag) { modifiers.append(name) }
