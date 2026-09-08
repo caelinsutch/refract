@@ -149,6 +149,7 @@ test("preview targeting resolves the visible source through padding, crop, and z
   p.zooms = [
     {
       id: "zoom",
+      disabled: false,
       start: 0,
       end: 4000,
       scale: 2,
