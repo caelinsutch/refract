@@ -72,6 +72,7 @@ import {
 } from "./core/compositor";
 import { emptyHistory, reduceHistory } from "./core/history";
 import CropEditor from "./components/CropEditor";
+import CommandMenu, { type EditorCommand } from "./components/CommandMenu";
 import Timeline, { type Selection } from "./components/Timeline";
 import {
   TimelineVisibility,
@@ -378,6 +379,7 @@ export default function App() {
       mask: false,
     }),
     [modal, setModal] = useState<"export" | "presets" | null>(null),
+    [commandOpen, setCommandOpen] = useState(false),
     [status, setStatus] = useState(""),
     [dirty, setDirty] = useState(false),
     [exporting, setExporting] = useState(false),
@@ -600,6 +602,7 @@ export default function App() {
         type: "blur",
         strength: 20,
       };
+    if (m.end <= m.start) return;
     edit({ ...project, masks: [...project.masks, m] });
     setTimelineTracks((t) => ({ ...t, mask: true }));
     setSelection({ type: "mask", id: m.id });
@@ -713,6 +716,10 @@ export default function App() {
   useEffect(() => {
     const action = (a: string) => {
       if (cropping) return;
+      if (a === "commands" && !exporting && !modal) {
+        setPlaying(false);
+        setCommandOpen((v) => !v);
+      }
       if (a === "import") void importVideo();
       if (a === "open") void open();
       if (a === "save") void save();
@@ -727,6 +734,17 @@ export default function App() {
     const off = window.refract?.onMenu(action);
     const key = (e: KeyboardEvent) => {
       if (cropping || e.defaultPrevented) return;
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        e.key.toLowerCase() === "k" &&
+        !modal &&
+        !exporting
+      ) {
+        e.preventDefault();
+        setPlaying(false);
+        setCommandOpen((v) => !v);
+        return;
+      }
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -991,8 +1009,144 @@ export default function App() {
     edit({ ...project, captions: parsed });
     tell(`Imported ${parsed.length} captions.`);
   }
+  const commands: EditorCommand[] = [
+    {
+      id: "record",
+      disabled: !window.refract,
+      label: "New recording",
+      group: "Recording",
+      shortcut: "⌘N",
+      run: () => {
+        void window.refract?.showRecorder();
+      },
+    },
+    {
+      id: "open",
+      label: "Open project…",
+      group: "Project",
+      shortcut: "⌘O",
+      run: () => {
+        void open();
+      },
+    },
+    {
+      id: "import",
+      label: "Create project from video…",
+      group: "Project",
+      shortcut: "⌘I",
+      keywords: "import",
+      run: () => {
+        void importVideo();
+      },
+    },
+    {
+      id: "save",
+      label: "Save project",
+      group: "Project",
+      shortcut: "⌘S",
+      disabled: !project,
+      run: () => {
+        void save();
+      },
+    },
+    {
+      id: "save-as",
+      label: "Save project as…",
+      group: "Project",
+      shortcut: "⇧⌘S",
+      disabled: !project,
+      run: () => {
+        void save(true);
+      },
+    },
+    {
+      id: "export",
+      label: "Export video…",
+      group: "Export",
+      shortcut: "⌘E",
+      keywords: "mp4 gif",
+      disabled: !project,
+      run: () => setModal("export"),
+    },
+    {
+      id: "cut",
+      label: "Split clip at playhead",
+      group: "Editing",
+      shortcut: "C",
+      keywords: "cut",
+      disabled: !project,
+      run: cut,
+    },
+    {
+      id: "zoom",
+      label: "Add zoom at playhead",
+      group: "Editing",
+      disabled: !project,
+      run: () => {
+        setTimelineTracks((t) => ({ ...t, zoom: true }));
+        addZoom();
+      },
+    },
+    {
+      id: "mask",
+      label: "Add mask at playhead",
+      group: "Editing",
+      keywords: "blur highlight",
+      disabled: !project,
+      run: addMask,
+    },
+    {
+      id: "crop",
+      label: "Crop recording…",
+      group: "Editing",
+      disabled: !project,
+      run: () => setCropping(true),
+    },
+    {
+      id: "copy-frame",
+      label: "Copy current frame",
+      group: "Export",
+      keywords: "image clipboard",
+      disabled: !project,
+      run: () => {
+        void copyFrame();
+      },
+    },
+    {
+      id: "undo",
+      label: "Undo",
+      group: "Editing",
+      shortcut: "⌘Z",
+      disabled: !history.past.length,
+      run: undo,
+    },
+    {
+      id: "redo",
+      label: "Redo",
+      group: "Editing",
+      shortcut: "⇧⌘Z",
+      disabled: !history.future.length,
+      run: redo,
+    },
+    ...tabs.map((item) => ({
+      id: `settings-${item.id}`,
+      label: `Show ${item.title.toLowerCase()} settings`,
+      group: "Settings",
+      disabled: !project,
+      run: () => {
+        setSelection(null);
+        setTab(item.id);
+      },
+    })),
+  ];
   return (
     <div {...sx.props(s.app)}>
+      {commandOpen && (
+        <CommandMenu
+          commands={commands}
+          onClose={() => setCommandOpen(false)}
+        />
+      )}
       {cropping && project && (
         <CropEditor
           width={project.source.width}

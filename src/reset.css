@@ -113,6 +113,9 @@
   .titlebar {
     -webkit-app-region: drag;
   }
+  dialog[data-command-menu]::backdrop {
+    background: #0006;
+  }
   .titlebar button,
   .titlebar button *,
   .titlebar input {

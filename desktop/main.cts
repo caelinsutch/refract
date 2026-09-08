@@ -290,6 +290,12 @@ app.whenReady().then(() => {
       {
         label: "View",
         submenu: [
+          {
+            label: "Command menu…",
+            accelerator: "CmdOrCtrl+K",
+            click: () => send("commands"),
+          },
+          { type: "separator" },
           { role: "reload" },
           { role: "toggleDevTools" },
           { role: "togglefullscreen" },

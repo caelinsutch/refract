@@ -1,5 +1,5 @@
 import * as sx from "@stylexjs/stylex";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 const s = sx.create({
   button: {
     display: "inline-flex",
@@ -38,6 +38,36 @@ const s = sx.create({
     color: "#eceaf1",
     marginBlock: "0 16px",
   },
+  toggle: {
+    position: "relative",
+    flexShrink: 0,
+    width: "2.734375em",
+    height: "1.5625em",
+    padding: 0,
+    borderWidth: 0,
+    borderRadius: 999,
+    backgroundColor: { default: "#ffffff1a", ":hover": "#ffffff26" },
+    boxShadow: "inset 0 0 0 1px #ffffff12",
+    transitionProperty: "background-color",
+    transitionDuration: { default: "150ms", "@media (prefers-reduced-motion: reduce)": "0ms" },
+  },
+  toggleOn: { backgroundColor: { default: "#4d2ff5", ":hover": "#6044ff" } },
+  thumb: {
+    position: "absolute",
+    top: "0.1953125em",
+    left: "0.1953125em",
+    width: "1.171875em",
+    height: "1.171875em",
+    borderRadius: "50%",
+    backgroundColor: "white",
+    boxShadow: "0 2px 2px #0004",
+    transform: "translateX(0)",
+    transitionProperty: "transform",
+    transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+    transitionDuration: { default: "150ms", "@media (prefers-reduced-motion: reduce)": "0ms" },
+    pointerEvents: "none",
+  },
+  thumbOn: { transform: "translateX(1.171875em)" },
 });
 export function Button({
   children,
@@ -145,15 +175,22 @@ export function Toggle({
   value: boolean;
   onChange: (v: boolean) => void;
 }) {
+  const id = useId();
   return (
-    <label {...sx.props(s.row)} style={{ marginBottom: 16 }}>
-      <span>{label}</span>
-      <input
-        type="checkbox"
-        checked={value}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-    </label>
+    <div {...sx.props(s.row)} style={{ marginBottom: 16 }}>
+      <label htmlFor={id}>{label}</label>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-label={label}
+        aria-checked={value}
+        {...sx.props(s.toggle, value && s.toggleOn)}
+        onClick={() => onChange(!value)}
+      >
+        <span {...sx.props(s.thumb, value && s.thumbOn)} />
+      </button>
+    </div>
   );
 }
 export function Row({ children }: { children: ReactNode }) {
