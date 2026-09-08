@@ -1,3 +1,4 @@
+import { cursorPresets } from "./core/cursor";
 import { clipTrimBounds, trimClip } from "./core/timeline";
 import {
   useState,
@@ -870,6 +871,13 @@ export default function App() {
       selection?.type === "mask"
         ? project?.masks.find((m) => m.id === selection.id)
         : null;
+  const cursorSpring =
+    project?.appearance.cursorSpring ??
+    cursorPresets[
+      project?.appearance.cursorAnimation === "none"
+        ? "smooth"
+        : (project?.appearance.cursorAnimation ?? "smooth")
+    ];
   const trimBounds = project && clip ? clipTrimBounds(project, clip.id) : null;
   const editClipTrim = (side: "start" | "end", seconds: number) => {
     if (!project || !clip) return;
@@ -1677,12 +1685,15 @@ export default function App() {
                         key={style}
                         {...sx.props(
                           s.segment,
-                          (project.appearance.cursorSmooth
-                            ? project.appearance.cursorAnimation
-                            : "none") === style && s.segmentActive,
+                          !project.appearance.cursorSpring &&
+                            (project.appearance.cursorSmooth
+                              ? project.appearance.cursorAnimation
+                              : "none") === style &&
+                            s.segmentActive,
                         )}
                         onClick={() =>
                           appearance({
+                            cursorSpring: undefined,
                             cursorAnimation: style,
                             cursorSmooth: style !== "none",
                           })
@@ -1696,6 +1707,53 @@ export default function App() {
                 <Note>
                   Choose how the cursor settles into each new position.
                 </Note>
+                {project.appearance.cursorSmooth &&
+                  project.appearance.cursorAnimation !== "none" && (
+                    <details style={{ marginTop: 12 }}>
+                      <summary>Customize cursor animation</summary>
+                      <Range
+                        label="Rigidity"
+                        value={cursorSpring.stiffness}
+                        min={5}
+                        max={600}
+                        step={1}
+                        onChange={(stiffness) =>
+                          appearance({
+                            cursorSpring: { ...cursorSpring, stiffness },
+                          })
+                        }
+                      />
+                      <Range
+                        label="Smoothness"
+                        value={cursorSpring.damping}
+                        min={5}
+                        max={200}
+                        step={1}
+                        onChange={(damping) =>
+                          appearance({
+                            cursorSpring: { ...cursorSpring, damping },
+                          })
+                        }
+                      />
+                      <Range
+                        label="Momentum"
+                        value={cursorSpring.mass}
+                        min={0.1}
+                        max={15}
+                        step={0.1}
+                        onChange={(mass) =>
+                          appearance({
+                            cursorSpring: { ...cursorSpring, mass },
+                          })
+                        }
+                      />
+                      <Button
+                        onClick={() => appearance({ cursorSpring: undefined })}
+                      >
+                        Reset cursor animation
+                      </Button>
+                    </details>
+                  )}
               </>
             ) : tab === "captions" ? (
               <>

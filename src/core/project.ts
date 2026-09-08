@@ -1,3 +1,4 @@
+import type { SpringConfig } from "./spring.js";
 import { smootherstep, followClicks } from "./motion.js";
 import type { CropRect } from "./crop.js";
 export type Segment = { id: string; start: number; end: number; speed: number };
@@ -49,6 +50,7 @@ export type Appearance = {
   cursorSize: number;
   hideCursor: boolean;
   cursorSmooth: boolean;
+  cursorSpring?: SpringConfig;
   cursorAnimation: "smooth" | "medium" | "rapid" | "none";
   clickEffect: boolean;
   animation: "smooth" | "focused" | "instant";
@@ -260,6 +262,19 @@ export function validateProject(value: unknown): Project {
     )
   )
     throw new Error("The project has an invalid cursor animation style.");
+  if (p.appearance.cursorSpring) {
+    const { stiffness, damping, mass } = p.appearance.cursorSpring;
+    if (
+      ![stiffness, damping, mass].every(valid) ||
+      stiffness < 5 ||
+      stiffness > 600 ||
+      damping < 5 ||
+      damping > 200 ||
+      mass < 0.1 ||
+      mass > 15
+    )
+      throw new Error("The project has an invalid cursor spring.");
+  }
   for (const k of [
     "padding",
     "radius",

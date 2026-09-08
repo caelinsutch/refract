@@ -206,6 +206,7 @@ export function drawFrame(
       p.cursor,
       source,
       a.cursorSmooth ? a.cursorAnimation : "none",
+      a.cursorSpring,
     )!;
     const cx = x + ((px * sw - sx) / cw) * w,
       cy = y + ((py * sh - sy) / ch) * h;

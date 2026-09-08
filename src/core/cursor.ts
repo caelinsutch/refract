@@ -1,3 +1,4 @@
+import { springState, type SpringConfig } from "./spring.js";
 import type { CursorEvent } from "./project.js";
 
 /** First event strictly after source time. Capture tracks are sorted on creation/load. */
@@ -40,47 +41,22 @@ export function recentClicks(
 }
 
 export type CursorStyle = "smooth" | "medium" | "rapid" | "none";
-const presets = {
+export const cursorPresets = {
   smooth: { stiffness: 470, damping: 70, mass: 3 },
   medium: { stiffness: 340, damping: 60, mass: 3 },
   rapid: { stiffness: 530, damping: 40, mass: 1 },
 };
 type State = { x: number; y: number; vx: number; vy: number };
-const tracks = new WeakMap<
-  CursorEvent[],
-  Map<Exclude<CursorStyle, "none">, State[]>
->();
+const tracks = new WeakMap<CursorEvent[], Map<string, State[]>>();
 
-/** Exact damped spring evolution against a fixed target, in seconds. */
-function evolve(
-  position: number,
-  velocity: number,
-  target: number,
-  seconds: number,
-  style: Exclude<CursorStyle, "none">,
-) {
-  const { stiffness, damping, mass } = presets[style];
-  const a = damping / (2 * mass),
-    w2 = stiffness / mass;
-  const w = Math.sqrt(w2 - a * a);
-  const displacement = position - target;
-  const b = (velocity + a * displacement) / w;
-  const c = Math.cos(w * seconds),
-    s = Math.sin(w * seconds),
-    decay = Math.exp(-a * seconds);
-  return [
-    target + decay * (displacement * c + b * s),
-    decay * ((-a * displacement + b * w) * c + (-a * b - displacement * w) * s),
-  ];
-}
 function advance(
   state: State,
   target: CursorEvent,
   ms: number,
-  style: Exclude<CursorStyle, "none">,
+  config: SpringConfig,
 ): State {
-  const [x, vx] = evolve(state.x, state.vx, target.x, ms / 1000, style);
-  const [y, vy] = evolve(state.y, state.vy, target.y, ms / 1000, style);
+  const [x, vx] = springState(state.x, state.vx, target.x, ms / 1000, config);
+  const [y, vy] = springState(state.y, state.vy, target.y, ms / 1000, config);
   return { x, y, vx, vy };
 }
 
@@ -89,15 +65,18 @@ export function animatedCursorAt(
   events: CursorEvent[],
   time: number,
   style: CursorStyle,
+  custom?: SpringConfig,
 ) {
   if (style === "none") return cursorAt(events, time, false);
   if (!events.length) return null;
+  const config = custom ?? cursorPresets[style];
+  const key = `${config.stiffness}/${config.damping}/${config.mass}`;
   let styles = tracks.get(events);
   if (!styles) {
     styles = new Map();
     tracks.set(events, styles);
   }
-  let states = styles.get(style);
+  let states = styles.get(key);
   if (!states) {
     states = [{ x: events[0].x, y: events[0].y, vx: 0, vy: 0 }];
     for (let i = 1; i < events.length; i++)
@@ -106,17 +85,18 @@ export function animatedCursorAt(
           states[i - 1],
           events[i - 1],
           events[i].time - events[i - 1].time,
-          style,
+          config,
         ),
       );
-    styles.set(style, states);
+    if (styles.size >= 8) styles.delete(styles.keys().next().value!);
+    styles.set(key, states);
   }
   const index = Math.max(0, after(events, time) - 1);
   const state = advance(
     states[index],
     events[index],
     Math.max(0, time - events[index].time),
-    style,
+    config,
   );
   return {
     x: Math.max(0, Math.min(1, state.x)),
