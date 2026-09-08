@@ -39,3 +39,9 @@ The local-caption test revealed that earlier live container metadata checks miss
 The authorized local-media protocol now streams requested byte ranges directly, with Accept-Ranges, Content-Length, Content-Range, 206 partial responses, and 416 responses for unsatisfiable ranges. Origin validation remains in the protocol handler and media paths still come from issued opaque tokens. HEAD returns headers without streaming a body.
 
 Tests verify fixed/open-ended/suffix ranges, bounds, exact streamed response bytes, content type, allowed-origin headers, HEAD, and 416 behavior. All 41 core tests and the production build pass. This change was prompted by a paused-preview seek that requested 5.427313 seconds but remained at media time zero. Live confirmation that this change resolves that symptom is pending because the Mac locked before the next app test. Temporary preview diagnostics remain local and are not part of this commit.
+
+## Decoder-level range integration
+
+`node --import tsx scripts/verify-media-seeking.ts` generates a six-second H.264 fixture with one-second keyframes and serves it through the same `serveMediaFile` handler on a temporary loopback-only HTTP server. FFmpeg seeks to 0, 4, 1, and 5 seconds. Each decoded frame hash matches direct file decoding exactly. Bounded requests exercise actual nonzero ranges: the verified run used 21 range requests. The server is closed after success or failure.
+
+This validates decoder-level byte serving, including seeks made out of chronological order. It does not validate Electron's custom-protocol integration or paused canvas preview. The unsuccessful preview decoder experiments were removed from source and preserved as an ignored diagnostic patch under `work/`; the next live test should isolate the committed byte-range handler with the original preview implementation.
