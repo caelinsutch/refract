@@ -8,7 +8,7 @@ The reference installation is version **3.7.5-4595**, inspected on September 8, 
 
 Direct package inspection establishes that the application uses Electron, an obfuscated JavaScript editor, native recording helpers, and a JavaScript video encoder interface. That supports a React/StyleX/Electron interface backed by Swift capture. It does not establish the complete internal architecture: several conclusions below are explicitly proposals or unresolved inferences.
 
-The planned implementation is called **Glissade**. It aims to reproduce the observed workflows while retaining its own source code, application identity, file format, and assets. No vendor account service, licensing mechanism, or proprietary helper is a runtime dependency.
+The planned implementation is called **Refract**. It aims to reproduce the observed workflows while retaining its own source code, application identity, file format, and assets. No vendor account service, licensing mechanism, or proprietary helper is a runtime dependency.
 
 ## Evidence and scope
 
@@ -38,7 +38,7 @@ The import guide describes creating a project from an existing MP4. It explicitl
 
 Project saving is separate from exporting. The guide documents Save, Save As, recent projects, and a prompt when closing unsaved work.[^5] A project must preserve the original media and edits so it can be reopened, revised, and exported again. A flat MP4 is not a substitute for an editable project.
 
-The installed bundle registers project and preset package extensions. Readable code identifies a project JSON file and separate recording, metadata, asset, and marker concepts. This suggests directory-based storage, but the full on-disk schema has not yet been established. Glissade will use a versioned, independently specified project directory rather than silently claiming vendor project compatibility.
+The installed bundle registers project and preset package extensions. Readable code identifies a project JSON file and separate recording, metadata, asset, and marker concepts. This suggests directory-based storage, but the full on-disk schema has not yet been established. Refract will use a versioned, independently specified project directory rather than silently claiming vendor project compatibility.
 
 ### Timeline and temporal editing
 
@@ -74,7 +74,7 @@ The guide offers wallpaper, gradient, solid color, and custom image backgrounds,
 
 The code exposes directional shadow parameters, independent inset sides, opacity, camera layout values, and separate motion-blur strengths. This argues for a structured composition specification rather than scattered CSS properties. The settings panel should update a single project model consumed by both the canvas and exporter.
 
-Glissade's initial wallpaper library will use original gradients and generated geometry. Exact matching to a proprietary wallpaper cannot be claimed for substituted assets. User-supplied images can be embedded in the project, while user-selected system artwork can remain an explicitly selected local asset.
+Refract's initial wallpaper library will use original gradients and generated geometry. Exact matching to a proprietary wallpaper cannot be claimed for substituted assets. User-supplied images can be embedded in the project, while user-selected system artwork can remain an explicitly selected local asset.
 
 The animation guide distinguishes cursor motion profiles and focused versus smooth screen animation, with independently adjustable blur for cursor motion, screen zoom, and screen movement.[^12] The implementation should treat blur as part of video composition. A CSS blur applied to the whole preview would not reproduce directional temporal blur in exported frames.
 
@@ -102,7 +102,7 @@ The ASAR contains an Electron entry bundle of roughly 7.5 MB, preload bundle of 
 
 The app chunks contain obfuscated identifiers, rotated-looking string tables, arithmetic constants, React-style JSX calls, and styled-component display names. Component names identify sidebar navigation, slice editor, layout editor, timeline scrollbar, recording timeline, and top-bar groups. A readable style specifies a 320-pixel sidebar. These are useful structural facts, but recovering names is not equivalent to recovering the original TypeScript source.
 
-The encoder chunk directly constructs a `VideoEncoder`. A separate graphics-heavy chunk contains rendering and texture-management code. WebCodecs exposes codec interfaces but does not itself require support for a particular codec.[^17] Glissade must probe capabilities and handle unsupported encoder configurations rather than assuming every Electron build can encode every profile.
+The encoder chunk directly constructs a `VideoEncoder`. A separate graphics-heavy chunk contains rendering and texture-management code. WebCodecs exposes codec interfaces but does not itself require support for a particular codec.[^17] Refract must probe capabilities and handle unsupported encoder configurations rather than assuming every Electron build can encode every profile.
 
 Native binaries include recording, audio composition, transcription, noise reduction, dynamic mask tracking, face detection, window enumeration, and window management helpers. Static linkage of the recording binary includes ScreenCaptureKit, AVFoundation, CoreMedia, CoreVideo, Metal, CoreAudio, and Swift libraries. A MobileDevice private-framework linkage is also present; reproducing device support through that implementation would require additional investigation and is not a chosen dependency.
 

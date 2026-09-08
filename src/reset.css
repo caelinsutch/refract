@@ -1,0 +1,136 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #19191c;
+  color: #e6e6e9;
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+button,
+input,
+select,
+textarea {
+  outline: none;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #aa86ff;
+  outline-offset: 2px;
+}
+button {
+  color: inherit;
+}
+input[type="range"] {
+  appearance: none;
+  height: 4px;
+  border-radius: 9px;
+  background: #48484e;
+  accent-color: #aaa8b5;
+  cursor: pointer;
+  width: 100%;
+  margin: 9px 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e4e3ea;
+  box-shadow: 0 1px 4px #0008;
+}
+input[type="checkbox"] {
+  accent-color: #9b6bea;
+}
+input[type="color"] {
+  padding: 0;
+  overflow: hidden;
+  background: none;
+  border: 0;
+  height: 28px;
+  width: 38px;
+}
+select {
+  color: #d5d4dc;
+  background: #333238;
+  border: 1px solid #45434b;
+  padding: 5px 8px;
+  border-radius: 5px;
+}
+input[type="number"],
+input[type="text"],
+textarea {
+  color: #e8e7ee;
+  background: #26252b;
+  border: 1px solid #45434b;
+  border-radius: 5px;
+  padding: 6px;
+  width: 100%;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #525159;
+  border-radius: 6px;
+}
+svg {
+  flex-shrink: 0;
+}
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.titlebar {
+  -webkit-app-region: drag;
+}
+.titlebar button,
+.titlebar input {
+  -webkit-app-region: no-drag;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  [role="dialog"] {
+    background: #28262d !important;
+    backdrop-filter: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button:active:not(:disabled) {
+    transform: none;
+  }
+}
+@media (prefers-contrast: more) {
+  button,
+  select,
+  input {
+    border: 1px solid #888;
+  }
+  body {
+    color: #fff;
+  }
+}

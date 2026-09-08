@@ -1,6 +1,6 @@
 # Parity matrix
 
-Reference: Screen Studio 3.7.5-4595. Status at the initial research milestone: implementation not started. “Documented” indicates a requirement source, not a passing test.
+Reference: Screen Studio 3.7.5-4595. Status: first editor prototype implemented; native recorder in progress. “Documented” indicates a requirement source, not a passing test.
 
 | ID | Requirement | Reference evidence | Acceptance |
 |---|---|---|---|
@@ -57,3 +57,12 @@ Reference: Screen Studio 3.7.5-4595. Status at the initial research milestone: i
 ## Completion rule
 
 Exact parity remains unverified until every applicable requirement is implemented and its acceptance check passes against a reference. Hardware, account-service, and reference-license dependencies remain visible in the matrix. Passing internal tests alone does not establish reference parity.
+
+## First editor build evidence
+
+- TypeScript renderer and desktop compilation passed. StyleX production compilation passed.
+- Five core tests passed: cut/speed time map, split boundaries, zoom determinism/clamping, no-click auto zoom, invalid range rejection.
+- Launched the Electron application and imported the synthetic MP4 through the native picker.
+- The live UI reported 12 seconds and rendered the clip on its styled background.
+- Screenshot inspection confirmed the initial preview, framing controls, 320px sidebar, and clip/zoom tracks. This is an internal inspection, not reference pixel parity.
+- Export, saved-project reopen, recording, camera, and device workflows have not yet passed live verification.

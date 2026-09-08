@@ -9,7 +9,7 @@ work/
 vendor-reference/
 *.asar
 *.screenstudio
-*.glissade
+*.refract
 *.mp4
 *.mov
 *.webm
