@@ -215,6 +215,17 @@ export function validateProject(value: unknown): Project {
     !Array.isArray(p.cursor)
   )
     throw new Error("The project is missing its editing tracks.");
+  for (const event of p.cursor)
+    if (
+      ![event.time, event.x, event.y].every(valid) ||
+      event.time < 0 ||
+      event.x < 0 ||
+      event.x > 1 ||
+      event.y < 0 ||
+      event.y > 1
+    )
+      throw new Error("The project has invalid cursor data.");
+  p.cursor = [...p.cursor].sort((a, b) => a.time - b.time);
   for (const z of p.zooms)
     if (
       ![z.start, z.end, z.scale, z.x, z.y].every(valid) ||

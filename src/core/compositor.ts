@@ -1,3 +1,4 @@
+import { cursorAt, recentClicks } from "./cursor";
 import { type Project, sourceAt, zoomAt } from "./project";
 export const wallpapers = [
   ["#bacdf4", "#527acf", "#ded6fb"],
@@ -201,16 +202,7 @@ export function drawFrame(
     }
   }
   if (!a.hideCursor && p.cursor.length) {
-    const idx = p.cursor.findIndex((e) => e.time > source),
-      prev = p.cursor[Math.max(0, (idx < 0 ? p.cursor.length : idx) - 1)],
-      next = idx < 0 ? prev : p.cursor[idx];
-    let f =
-      a.cursorSmooth && next.time !== prev.time
-        ? (source - prev.time) / (next.time - prev.time)
-        : 0;
-    f = f * f * (3 - 2 * f);
-    const px = prev.x + (next.x - prev.x) * f,
-      py = prev.y + (next.y - prev.y) * f;
+    const { x: px, y: py } = cursorAt(p.cursor, source, a.cursorSmooth)!;
     const cx = x + ((px * sw - sx) / cw) * w,
       cy = y + ((py * sh - sy) / ch) * h;
     c.save();
@@ -232,9 +224,7 @@ export function drawFrame(
     c.stroke();
     c.restore();
     if (a.clickEffect) {
-      for (const click of p.cursor.filter(
-        (e) => e.click && source - e.time >= 0 && source - e.time < 500,
-      )) {
+      for (const click of recentClicks(p.cursor, source, 500)) {
         const progress = (source - click.time) / 500;
         c.beginPath();
         c.arc(

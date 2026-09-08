@@ -95,3 +95,7 @@ Preview clicks now map through the same destination rectangle and source samplin
 ## Consistent clip length controls
 
 Numeric trim controls now use the same source bounds and ripple trim function as the timeline handles, preventing extension into neighboring retained footage. Both numeric edges pause playback, use 10 ms increments, and group continuous edits for undo. A stationary or inward trim on a valid short split no longer expands it to 100 ms; no-op edits return the original project. A short-clip regression test and existing speed/neighbor-boundary tests pass. All 24 core tests and the production build pass; live handle verification is still pending while macOS is locked.
+
+## Cursor sampling
+
+Cursor positions now use binary search over ordered source-time events. Click rings inspect only events in their active 500 ms interval instead of filtering the entire capture every rendered frame. Loaded tracks are sorted and reject nonfinite/out-of-range coordinates; sampling remains bounded before the first event and after the last, and uses the last event at duplicate timestamps. Two regression tests cover these cases and click-window endpoints. All 26 tests and the production build pass. This reduces per-frame event lookup work; it is not a measured playback benchmark or proof of reference cursor-shape/motion parity.
