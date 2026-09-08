@@ -91,7 +91,7 @@ const s = sx.create({
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: "var(--track-clip-border)",
-    color: "var(--white)",
+    color: "var(--text-primary)",
     fontWeight: 500,
     fontSize: 11,
     display: "flex",
@@ -135,6 +135,7 @@ const s = sx.create({
   }),
   selected: { outline: "2px solid var(--text-primary)", outlineOffset: 2 },
   mask: {
+    color: "var(--text-primary)",
     backgroundColor: "var(--track-mask)",
     borderColor: "var(--track-mask-border)",
   },

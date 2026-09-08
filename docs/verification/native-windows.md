@@ -18,3 +18,7 @@ Light colors include separate text, controls, borders, tracks and translucent ma
 - Numeric-entry testing through the UI tool produced inconsistent digit entry. A draft string now prevents premature clamping while editing, but full multi-digit input still needs a reliable live check. Do not treat these tool actions as proof that entering 1000 worked.
 - The generic shell extraction and native title/background refinements are build-checked; the running session used the initial native-window host during these live checks. A restart is needed to verify the final shell.
 - Full editor/recorder visual review in both themes, all dismissal paths, resizing and native-window dragging remain to be checked. Screenshot checks here establish crop theme response, not complete app-wide visual parity.
+
+## Light-theme follow-up
+
+The current editor empty state, compact recorder, and expanded recording options were visually inspected in macOS Light appearance. Corrected pale clip/mask text, the recorder's white-on-white close control, and its fixed white countdown. Static token contrast ratios are 9.27:1 for light clip labels, 8.85:1 for light mask labels, and 5.70:1 for the light recorder close icon. Corresponding dark clip/mask text remains 4.57:1 and 6.99:1. Production build and whitespace checks passed. Loaded editor tracks and all hover/focus combinations still need a complete visual pass; token calculations are not a substitute for that inspection.

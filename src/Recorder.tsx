@@ -102,8 +102,8 @@ const s = sx.create({
     borderWidth: 0,
     borderRadius: "50%",
     backgroundColor: {
-      default: "var(--slider-thumb)",
-      ":hover": "var(--white)",
+      default: "var(--close-control)",
+      ":hover": "var(--close-control-hover)",
     },
     color: "var(--text-inverse)",
   },
@@ -209,7 +209,7 @@ const s = sx.create({
   },
   count: {
     fontSize: 22,
-    color: "var(--white)",
+    color: "var(--text-primary)",
     fontVariantNumeric: "tabular-nums",
     width: 40,
     textAlign: "center",

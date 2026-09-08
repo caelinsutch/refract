@@ -46,6 +46,8 @@
   --border-strong: #454a54;
   --slider-track: #484d56;
   --slider-thumb: #e4e7ed;
+  --close-control: #e4e7ed;
+  --close-control-hover: #ffffff;
   --scrollbar: #525762;
   --contrast-border: #888;
   --track-clip: #93610c;
@@ -133,6 +135,8 @@
     --border-strong: #bbc1cb;
     --slider-track: #b8bec8;
     --slider-thumb: #ffffff;
+    --close-control: #596270;
+    --close-control-hover: #3e4550;
     --scrollbar: #a7aeba;
     --contrast-border: #68717f;
     --focus: #637387;
