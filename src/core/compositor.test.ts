@@ -4,6 +4,70 @@ import { createCanvas } from "@napi-rs/canvas";
 import { createProject } from "./project";
 import { drawFrame } from "./compositor";
 
+test("idle hiding yields to a moving cursor loop while explicit hiding still wins", () => {
+  const source = createCanvas(400, 400);
+  source.getContext("2d").fillStyle = "white";
+  source.getContext("2d").fillRect(0, 0, 400, 400);
+  const p = createProject({
+    file: "test",
+    width: 400,
+    height: 400,
+    duration: 4000,
+    hasAudio: false,
+  });
+  p.cursor = [
+    { time: 0, x: 0.2, y: 0.5 },
+    { time: 500, x: 0.8, y: 0.5 },
+  ];
+  Object.assign(p.appearance, {
+    padding: 0,
+    radius: 0,
+    shadow: 0,
+    cursorSize: 2,
+    cursorSmooth: false,
+    cursorIdleMs: 500,
+    cursorLoopMs: 1000,
+  });
+  const canvas = createCanvas(400, 400);
+  const c = canvas.getContext("2d");
+  const darkPixels = (time: number) => {
+    drawFrame(
+      c as unknown as CanvasRenderingContext2D,
+      source as unknown as CanvasImageSource,
+      p,
+      time,
+      400,
+      400,
+    );
+    const pixels = c.getImageData(0, 0, 400, 400).data;
+    let count = 0;
+    for (let i = 0; i < pixels.length; i += 4) if (pixels[i] < 100) count++;
+    return count;
+  };
+  assert.equal(
+    darkPixels(2500),
+    0,
+    "Stationary cursor should disappear before the loop",
+  );
+  assert.ok(darkPixels(3500) > 20, "The returning pointer must be visible");
+  p.appearance.hideCursor = true;
+  assert.equal(
+    darkPixels(3500),
+    0,
+    "Explicit hide overrides the automatic return",
+  );
+  p.appearance.hideCursor = false;
+  p.cursor = [
+    { time: 0, x: 0.5, y: 0.5 },
+    { time: 500, x: 0.5, y: 0.5 },
+  ];
+  assert.equal(
+    darkPixels(3500),
+    0,
+    "A loop with no displacement should stay idle",
+  );
+});
+
 test("background blur leaves the recording itself sharp", () => {
   const source = createCanvas(100, 100),
     sc = source.getContext("2d");

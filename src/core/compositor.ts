@@ -1,5 +1,10 @@
 import { wrapCaption } from "./captions";
-import { loopedCursorAt, recentClicks, cursorVisibleAt } from "./cursor";
+import {
+  animatedCursorAt,
+  loopedCursorAt,
+  recentClicks,
+  cursorVisibleAt,
+} from "./cursor";
 import { type Project, sourceAt, zoomAt } from "./project";
 export const wallpapers = [
   ["#bacdf4", "#527acf", "#ded6fb"],
@@ -202,14 +207,40 @@ export function drawFrame(
       c.fillRect(mx, my, mw, mh);
     }
   }
-  if (!a.hideCursor && cursorVisibleAt(p.cursor, source, a.cursorIdleMs)) {
+  const cursorStyle = a.cursorSmooth ? a.cursorAnimation : "none";
+  const firstSource = p.segments[0].start;
+  const lastSource = p.segments[p.segments.length - 1].end;
+  let loopMoving = false;
+  if (
+    a.cursorLoopMs != null &&
+    source > Math.max(firstSource, lastSource - a.cursorLoopMs) &&
+    source <= lastSource
+  ) {
+    const from = animatedCursorAt(
+      p.cursor,
+      Math.max(firstSource, lastSource - a.cursorLoopMs),
+      cursorStyle,
+      a.cursorSpring,
+    );
+    const to = animatedCursorAt(
+      p.cursor,
+      firstSource,
+      cursorStyle,
+      a.cursorSpring,
+    );
+    loopMoving = !!from && !!to && (from.x !== to.x || from.y !== to.y);
+  }
+  if (
+    !a.hideCursor &&
+    (loopMoving || cursorVisibleAt(p.cursor, source, a.cursorIdleMs))
+  ) {
     const { x: px, y: py } = loopedCursorAt(
       p.cursor,
       source,
-      p.segments[0].start,
-      p.segments[p.segments.length - 1].end,
+      firstSource,
+      lastSource,
       a.cursorLoopMs,
-      a.cursorSmooth ? a.cursorAnimation : "none",
+      cursorStyle,
       a.cursorSpring,
     )!;
     const cx = x + ((px * sw - sx) / cw) * w,
