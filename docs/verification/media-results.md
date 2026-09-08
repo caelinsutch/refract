@@ -45,3 +45,21 @@ Tests verify fixed/open-ended/suffix ranges, bounds, exact streamed response byt
 `node --import tsx scripts/verify-media-seeking.ts` generates a six-second H.264 fixture with one-second keyframes and serves it through the same `serveMediaFile` handler on a temporary loopback-only HTTP server. FFmpeg seeks to 0, 4, 1, and 5 seconds. Each decoded frame hash matches direct file decoding exactly. Bounded requests exercise actual nonzero ranges: the verified run used 21 range requests. The server is closed after success or failure.
 
 This validates decoder-level byte serving, including seeks made out of chronological order. It does not validate Electron's custom-protocol integration or paused canvas preview. The unsuccessful preview decoder experiments were removed from source and preserved as an ignored diagnostic patch under `work/`; the next live test should isolate the committed byte-range handler with the original preview implementation.
+
+## Live Electron seek verification after unlock
+
+The `range-isolated` packaged build uses the committed byte-range handler with the original preview code and no diagnostic/decoder experiments. On the saved timecoded fixture, End displayed source timecode 00:00:05.400 / frame 162 at timeline 5.447 seconds. Start restored timecode/frame zero. Playback from the start subsequently reached the correct final frame. The fixture contains 163 video frames at 30 fps (5.433333 seconds) and 5.447312 seconds of AAC audio.
+
+This establishes that the byte-range handler resolves the observed frozen-picture seek in the actual Electron preview for this fixture. It does not establish all-codec, long-recording, or camera seek behavior.
+
+## Export cancellation and live 60 fps verification
+
+One live 1080p/60 fps run stopped advancing at 74%; its encoder stayed alive after Cancel. The same audio fixture and 327-frame PNG input completed through FFmpeg outside Electron. A fresh live run subsequently completed without changing the seek algorithm. The stall's original trigger is therefore still unresolved; a successful retry is not proof that it cannot recur.
+
+Cancellation now destroys the input stream, requests SIGTERM, and escalates to SIGKILL after one second if our encoder does not exit. Pending frame writes also reject when the encoder closes; pipe errors cannot crash the main process. A process-level test uses a child that ignores SIGTERM and never reads stdin, verifies forced termination, and verifies that a blocked 8 MiB write rejects. Failed exports retain their error in the export dialog. Detached video decoders are released on success, cancellation, and failure.
+
+The completed native-dialog export (`work/media-seeking/range-cancel-diagnostic.mp4`) contains H.264 at 1920 × 1080, 60/1 fps, 327 frames, 5.450000 seconds; AAC duration is 5.439875 seconds. At output 4.25 seconds, an extracted frame displays source timecode 4.233/frame 127, as expected when a 30 fps source is sampled at 60 fps. This verifies actual changing source pixels, alongside the previously verified preview seeks. It is a short fixture check, not broad export parity.
+
+## Draggable recording controller
+
+The controller background and left grab handle use Electron's native draggable region. Buttons and their descendants are excluded so source selection and recording actions remain clickable. Menu expansion/collapse preserves the window's bottom edge and horizontal position, clamped to its current display, rather than recentering on the primary display. The built controller's handle was visible, a drag gesture was delivered, and Recording options opened afterward. The UI tool does not expose window coordinates in its returned accessibility text, so the exact displacement was not independently measured. See [Electron custom draggable regions](https://www.electronjs.org/docs/latest/tutorial/custom-window-interactions#custom-draggable-regions).

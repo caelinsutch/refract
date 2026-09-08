@@ -429,6 +429,8 @@ handle(
       );
     });
     current.done.catch(() => {});
+    // A failed/cancelled pipe must not become an uncaught main-process error.
+    child.stdin!.on("error", () => {});
     child.stderr!.on("data", (d) => {
       current.error = (current.error + d.toString()).slice(-4000);
     });
@@ -503,13 +505,9 @@ app.on("before-quit", () => transcription?.abort());
 
 handle("export-frame", async (id: string, data: ArrayBuffer) => {
   if (!job || job.id !== id) throw Error("Export is no longer active.");
-  const child = job.child;
-  if (child.exitCode !== null) throw Error(job.error || "Encoder stopped.");
-  await new Promise<void>((resolve, reject) =>
-    child.stdin!.write(Buffer.from(data), (error) =>
-      error ? reject(error) : resolve(),
-    ),
-  );
+  if (job.cancelled) throw Error("Export cancelled.");
+  const { writeEncoderFrame } = await import("../src/core/export-process.js");
+  await writeEncoderFrame(job.child, Buffer.from(data));
 });
 handle("export-finish", async (id: string) => {
   if (!job || job.id !== id) throw Error("Export is no longer active.");
@@ -526,10 +524,8 @@ handle("export-cancel", async () => {
   if (!job) return;
   const current = job;
   current.cancelled = true;
-  current.child.kill("SIGTERM");
-  try {
-    await current.done;
-  } catch {}
+  const { stopEncoder } = await import("../src/core/export-process.js");
+  await stopEncoder(current.child);
   await fs.rm(current.temp, { force: true });
   if (job === current) job = null;
 });

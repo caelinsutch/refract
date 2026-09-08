@@ -19,7 +19,11 @@ export async function seekExportVideo(video: HTMLVideoElement, target: number) {
     });
     const timeout = setTimeout(() => {
       cleanup();
-      reject(Error("Video frame decoding timed out."));
+      reject(
+        Error(
+          `Video frame decoding timed out near ${target.toFixed(2)} seconds. Try exporting again.`,
+        ),
+      );
     }, 10000);
     const cleanup = () => {
       clearTimeout(timeout);

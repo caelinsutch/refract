@@ -372,6 +372,7 @@ export default function App() {
     [status, setStatus] = useState(""),
     [dirty, setDirty] = useState(false),
     [exporting, setExporting] = useState(false),
+    [exportError, setExportError] = useState(""),
     [progress, setProgress] = useState(0),
     [fps, setFps] = useState(30),
     [resolution, setResolution] = useState(1920),
@@ -774,21 +775,23 @@ export default function App() {
       size = dimensions(p, resolution);
     setPlaying(false);
     cancelExport.current = false;
+    let v: HTMLVideoElement | undefined;
+    let cam: HTMLVideoElement | undefined;
     try {
       const id = await api.exportStart({ project: p, ...size, fps, format });
       if (!id) return;
       setExporting(true);
+      setExportError("");
       setProgress(0);
-      const v = document.createElement("video");
+      v = document.createElement("video");
       v.crossOrigin = "anonymous";
       v.muted = true;
       v.preload = "auto";
       v.src = url;
       await new Promise<void>((resolve, reject) => {
-        v.onloadeddata = () => resolve();
-        v.onerror = () => reject(Error("Cannot decode source video."));
+        v!.onloadeddata = () => resolve();
+        v!.onerror = () => reject(Error("Cannot decode source video."));
       });
-      let cam: HTMLVideoElement | undefined;
       if (cameraUrl) {
         cam = document.createElement("video");
         cam.crossOrigin = "anonymous";
@@ -838,12 +841,18 @@ export default function App() {
       setProgress(100);
       tell(`Exported ${dest.split("/").pop()}`);
       setModal(null);
-      v.remove();
-      cam?.remove();
     } catch (e) {
       await api.exportCancel();
+      setExportError(cancelExport.current ? "" : String(e));
       tell(String(e));
     } finally {
+      for (const video of [v, cam]) {
+        if (!video) continue;
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+        video.remove();
+      }
       setExporting(false);
     }
   }
@@ -2072,6 +2081,7 @@ export default function App() {
               <>
                 {!exporting ? (
                   <>
+                    {exportError && <p role="alert">{exportError}</p>}
                     <Row>
                       <span>Export as</span>
                       <select
