@@ -1,3 +1,4 @@
+import { wrapCaption } from "./captions";
 import { animatedCursorAt, recentClicks } from "./cursor";
 import { type Project, sourceAt, zoomAt } from "./project";
 export const wallpapers = [
@@ -284,19 +285,32 @@ export function drawFrame(
     c.font = `600 ${30 * scale}px -apple-system, sans-serif`;
     c.textAlign = "center";
     c.textBaseline = "middle";
-    const measure = c.measureText(caption.text);
+    const lines = wrapCaption(
+      caption.text,
+      width * 0.84 - 36 * scale,
+      (text) => c.measureText(text).width,
+    );
+    const textWidth = Math.max(
+      ...lines.map((line) => c.measureText(line).width),
+    );
+    const lineHeight = 38 * scale;
+    const boxHeight = lines.length * lineHeight + 14 * scale;
+    const bottom = 33 * scale;
+    const top = height - bottom - boxHeight;
     c.fillStyle = "#000b";
     rounded(
       c,
-      (width - measure.width) / 2 - 18 * scale,
-      height - 85 * scale,
-      measure.width + 36 * scale,
-      52 * scale,
+      (width - textWidth) / 2 - 18 * scale,
+      top,
+      textWidth + 36 * scale,
+      boxHeight,
       10 * scale,
     );
     c.fill();
     c.fillStyle = "white";
-    c.fillText(caption.text, width / 2, height - 59 * scale);
+    lines.forEach((line, index) =>
+      c.fillText(line, width / 2, top + 7 * scale + lineHeight * (index + 0.5)),
+    );
   }
   c.restore();
 }

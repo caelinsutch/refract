@@ -183,3 +183,61 @@ test("preview targeting resolves the visible source through padding, crop, and z
   );
   assert.deepEqual([...c.getImageData(300, 400, 1, 1).data], [0, 255, 0, 255]);
 });
+
+test("long captions render inside portrait video margins on multiple lines", () => {
+  const p = createProject({
+    file: "test",
+    width: 100,
+    height: 100,
+    duration: 1000,
+    hasAudio: false,
+  });
+  const source = createCanvas(100, 100),
+    sc = source.getContext("2d");
+  sc.fillStyle = "#eeeeee";
+  sc.fillRect(0, 0, 100, 100);
+  const out = createCanvas(720, 1280),
+    ctx = out.getContext("2d");
+  const render = () => {
+    drawFrame(
+      ctx as unknown as CanvasRenderingContext2D,
+      source as unknown as CanvasImageSource,
+      p,
+      500,
+      720,
+      1280,
+    );
+    return ctx.getImageData(0, 0, 720, 1280).data;
+  };
+  const before = render();
+  p.captions = [
+    {
+      id: "long",
+      start: 0,
+      end: 1000,
+      text: "A longer caption should wrap across multiple readable lines instead of running outside the edges of a portrait video.",
+    },
+  ];
+  const after = render();
+  let minX = 720,
+    maxX = 0,
+    minY = 1280,
+    maxY = 0;
+  for (let y = 0; y < 1280; y++)
+    for (let x = 0; x < 720; x++) {
+      const i = (y * 720 + x) * 4;
+      if (
+        before[i] !== after[i] ||
+        before[i + 1] !== after[i + 1] ||
+        before[i + 2] !== after[i + 2]
+      ) {
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  assert.ok(minX >= 720 * 0.08 - 1 && maxX < 720 * 0.92 + 1);
+  assert.ok(maxY - minY > 30, "caption should occupy multiple lines");
+  assert.ok(maxY < 1280 - 10);
+});

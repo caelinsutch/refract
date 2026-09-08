@@ -55,3 +55,40 @@ export function captionsFromWords(
   flush();
   return captions;
 }
+
+/** Wrap at words, with grapheme-safe breaks for URLs and scripts without spaces. */
+export function wrapCaption(
+  text: string,
+  maxWidth: number,
+  measure: (text: string) => number,
+): string[] {
+  const lines: string[] = [];
+  const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+  for (const paragraph of text.split(/\r?\n/)) {
+    let line = "";
+    for (const word of paragraph.trim().split(/\s+/).filter(Boolean)) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (measure(candidate) <= maxWidth) {
+        line = candidate;
+        continue;
+      }
+      if (line) {
+        lines.push(line);
+        line = "";
+      }
+      if (measure(word) <= maxWidth) {
+        line = word;
+        continue;
+      }
+      for (const { segment } of graphemes.segment(word)) {
+        if (line && measure(line + segment) > maxWidth) {
+          lines.push(line);
+          line = "";
+        }
+        line += segment;
+      }
+    }
+    lines.push(line);
+  }
+  return lines;
+}

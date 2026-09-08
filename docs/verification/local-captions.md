@@ -25,3 +25,7 @@ The ScreenCaptureKit recorder sets `showsCursor = false` so the pointer is not b
 The capture helper currently reports `permission: required` on this Mac. A permission-enabled live recording with cursor movement has not yet been verified. Polling can miss a press and release occurring between samples, and cursor shape/keyboard-event capture is not complete. These remain explicit gaps rather than evidence of exact reference parity.
 
 The Swift helper inside `release/captions-preview/Refract-darwin-arm64/Refract.app` was also executed successfully against the spoken fixture and returned the same 17 timed words. The packaged editor was not relaunched because the existing app contains unsaved edits.
+
+## Caption layout
+
+Caption rendering now wraps words within an 84% composition-width box, preserves explicit line breaks, and breaks oversized tokens only at grapheme boundaries. The backing plate grows to fit multiple lines. A rendered portrait fixture confirms the caption stays within horizontal margins and above the bottom edge. All 35 tests, the production build, and the shared MP4/GIF fixture pass after this change. Very large manually entered caption blocks and exact reference caption typography remain outside this check.

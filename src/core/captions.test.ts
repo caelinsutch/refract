@@ -55,3 +55,24 @@ test("caption grouping respects pauses, punctuation, duration, and bad timestamp
   );
   assert.deepEqual(captionsFromWords([], 5000), []);
 });
+
+test("caption wrapping preserves words, explicit lines, and grapheme clusters", async () => {
+  const { wrapCaption } = await import("./captions");
+  const measure = (s: string) =>
+    [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(s)]
+      .length;
+  const text = "Captions stay readable on narrow video";
+  const lines = wrapCaption(text, 12, measure);
+  assert.equal(lines.join(" "), text);
+  assert.ok(lines.every((line) => measure(line) <= 12));
+  assert.deepEqual(wrapCaption("First line\nSecond line", 50, measure), [
+    "First line",
+    "Second line",
+  ]);
+  const emoji = "👨‍👩‍👧‍👦";
+  assert.deepEqual(wrapCaption(emoji.repeat(5), 2, measure), [
+    emoji.repeat(2),
+    emoji.repeat(2),
+    emoji,
+  ]);
+});
