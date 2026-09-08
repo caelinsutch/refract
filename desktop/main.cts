@@ -445,11 +445,8 @@ handle("export-finish", async (id: string) => {
   const current = job;
   try {
     current.child.stdin!.end();
-    await current.done;
-    const info = await fs.stat(current.temp);
-    if (info.size === 0) throw Error("Encoder created an empty file.");
-    await fs.rename(current.temp, current.dest);
-    return current.dest;
+    const { finishExport } = await import("../src/core/export-job.js");
+    return await finishExport(current);
   } finally {
     if (job === current) job = null;
   }
@@ -457,12 +454,13 @@ handle("export-finish", async (id: string) => {
 handle("export-cancel", async () => {
   if (!job) return;
   const current = job;
-  job = null;
+  current.cancelled = true;
   current.child.kill("SIGTERM");
   try {
     await current.done;
   } catch {}
   await fs.rm(current.temp, { force: true });
+  if (job === current) job = null;
 });
 app.on("window-all-closed", () => {
   job?.child.kill();

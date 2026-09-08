@@ -1954,6 +1954,9 @@ export default function App() {
                       <Button
                         onClick={() => {
                           cancelExport.current = true;
+                          void window.refract
+                            ?.exportCancel()
+                            .catch((error) => tell(String(error)));
                         }}
                       >
                         Cancel export
