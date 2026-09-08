@@ -37,3 +37,11 @@ Recording finalization now persists the new project's manifest before asking to 
 If replacement is refused, the new recording remains saved, is registered with macOS recent documents, and a native notice offers to reveal its project folder in Finder. The editor remains on the existing project. A quit pending capture completion is cancelled on this path rather than discarding the retained edits immediately afterward.
 
 Production TypeScript/StyleX compilation passes. The UI tool still reports the Mac locked, so actual completion, prompt dismissal, Finder reveal, and quit-during-capture interactions remain unverified. A separately opened/reloaded editor and simultaneous project actions still need lifecycle QA. Ordinary quit/close protection remains outstanding. Starting with Don't Save and finishing with the same dirty editor may prompt twice; that interaction still needs refinement against the reference.
+
+## Close and Quit coordination
+
+Editor close now resolves unsaved changes before hiding the editor; Cancel leaves it open. Quit defers to native capture finalization when needed, then requests the editor decision before re-entering the approved shutdown path. Duplicate close/quit requests coalesce. Permission to close a crop/modal/export interaction is not inferred: the existing editor guard rejects replacement while those interactions are active.
+
+Transcription cancellation and recorder timer/global-shortcut cleanup now run on `will-quit`, not a potentially cancelled `before-quit`. Cancelling Quit therefore does not unregister the recorder shortcuts or abort transcription through that cleanup hook. Approved capture shutdown still finishes persistence before exit.
+
+67 tests and the production build pass. The lifecycle test uses event-emitter hosts to cover duplicate requests, cancelled close followed by another close, capture deferral, cancelled quit followed by another quit, and the approved quit/window-close re-entry. It is not an Electron/macOS interaction test. Native Quit/Close, long-running recording finalization, modal refusal, and renderer-unresponsive behavior remain to be exercised; exact reference parity is not established.

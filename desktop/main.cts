@@ -1,3 +1,4 @@
+import { setupEditorLifecycle } from "./editor-lifecycle.cjs";
 import { setupCropWindow } from "./crop-window.cjs";
 import { setupProjectGuard } from "./project-guard.cjs";
 import { setupRecorder } from "./recorder.cjs";
@@ -28,10 +29,6 @@ import { serveMediaFile } from "./media.cjs";
 const run = promisify(execFile);
 const media = new Map<string, string>();
 let win: BrowserWindow;
-let quitting = false;
-app.on("before-quit", () => {
-  quitting = true;
-});
 let projectDir: string | null = null;
 type ExportJob = {
   id: string;
@@ -225,7 +222,6 @@ app.whenReady().then(() => {
       await writeProjectManifest(dir, project);
       app.addRecentDocument(dir);
       if (!(await guardProject())) {
-        quitting = false;
         const decision = await dialog.showMessageBox(win, {
           type: "info",
           message: "Your recording is saved.",
@@ -253,12 +249,7 @@ app.whenReady().then(() => {
   );
   // Keep the editor alive when its window closes so the recorder and menu
   // callbacks never target a destroyed webContents. Dock activation restores UI.
-  win.on("close", (event) => {
-    if (!quitting) {
-      event.preventDefault();
-      win.hide();
-    }
-  });
+  setupEditorLifecycle(app, win, recorder.prepareQuit, guardProject);
   app.on("activate", () => {
     if (win.isVisible()) {
       win.show();
@@ -586,7 +577,7 @@ handle("captions-generate", async (project: Project, locale: string) => {
   }
 });
 handle("captions-cancel", () => transcription?.abort());
-app.on("before-quit", () => transcription?.abort());
+app.on("will-quit", () => transcription?.abort());
 
 handle("export-frame", async (id: string, data: ArrayBuffer) => {
   if (!job || job.id !== id) throw Error("Export is no longer active.");

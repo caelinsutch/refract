@@ -389,17 +389,19 @@ export function setupRecorder(
     if (state.phase === "recording") child?.stdin.write("pause\n");
     else if (state.phase === "paused") child?.stdin.write("resume\n");
   });
-  app.on("before-quit", (event) => {
+  function prepareQuit() {
     if (["starting", "recording", "paused", "stopping"].includes(state.phase)) {
       // Keep Electron alive until capture finalization and project persistence finish.
-      event.preventDefault();
       quitAfterCapture = true;
       stop();
-      return;
+      return false;
     }
+    return true;
+  }
+  app.on("will-quit", () => {
     if (countdownTimer) clearInterval(countdownTimer);
     if (timer) clearInterval(timer);
     globalShortcut.unregisterAll();
   });
-  return { show, stop };
+  return { show, stop, prepareQuit };
 }
