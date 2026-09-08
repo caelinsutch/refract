@@ -477,6 +477,25 @@ export default function App() {
     return result.proceed;
   }
 
+  useEffect(() =>
+    window.refract?.onProjectGuard(async (id) => {
+      if (replacingProject.current || cropping || modal || exporting) {
+        await window.refract?.projectGuardResult(id, false);
+        return;
+      }
+      replacingProject.current = true;
+      let allowed = false;
+      try {
+        allowed = await allowProjectReplacement();
+      } catch (error) {
+        tell(String(error));
+      } finally {
+        replacingProject.current = false;
+        await window.refract?.projectGuardResult(id, allowed);
+      }
+    }),
+  );
+
   async function importVideo() {
     if (replacingProject.current) return;
     replacingProject.current = true;

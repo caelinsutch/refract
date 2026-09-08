@@ -21,3 +21,11 @@ This is not autosave, unsaved-edit recovery, recovery of an interrupted video en
 Open Project and Import Video now ask Save / Don't Save / Cancel through a native message box before replacing an edited project. Save is the default Return action; Escape maps to Cancel. Failed/cancelled saves prevent replacement. If the project snapshot changes while the dialog or save is pending, replacement stops so newer edits are not discarded. Duplicate Open/Import requests share a synchronous in-flight guard. Native theme and keyboard behavior come from the platform dialog; they still need live interaction verification.
 
 All 66 core tests and production compilation pass. A decision-flow test exercises all three responses, cancelled/failed saving, and a newer edit arriving during the prompt/save. This does not verify native dialog rendering or IPC delivery. Quit, closing the editor, starting a recording through all entry points, and crash recovery of unsaved edits are still outstanding.
+
+## Recording start guard
+
+Every recorder start request now asks the owning editor to resolve unsaved changes before capture begins. This covers starts reached through the toolbar, File menu, command menu, Dock activation and global recording shortcut because they converge on the recorder's start handler. Merely opening the recorder does not discard a project or prompt.
+
+The native request uses an opaque identifier and accepts results only from the editor's webContents. Reload, renderer failure or window destruction rejects the pending request. Duplicate starts are suppressed while the decision/permissions are pending. Closing the recorder during that interval prevents the delayed start. The editor refuses a replacement request during another project switch, crop/modal interaction or export. Its native save prompt brings the editor forward if it was hidden.
+
+Production compilation passes. The shared decision-flow tests cover save/cancel/failure/newer edits, but IPC and live recording integration still need an unlocked Mac. This does not yet guard edits made after recording starts, quit, or editor close; completion-time project replacement and those lifecycle paths remain open.

@@ -7,6 +7,8 @@ import type { Project } from "./core/project";
 declare global {
   interface Window {
     refract?: {
+      onProjectGuard(callback: (id: string) => void): () => void;
+      projectGuardResult(id: string, allowed: boolean): Promise<void>;
       editText: (action: "undo" | "redo") => Promise<void>;
       cropOpen: (data: {
         width: number;

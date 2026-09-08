@@ -3,6 +3,13 @@ import type { Project } from "../src/core/project.js" with {
   "resolution-mode": "import",
 };
 contextBridge.exposeInMainWorld("refract", {
+  onProjectGuard: (callback: (id: string) => void) => {
+    const listener = (_: IpcRendererEvent, id: string) => callback(id);
+    ipcRenderer.on("project-guard-request", listener);
+    return () => ipcRenderer.removeListener("project-guard-request", listener);
+  },
+  projectGuardResult: (id: string, allowed: boolean) =>
+    ipcRenderer.invoke("project-guard-result", id, allowed),
   editText: (action: "undo" | "redo") =>
     ipcRenderer.invoke("edit-text", action),
   cropOpen: (data: unknown) => ipcRenderer.invoke("crop-open", data),

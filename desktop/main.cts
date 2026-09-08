@@ -1,4 +1,5 @@
 import { setupCropWindow } from "./crop-window.cjs";
+import { setupProjectGuard } from "./project-guard.cjs";
 import { setupRecorder } from "./recorder.cjs";
 import {
   app,
@@ -154,6 +155,7 @@ app.whenReady().then(() => {
     else throw Error("Unsupported text editing action");
   });
 
+  const guardProject = setupProjectGuard(win);
   const recorder = setupRecorder(
     win,
     async (dir) => {
@@ -231,6 +233,7 @@ app.whenReady().then(() => {
       });
     },
     () => send("import"),
+    guardProject,
   );
   // Keep the editor alive when its window closes so the recorder and menu
   // callbacks never target a destroyed webContents. Dock activation restores UI.
@@ -338,6 +341,8 @@ app.whenReady().then(() => {
   );
 });
 handle("confirm-unsaved", async (title: string) => {
+  win.show();
+  win.focus();
   const result = await dialog.showMessageBox(win, {
     type: "question",
     message: `Save changes to “${String(title).slice(0, 200)}”?`,

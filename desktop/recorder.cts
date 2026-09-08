@@ -26,6 +26,7 @@ export function setupRecorder(
   editor: BrowserWindow,
   onFinished: (dir: string) => Promise<void>,
   onImport: () => void,
+  beforeStart: () => Promise<boolean>,
 ) {
   let bar: BrowserWindow | null = null,
     areaWindow: BrowserWindow | null = null,
@@ -39,6 +40,7 @@ export function setupRecorder(
     areaDisplayId: number | undefined;
   let quitAfterCapture = false;
   let stopWhenStarted = false;
+  let checkingStart = false;
   let state: RecorderState = { phase: "idle", countdown: 3, elapsed: 0 };
   const executable = path.join(
     __dirname,
@@ -270,25 +272,34 @@ export function setupRecorder(
   register("recorder-sources", list);
   register("recorder-expand", (expanded: boolean) => resize(expanded));
   register("recorder-start", async (selected: CaptureChoice) => {
-    if (!["display", "window", "area"].includes(selected.mode))
-      throw Error("Invalid source type.");
-    if (selected.microphoneId) {
-      const status = systemPreferences.getMediaAccessStatus("microphone");
-      if (
-        status !== "granted" &&
-        !(await systemPreferences.askForMediaAccess("microphone"))
-      )
-        throw Error("Microphone access was not granted.");
+    if (checkingStart || !["idle", "error"].includes(state.phase)) return;
+    checkingStart = true;
+    const requestedBar = bar;
+    try {
+      if (!(await beforeStart())) return;
+      if (!["display", "window", "area"].includes(selected.mode))
+        throw Error("Invalid source type.");
+      if (selected.microphoneId) {
+        const status = systemPreferences.getMediaAccessStatus("microphone");
+        if (
+          status !== "granted" &&
+          !(await systemPreferences.askForMediaAccess("microphone"))
+        )
+          throw Error("Microphone access was not granted.");
+      }
+      if (selected.cameraId) {
+        const status = systemPreferences.getMediaAccessStatus("camera");
+        if (
+          status !== "granted" &&
+          !(await systemPreferences.askForMediaAccess("camera"))
+        )
+          throw Error("Camera access was not granted.");
+      }
+      if (!bar || bar !== requestedBar) return;
+      await begin(selected);
+    } finally {
+      checkingStart = false;
     }
-    if (selected.cameraId) {
-      const status = systemPreferences.getMediaAccessStatus("camera");
-      if (
-        status !== "granted" &&
-        !(await systemPreferences.askForMediaAccess("camera"))
-      )
-        throw Error("Camera access was not granted.");
-    }
-    await begin(selected);
   });
   register("recorder-pause", () => {
     if (state.phase === "recording") child?.stdin.write("pause\n");
