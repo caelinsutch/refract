@@ -3,6 +3,37 @@ import type { Project } from "../src/core/project.js" with {
   "resolution-mode": "import",
 };
 contextBridge.exposeInMainWorld("refract", {
+  showRecorder: () => ipcRenderer.invoke("recorder-show"),
+  recorderState: () => ipcRenderer.invoke("recorder-state"),
+  recorderSources: () => ipcRenderer.invoke("recorder-sources"),
+  recorderExpand: (expanded: boolean) =>
+    ipcRenderer.invoke("recorder-expand", expanded),
+  recorderStart: (choice: unknown) =>
+    ipcRenderer.invoke("recorder-start", choice),
+  recorderPause: () => ipcRenderer.invoke("recorder-pause"),
+  recorderStop: () => ipcRenderer.invoke("recorder-stop"),
+  recorderClose: () => ipcRenderer.invoke("recorder-close"),
+  recorderImport: () => ipcRenderer.invoke("recorder-import"),
+  recorderPermissions: () => ipcRenderer.invoke("recorder-permissions"),
+  recorderArea: (id: number) => ipcRenderer.invoke("recorder-area", id),
+  recorderAreaSelected: (area: unknown) =>
+    ipcRenderer.invoke("recorder-area-selected", area),
+  onRecorderState: (callback: (state: unknown) => void) => {
+    const listener = (_: IpcRendererEvent, data: unknown) => callback(data);
+    ipcRenderer.on("recorder-state", listener);
+    return () => ipcRenderer.removeListener("recorder-state", listener);
+  },
+  onRecordingFinished: (callback: (data: unknown) => void) => {
+    const listener = (_: IpcRendererEvent, data: unknown) => callback(data);
+    ipcRenderer.on("recording-finished", listener);
+    return () => ipcRenderer.removeListener("recording-finished", listener);
+  },
+  onAreaSelected: (callback: (data: unknown) => void) => {
+    const listener = (_: IpcRendererEvent, data: unknown) => callback(data);
+    ipcRenderer.on("recorder-area-result", listener);
+    return () => ipcRenderer.removeListener("recorder-area-result", listener);
+  },
+
   importVideo: () => ipcRenderer.invoke("import-video"),
   openProject: () => ipcRenderer.invoke("open-project"),
   saveProject: (project: Project, saveAs?: boolean) =>

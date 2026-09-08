@@ -47,6 +47,13 @@ export type Appearance = {
   animation: "smooth" | "focused" | "instant";
   volume: number;
   muted: boolean;
+  cameraHidden: boolean;
+  cameraMirror: boolean;
+  cameraSize: number;
+  cameraRoundness: number;
+  cameraX: number;
+  cameraY: number;
+  cameraZoomScale: number;
 };
 export type Project = {
   version: 1;
@@ -58,6 +65,7 @@ export type Project = {
     width: number;
     height: number;
     hasAudio: boolean;
+    camera?: { file: string; width: number; height: number };
   };
   segments: Segment[];
   zooms: Zoom[];
@@ -85,6 +93,13 @@ export const defaults: Appearance = {
   animation: "smooth",
   volume: 1,
   muted: false,
+  cameraHidden: false,
+  cameraMirror: true,
+  cameraSize: 0.35,
+  cameraRoundness: 0.25,
+  cameraX: 1,
+  cameraY: 1,
+  cameraZoomScale: 0.7,
 };
 export const uid = () => crypto.randomUUID();
 export function createProject(

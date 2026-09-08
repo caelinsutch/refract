@@ -1,0 +1,4 @@
+import { packager } from '@electron/packager';
+import path from 'node:path';
+const appPaths=await packager({dir:process.cwd(),out:path.join(process.cwd(),'release'),name:'Refract',appBundleId:'com.caelinsutch.refract',appCategoryType:'public.app-category.video',platform:'darwin',arch:'arm64',overwrite:true,asar:false,prune:false,ignore:[/^\/node_modules/,/^\/release/,/^\/\.git/,/^\/src/,/^\/work/,/^\/docs/,/^\/scripts/,/^\/native\/\.build\/module-cache/],extendInfo:{NSCameraUsageDescription:'Refract records your camera as a separate, editable video track.',NSMicrophoneUsageDescription:'Refract records microphone audio when you choose a microphone.',NSCameraUseContinuityCameraDeviceType:true,CFBundleDocumentTypes:[{CFBundleTypeName:'Refract Project',CFBundleTypeExtensions:['refract'],CFBundleTypeRole:'Editor',LSTypeIsPackage:true}]}});
+console.log(appPaths.join('\n'));

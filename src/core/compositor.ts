@@ -38,6 +38,7 @@ export function drawFrame(
   width: number,
   height: number,
   bgImage?: CanvasImageSource,
+  camera?: CanvasImageSource,
 ) {
   const a = p.appearance,
     scale = width / 1280;
@@ -176,6 +177,39 @@ export function drawFrame(
     }
   }
   c.restore();
+  if (camera && p.source.camera && !a.cameraHidden) {
+    const cameraScale = 1 - (1 - a.cameraZoomScale) * Math.min(1, z.scale - 1);
+    const size = Math.min(width, height) * a.cameraSize * cameraScale;
+    const margin = 25 * scale,
+      cx = margin + (width - size - margin * 2) * a.cameraX,
+      cy = margin + (height - size - margin * 2) * a.cameraY;
+    const inputSize = Math.min(p.source.camera.width, p.source.camera.height);
+    c.save();
+    c.shadowColor = "#0007";
+    c.shadowBlur = 20 * scale;
+    c.shadowOffsetY = 6 * scale;
+    rounded(c, cx, cy, size, size, size * a.cameraRoundness);
+    c.fillStyle = "#222";
+    c.fill();
+    c.shadowColor = "transparent";
+    c.clip();
+    if (a.cameraMirror) {
+      c.translate(cx + size, cy);
+      c.scale(-1, 1);
+    } else c.translate(cx, cy);
+    c.drawImage(
+      camera,
+      (p.source.camera.width - inputSize) / 2,
+      (p.source.camera.height - inputSize) / 2,
+      inputSize,
+      inputSize,
+      0,
+      0,
+      size,
+      size,
+    );
+    c.restore();
+  }
   const caption = p.captions.find((s) => source >= s.start && source < s.end);
   if (caption) {
     c.font = `600 ${30 * scale}px -apple-system, sans-serif`;

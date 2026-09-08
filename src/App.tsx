@@ -73,7 +73,7 @@ const s = sx.create({
     height: "100%",
     display: "flex",
     flexDirection: "column",
-    backgroundColor: "#19191c",
+    backgroundColor: "#08090d",
   },
   header: {
     height: 51,
@@ -81,8 +81,10 @@ const s = sx.create({
     alignItems: "center",
     gap: 5,
     paddingInline: 16,
-    borderBottom: "1px solid #ffffff0a",
-    backgroundColor: "#202024",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "#ffffff0a",
+    backgroundColor: "#08090d",
     flexShrink: 0,
   },
   traffic: { width: 66, display: "flex", gap: 7 },
@@ -103,7 +105,13 @@ const s = sx.create({
   },
   muted: { color: "#797582" },
   spacer: { flex: 1 },
-  body: { display: "flex", flex: 1, minHeight: 0 },
+  body: {
+    display: "flex",
+    flex: 1,
+    minHeight: 0,
+    padding: "16px 14px 0",
+    gap: 2,
+  },
   workspace: { display: "flex", flexDirection: "column", flex: 1, minWidth: 0 },
   stage: {
     flex: 1,
@@ -111,7 +119,7 @@ const s = sx.create({
     display: "flex",
     flexDirection: "column",
     position: "relative",
-    backgroundColor: "#151518",
+    backgroundColor: "#08090d",
   },
   stageTools: {
     height: 34,
@@ -121,14 +129,9 @@ const s = sx.create({
     gap: 7,
     flexShrink: 0,
     alignSelf: "center",
-    marginTop: 14,
+    marginTop: 0,
+    marginBottom: 6,
     paddingInline: 7,
-    borderRadius: 11,
-    backgroundColor: "#39383d99",
-    backgroundImage: "linear-gradient(160deg,#ffffff0e,#ffffff00)",
-    backdropFilter: "blur(24px) saturate(1.4)",
-    border: "1px solid #ffffff14",
-    boxShadow: "inset 0 1px 0 #ffffff12,0 4px 14px #0003",
   },
   canvasHolder: {
     flex: 1,
@@ -136,7 +139,7 @@ const s = sx.create({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "12px 40px 26px",
+    padding: "10px 14px 12px",
   },
   canvas: {
     display: "block",
@@ -151,7 +154,9 @@ const s = sx.create({
     alignItems: "center",
     paddingInline: 17,
     gap: 7,
-    borderTop: "1px solid #ffffff06",
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: "#ffffff06",
     flexShrink: 0,
   },
   time: {
@@ -163,8 +168,10 @@ const s = sx.create({
   sidebar: {
     width: 320,
     flexShrink: 0,
-    backgroundColor: "#242328",
-    borderLeft: "1px solid #ffffff0b",
+    backgroundColor: "#13151b",
+    borderRadius: 8,
+    overflow: "hidden",
+    marginBottom: 6,
     display: "flex",
     flexDirection: "column",
   },
@@ -173,22 +180,24 @@ const s = sx.create({
     alignItems: "center",
     justifyContent: "space-around",
     height: 47,
-    borderBottom: "1px solid #ffffff0d",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "#ffffff0d",
     paddingInline: 9,
   },
-  panel: { padding: "21px 19px", overflowY: "auto", flex: 1 },
+  panel: { padding: "16px 14px", overflowY: "auto", flex: 1 },
   segmented: {
     display: "flex",
     padding: 3,
     borderRadius: 6,
-    backgroundColor: "#19191e",
+    backgroundColor: "#ffffff0a",
     gap: 1,
     marginBottom: 20,
   },
   segment: {
     flex: 1,
     height: 25,
-    border: 0,
+    borderWidth: 0,
     borderRadius: 4,
     backgroundColor: { default: "transparent", ":hover": "#ffffff0b" },
     color: "#aaa5b5",
@@ -196,7 +205,7 @@ const s = sx.create({
   },
   segmentActive: {
     color: "#f0ebf9",
-    backgroundColor: "#45414d",
+    backgroundColor: "#ffffff24",
     boxShadow: "0 1px 4px #0004",
   },
   grid: {
@@ -209,7 +218,9 @@ const s = sx.create({
   swatch: (a: string, b: string, c: string) => ({
     height: 45,
     borderRadius: 5,
-    border: "1px solid #ffffff14",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "#ffffff14",
     backgroundImage: `linear-gradient(125deg, ${a}, ${b} 56%, ${c})`,
     cursor: "pointer",
   }),
@@ -258,7 +269,9 @@ const s = sx.create({
     backgroundColor: "#28262de8",
     backdropFilter: "blur(32px) saturate(1.3)",
     backgroundImage: "linear-gradient(145deg,#ffffff09,#ffffff00)",
-    border: "1px solid #ffffff1c",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "#ffffff1c",
     borderRadius: 12,
     boxShadow: "0 25px 100px #0008",
     padding: 25,
@@ -270,7 +283,9 @@ const s = sx.create({
     left: 20,
     padding: "11px 16px",
     backgroundColor: "#36313e",
-    border: "1px solid #ffffff16",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "#ffffff16",
     borderRadius: 8,
     boxShadow: "0 5px 20px #0005",
     zIndex: 50,
@@ -316,14 +331,15 @@ const tabs = [
   { id: "background", title: "Background & screen", icon: ImageIcon },
   { id: "cursor", title: "Cursor", icon: MousePointer2 },
   { id: "camera", title: "Camera", icon: Video },
+  { id: "captions", title: "Captions", icon: Captions },
   { id: "audio", title: "Audio", icon: AudioLines },
   { id: "shortcuts", title: "Shortcuts", icon: Keyboard },
   { id: "animations", title: "Animations", icon: Clapperboard },
-  { id: "captions", title: "Captions", icon: Captions },
 ];
 export default function App() {
   const [project, setProject] = useState<Project | null>(null),
     [url, setUrl] = useState(""),
+    [cameraUrl, setCameraUrl] = useState(""),
     [time, setTime] = useState(0),
     [playing, setPlaying] = useState(false),
     [loop, setLoop] = useState(false),
@@ -352,6 +368,7 @@ export default function App() {
       }
     });
   const video = useRef<HTMLVideoElement>(null),
+    cameraVideo = useRef<HTMLVideoElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     input = useRef<HTMLInputElement>(null),
     bgInput = useRef<HTMLInputElement>(null),
@@ -400,7 +417,8 @@ export default function App() {
     setFuture((f) => f.slice(1));
     setDirty(true);
   };
-  function load(p: Project, u: string) {
+  function load(p: Project, u: string, cam?: string) {
+    setCameraUrl(cam ?? "");
     setPlaying(false);
     setProject(p);
     setUrl(u);
@@ -455,7 +473,7 @@ export default function App() {
         return;
       }
       const r = await window.refract.openProject();
-      if (r) load(validateProject(r.project), r.url);
+      if (r) load(validateProject(r.project), r.url, r.cameraUrl);
     } catch (e) {
       tell(String(e));
     }
@@ -600,6 +618,23 @@ export default function App() {
     } else v.pause();
   }, [project, time, playing, previewSpeed, url]);
   useEffect(() => {
+    const v = cameraVideo.current;
+    if (!v || !project) return;
+    const source = sourceAt(project, time);
+    if (!source) return;
+    const desired = Math.min(
+      Math.max(0, v.duration - 0.02),
+      source.time / 1000,
+    );
+    if (Number.isFinite(desired) && Math.abs(v.currentTime - desired) > 0.05)
+      v.currentTime = desired;
+    v.muted = true;
+    if (playing) {
+      v.playbackRate = source.segment.speed * previewSpeed;
+      void v.play().catch(() => {});
+    } else v.pause();
+  }, [project, time, playing, previewSpeed, cameraUrl]);
+  useEffect(() => {
     let id: number,
       last = performance.now(),
       lastState = last;
@@ -623,6 +658,9 @@ export default function App() {
             d.width,
             d.height,
             bgImage.current ?? undefined,
+            cameraVideo.current && cameraVideo.current.readyState >= 2
+              ? cameraVideo.current
+              : undefined,
           );
       }
       if (playingRef.current && p) {
@@ -716,6 +754,16 @@ export default function App() {
         v.onloadeddata = () => resolve();
         v.onerror = () => reject(Error("Cannot decode source video."));
       });
+      let cam: HTMLVideoElement | undefined;
+      if (cameraUrl) {
+        cam = document.createElement("video");
+        cam.muted = true;
+        cam.src = cameraUrl;
+        await new Promise<void>((resolve, reject) => {
+          cam!.onloadeddata = () => resolve();
+          cam!.onerror = () => reject(Error("Cannot decode camera video."));
+        });
+      }
       const out = document.createElement("canvas");
       out.width = size.width;
       out.height = size.height;
@@ -738,6 +786,21 @@ export default function App() {
             };
             v.currentTime = target;
           });
+        if (cam) {
+          const targetCamera = Math.min(target, cam.duration - 0.001);
+          if (Math.abs(cam.currentTime - targetCamera) > 0.001)
+            await new Promise<void>((resolve, reject) => {
+              const timeout = setTimeout(
+                () => reject(Error("Camera seek timed out.")),
+                10000,
+              );
+              cam!.onseeked = () => {
+                clearTimeout(timeout);
+                resolve();
+              };
+              cam!.currentTime = targetCamera;
+            });
+        }
         drawFrame(
           ctx,
           v,
@@ -746,6 +809,7 @@ export default function App() {
           size.width,
           size.height,
           bgImage.current ?? undefined,
+          cam,
         );
         const blob = await new Promise<Blob>((resolve, reject) =>
           out.toBlob(
@@ -762,6 +826,7 @@ export default function App() {
       tell(`Exported ${dest.split("/").pop()}`);
       setModal(null);
       v.remove();
+      cam?.remove();
     } catch (e) {
       await api.exportCancel();
       tell(String(e));
@@ -785,6 +850,35 @@ export default function App() {
       tell("Clipboard unavailable. Use the download frame button.");
     }
   }
+  useEffect(
+    () =>
+      window.refract?.onRecordingFinished((result) => {
+        const p = createProject(result.source, result.title);
+        p.cursor = result.cursor;
+        const clicks = result.cursor.filter((c) => c.click);
+        let lastEnd = 0;
+        for (const click of clicks) {
+          if (click.time < lastEnd) continue;
+          const start = Math.max(0, click.time - 300),
+            end = Math.min(p.source.duration, click.time + 2500);
+          p.zooms.push({
+            id: uid(),
+            start,
+            end,
+            scale: 2,
+            x: click.x,
+            y: click.y,
+            mode: "auto",
+            disabled: false,
+          });
+          lastEnd = end;
+        }
+        load(p, result.url, result.cameraUrl);
+        setDirty(true);
+        void window.refract?.saveProject(p);
+      }),
+    [],
+  );
   const z =
       selection?.type === "zoom"
         ? project?.zooms.find((z) => z.id === selection.id)
@@ -889,6 +983,12 @@ export default function App() {
           )}
         </div>
         <div {...sx.props(s.spacer)} />
+        <Button
+          title="New recording"
+          onClick={() => window.refract?.showRecorder()}
+        >
+          <Monitor size={15} />
+        </Button>
         <Button title="Import video" onClick={importVideo}>
           <Plus size={15} />
         </Button>
@@ -918,7 +1018,10 @@ export default function App() {
       <main {...sx.props(s.body)}>
         <div {...sx.props(s.workspace)}>
           <section {...sx.props(s.stage)}>
-            <div {...sx.props(s.stageTools)}>
+            <div
+              {...sx.props(s.stageTools)}
+              style={!project ? { visibility: "hidden" } : undefined}
+            >
               {project ? (
                 <>
                   <select
@@ -940,7 +1043,7 @@ export default function App() {
                     title="Screen framing"
                   >
                     <Crop size={13} />
-                    Frame
+                    Crop
                   </Button>
                   <Button onClick={addMask}>
                     <Scan size={13} />
@@ -977,15 +1080,21 @@ export default function App() {
                   <div {...sx.props(s.emptyIcon)}>
                     <Film size={31} strokeWidth={1.3} />
                   </div>
-                  <h1 {...sx.props(s.emptyTitle)}>
-                    A little motion. A better story.
-                  </h1>
+                  <h1 {...sx.props(s.emptyTitle)}>Make your next recording.</h1>
                   <p {...sx.props(s.emptyText)}>
-                    Open a recording to shape its framing, timing, and focus.
+                    Record your screen, or open a video to shape its framing,
+                    timing, and focus.
                   </p>
-                  <Button primary onClick={importVideo}>
+                  <Button
+                    primary
+                    onClick={() =>
+                      window.refract
+                        ? window.refract.showRecorder()
+                        : importVideo()
+                    }
+                  >
                     <Plus size={14} />
-                    Open a video
+                    {window.refract ? "New recording" : "Open a video"}
                   </Button>
                   <Button onClick={open}>
                     <FolderOpen size={13} />
@@ -1063,27 +1172,6 @@ export default function App() {
               ))}
             </select>
           </div>
-          {project ? (
-            <Timeline
-              project={project}
-              time={time}
-              seek={seek}
-              edit={edit}
-              selection={selection}
-              select={setSelection}
-              zoom={timelineZoom}
-              setZoom={setTimelineZoom}
-              cut={cut}
-            />
-          ) : (
-            <div
-              style={{
-                height: 192,
-                borderTop: "1px solid #ffffff0a",
-                background: "#1d1c21",
-              }}
-            />
-          )}
         </div>
         <aside {...sx.props(s.sidebar)}>
           <nav {...sx.props(s.tabs)}>
@@ -1598,10 +1686,61 @@ export default function App() {
             ) : tab === "camera" ? (
               <>
                 <Heading>Camera</Heading>
-                <Note>
-                  No camera track is attached to this project. Native camera
-                  capture and dynamic layouts are still in development.
-                </Note>
+                {!project.source.camera ? (
+                  <Note>
+                    No camera track is attached. Choose a camera in the
+                    recording bar for your next recording.
+                  </Note>
+                ) : (
+                  <>
+                    <Toggle
+                      label="Hide camera"
+                      value={project.appearance.cameraHidden}
+                      onChange={(cameraHidden) => appearance({ cameraHidden })}
+                    />
+                    <Toggle
+                      label="Mirror camera"
+                      value={project.appearance.cameraMirror}
+                      onChange={(cameraMirror) => appearance({ cameraMirror })}
+                    />
+                    <Range
+                      label="Camera size"
+                      value={project.appearance.cameraSize * 100}
+                      min={10}
+                      max={80}
+                      unit="%"
+                      onChange={(v) => appearance({ cameraSize: v / 100 })}
+                    />
+                    <Range
+                      label="Roundness"
+                      value={project.appearance.cameraRoundness * 100}
+                      min={0}
+                      max={50}
+                      unit="%"
+                      onChange={(v) => appearance({ cameraRoundness: v / 100 })}
+                    />
+                    <Range
+                      label="Horizontal position"
+                      value={project.appearance.cameraX * 100}
+                      unit="%"
+                      onChange={(v) => appearance({ cameraX: v / 100 })}
+                    />
+                    <Range
+                      label="Vertical position"
+                      value={project.appearance.cameraY * 100}
+                      unit="%"
+                      onChange={(v) => appearance({ cameraY: v / 100 })}
+                    />
+                    <Range
+                      label="Size during zoom"
+                      value={project.appearance.cameraZoomScale * 100}
+                      min={30}
+                      max={100}
+                      unit="%"
+                      onChange={(v) => appearance({ cameraZoomScale: v / 100 })}
+                    />
+                  </>
+                )}
               </>
             ) : (
               <>
@@ -1625,6 +1764,36 @@ export default function App() {
           </div>
         </aside>
       </main>
+      {project ? (
+        <Timeline
+          project={project}
+          time={time}
+          seek={seek}
+          edit={edit}
+          selection={selection}
+          select={setSelection}
+          zoom={timelineZoom}
+          setZoom={setTimelineZoom}
+          cut={cut}
+        />
+      ) : (
+        <div
+          style={{
+            height: 192,
+            borderTopWidth: 1,
+            borderTopStyle: "solid",
+            borderTopColor: "#ffffff0a",
+            background: "#08090d",
+          }}
+        />
+      )}
+      <video
+        ref={cameraVideo}
+        src={cameraUrl || undefined}
+        style={{ display: "none" }}
+        muted
+        playsInline
+      />
       <video
         ref={video}
         src={url || undefined}

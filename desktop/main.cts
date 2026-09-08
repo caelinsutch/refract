@@ -1,3 +1,4 @@
+import { setupRecorder } from "./recorder.cjs";
 import {
   app,
   BrowserWindow,
@@ -60,7 +61,7 @@ const inside = (base: string, relative: string) => {
     throw Error("Invalid project media path.");
   return resolved;
 };
-const probe = async (file: string) => {
+const probe = async (file: string): Promise<Project["source"]> => {
   const { stdout } = await run(tool("ffprobe"), [
     "-v",
     "error",
@@ -106,6 +107,7 @@ app.whenReady().then(() => {
     minWidth: 1000,
     minHeight: 660,
     title: "Refract",
+    show: false,
     backgroundColor: "#19191c",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 17, y: 18 },
@@ -121,6 +123,65 @@ app.whenReady().then(() => {
   if (process.env.REFRACT_DEV_URL) win.loadURL(process.env.REFRACT_DEV_URL);
   else win.loadFile(path.join(__dirname, "../../dist/index.html"));
   const send = (action: string) => win.webContents.send("menu-action", action);
+  const recorder = setupRecorder(
+    win,
+    async (dir) => {
+      const raw = path.join(dir, "media/screen.mp4");
+      const mic = path.join(dir, "media/microphone.m4a");
+      let file = raw;
+      try {
+        await fs.access(mic);
+        const original = await probe(raw);
+        const mixed = path.join(dir, "media/source.mp4");
+        const args = ["-y", "-i", raw, "-i", mic];
+        if (original.hasAudio)
+          args.push(
+            "-filter_complex",
+            "[0:a][1:a]amix=inputs=2:normalize=0[a]",
+            "-map",
+            "0:v",
+            "-map",
+            "[a]",
+          );
+        else args.push("-map", "0:v", "-map", "1:a");
+        args.push("-c:v", "copy", "-c:a", "aac", mixed);
+        await run(tool("ffmpeg"), args);
+        file = mixed;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+      const source = await probe(file);
+      source.file = "media/" + path.basename(file);
+      projectDir = dir;
+      let cameraUrl: string | undefined;
+      try {
+        const cameraFile = path.join(dir, "media/camera.mp4");
+        await fs.access(cameraFile);
+        const info = await probe(cameraFile);
+        source.camera = {
+          file: "media/camera.mp4",
+          width: info.width,
+          height: info.height,
+        };
+        cameraUrl = expose(cameraFile);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+      const cursor = JSON.parse(
+        await fs.readFile(path.join(dir, "media/cursor.json"), "utf8"),
+      );
+      win.webContents.send("recording-finished", {
+        source,
+        url: expose(file),
+        cursor,
+        cameraUrl,
+        title: "Recording " + new Date().toLocaleString(),
+      });
+    },
+    () => send("import"),
+  );
+  recorder.show();
+
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
@@ -138,6 +199,11 @@ app.whenReady().then(() => {
       {
         label: "File",
         submenu: [
+          {
+            label: "New recording",
+            accelerator: "CmdOrCtrl+N",
+            click: () => recorder.show(),
+          },
           {
             label: "Create project from video…",
             accelerator: "CmdOrCtrl+I",
@@ -235,7 +301,13 @@ handle("open-project", async () => {
   const file = inside(dir, project.source.file);
   await fs.access(file);
   projectDir = dir;
-  return { project, url: expose(file) };
+  return {
+    project,
+    url: expose(file),
+    cameraUrl: project.source.camera
+      ? expose(inside(dir, project.source.camera.file))
+      : undefined,
+  };
 });
 handle("save-project", async (project: Project, saveAs = false) => {
   if (!projectDir) throw Error("Import a video first.");
@@ -294,81 +366,14 @@ handle(
     });
     if (pick.canceled) return null;
     const temp = pick.filePath! + "." + crypto.randomUUID() + ".tmp." + format;
-    const args = [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-y",
-      "-f",
-      "image2pipe",
-      "-framerate",
-      String(fps),
-      "-vcodec",
-      "png",
-      "-i",
-      "pipe:0",
-    ];
-    let audio =
-      project.source.hasAudio && !project.appearance.muted && format === "mp4";
-    if (audio) {
-      args.push("-i", inside(projectDir, project.source.file));
-      const filters = project.segments.map((s, i) => {
-        if (
-          !Number.isFinite(s.start) ||
-          !Number.isFinite(s.end) ||
-          !Number.isFinite(s.speed) ||
-          s.speed < 0.1 ||
-          s.speed > 16
-        )
-          throw Error("Invalid segment.");
-        let speed = s.speed,
-          at = [];
-        while (speed > 2) {
-          at.push("atempo=2");
-          speed /= 2;
-        }
-        while (speed < 0.5) {
-          at.push("atempo=0.5");
-          speed /= 0.5;
-        }
-        at.push("atempo=" + speed);
-        return `[1:a]atrim=start=${s.start / 1000}:end=${s.end / 1000},asetpts=PTS-STARTPTS,${at.join(",")},volume=${Math.max(0, Math.min(2, project.appearance.volume))}[a${i}]`;
-      });
-      filters.push(
-        project.segments.map((_, i) => `[a${i}]`).join("") +
-          `concat=n=${project.segments.length}:v=0:a=1[aout]`,
-      );
-      args.push(
-        "-filter_complex",
-        filters.join(";"),
-        "-map",
-        "0:v",
-        "-map",
-        "[aout]",
-      );
-    }
-    if (format === "mp4")
-      args.push(
-        "-c:v",
-        "libx264",
-        "-preset",
-        "fast",
-        "-crf",
-        "18",
-        "-pix_fmt",
-        "yuv420p",
-        "-movflags",
-        "+faststart",
-        ...(audio ? ["-c:a", "aac", "-b:a", "192k"] : []),
-      );
-    else
-      args.push(
-        "-vf",
-        "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
-        "-loop",
-        "0",
-      );
-    args.push(temp);
+    const { exportArgs } = await import("../src/core/export.js");
+    const args = exportArgs(
+      project,
+      inside(projectDir, project.source.file),
+      temp,
+      fps,
+      format as "mp4" | "gif",
+    );
     const child = spawn(tool("ffmpeg"), args, {
       stdio: ["pipe", "ignore", "pipe"],
     });
