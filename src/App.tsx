@@ -1,3 +1,4 @@
+import { clipTrimBounds, trimClip } from "./core/timeline";
 import {
   useState,
   useReducer,
@@ -866,6 +867,18 @@ export default function App() {
       selection?.type === "mask"
         ? project?.masks.find((m) => m.id === selection.id)
         : null;
+  const trimBounds = project && clip ? clipTrimBounds(project, clip.id) : null;
+  const editClipTrim = (side: "start" | "end", seconds: number) => {
+    if (!project || !clip) return;
+    setPlaying(false);
+    const next = trimClip(
+      project,
+      clip.id,
+      side,
+      (seconds * 1000 - clip[side]) / clip.speed,
+    );
+    if (next !== project) edit(next, `clip-trim-${clip.id}-${side}`);
+  };
   const zoomEdit = (values: Partial<Zoom>) => {
     if (project && z)
       edit({
@@ -1286,34 +1299,20 @@ export default function App() {
                 <Range
                   label="Trim start"
                   value={clip.start / 1000}
-                  max={(clip.end - 100) / 1000}
-                  step={0.1}
+                  min={(trimBounds?.startMin ?? 0) / 1000}
+                  max={(trimBounds?.startMax ?? clip.start) / 1000}
+                  step={0.01}
                   unit="s"
-                  onChange={(start) => {
-                    setPlaying(false);
-                    edit({
-                      ...project,
-                      segments: project.segments.map((c) =>
-                        c.id === clip.id ? { ...c, start: start * 1000 } : c,
-                      ),
-                    });
-                  }}
+                  onChange={(start) => editClipTrim("start", start)}
                 />
                 <Range
                   label="Trim end"
                   value={clip.end / 1000}
-                  min={(clip.start + 100) / 1000}
-                  max={project.source.duration / 1000}
-                  step={0.1}
+                  min={(trimBounds?.endMin ?? clip.end) / 1000}
+                  max={(trimBounds?.endMax ?? clip.end) / 1000}
+                  step={0.01}
                   unit="s"
-                  onChange={(end) =>
-                    edit({
-                      ...project,
-                      segments: project.segments.map((c) =>
-                        c.id === clip.id ? { ...c, end: end * 1000 } : c,
-                      ),
-                    })
-                  }
+                  onChange={(end) => editClipTrim("end", end)}
                 />
                 <Button onClick={cut}>
                   <Scissors size={13} />

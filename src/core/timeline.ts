@@ -59,6 +59,24 @@ export function dragZoomRange(
   return next.end - next.start >= 200 ? next : z;
 }
 
+/** Source-time bounds shared by timeline handles and numeric trim controls. */
+export function clipTrimBounds(p: Project, id: string) {
+  const index = p.segments.findIndex((s) => s.id === id);
+  if (index < 0) return null;
+  const clip = p.segments[index];
+  // A valid short split must not expand merely because its handle was touched.
+  const minimum = Math.min(100, clip.end - clip.start);
+  return {
+    startMin: index > 0 ? p.segments[index - 1].end : 0,
+    startMax: clip.end - minimum,
+    endMin: clip.start + minimum,
+    endMax:
+      index + 1 < p.segments.length
+        ? p.segments[index + 1].start
+        : p.source.duration,
+  };
+}
+
 /** Ripple trim in edited milliseconds, constrained by adjacent retained footage. */
 export function trimClip(
   p: Project,
@@ -66,24 +84,17 @@ export function trimClip(
   side: "start" | "end",
   delta: number,
 ): Project {
-  const index = p.segments.findIndex((s) => s.id === id);
-  if (index < 0) return p;
-  const clip = p.segments[index];
-  const lower = index > 0 ? p.segments[index - 1].end : 0;
-  const upper =
-    index + 1 < p.segments.length
-      ? p.segments[index + 1].start
-      : p.source.duration;
-  const next = { ...clip };
-  if (side === "start")
-    next.start = Math.max(
-      lower,
-      Math.min(clip.end - 100, clip.start + delta * clip.speed),
-    );
-  else
-    next.end = Math.min(
-      upper,
-      Math.max(clip.start + 100, clip.end + delta * clip.speed),
-    );
+  const clip = p.segments.find((s) => s.id === id);
+  const bounds = clipTrimBounds(p, id);
+  if (!clip || !bounds || !Number.isFinite(delta) || delta === 0) return p;
+  const value = Math.max(
+    side === "start" ? bounds.startMin : bounds.endMin,
+    Math.min(
+      side === "start" ? bounds.startMax : bounds.endMax,
+      clip[side] + delta * clip.speed,
+    ),
+  );
+  if (value === clip[side]) return p;
+  const next = { ...clip, [side]: value };
   return { ...p, segments: p.segments.map((s) => (s.id === id ? next : s)) };
 }

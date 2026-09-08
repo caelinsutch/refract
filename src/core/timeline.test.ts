@@ -74,3 +74,20 @@ test("clip trimming follows speed and cannot overlap adjacent footage", async ()
   assert.equal(q.segments[1].end, 8100);
   assert.equal(p.segments[1].end, 12000);
 });
+
+test("short split clips do not expand on a stationary or inward trim", async () => {
+  const { trimClip, clipTrimBounds } = await import("./timeline");
+  const p = fixture();
+  p.segments = [{ id: "short", start: 500, end: 540, speed: 2 }];
+  assert.equal(trimClip(p, "short", "start", 0), p);
+  assert.equal(trimClip(p, "short", "start", 10), p);
+  assert.equal(trimClip(p, "short", "end", -10), p);
+  assert.equal(trimClip(p, "short", "end", NaN), p);
+  assert.deepEqual(clipTrimBounds(p, "short"), {
+    startMin: 0,
+    startMax: 500,
+    endMin: 540,
+    endMax: 12000,
+  });
+  assert.equal(trimClip(p, "short", "end", 100).segments[0].end, 740);
+});

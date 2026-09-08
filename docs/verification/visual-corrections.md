@@ -91,3 +91,7 @@ Twenty-one tests pass, including clip trim bounds/speed, smooth easing endpoints
 ## Preview zoom targeting
 
 Preview clicks now map through the same destination rectangle and source sampling rectangle used by the compositor. This accounts for background padding, letterboxing, crop offsets, and the active zoom before storing the manual source target. Clicks outside the recording rectangle leave the target unchanged. A rendered landmark regression verifies the resolved source pixel under a cropped, padded, 2× zoom. All 23 core tests, the TypeScript/production build, and MP4/GIF media verification pass. This fixes coordinate accuracy; live interaction and reference motion equivalence remain unverified.
+
+## Consistent clip length controls
+
+Numeric trim controls now use the same source bounds and ripple trim function as the timeline handles, preventing extension into neighboring retained footage. Both numeric edges pause playback, use 10 ms increments, and group continuous edits for undo. A stationary or inward trim on a valid short split no longer expands it to 100 ms; no-op edits return the original project. A short-clip regression test and existing speed/neighbor-boundary tests pass. All 24 core tests and the production build pass; live handle verification is still pending while macOS is locked.
