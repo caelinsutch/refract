@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import Recorder, { AreaPicker } from "./Recorder";
+import "./theme.css";
 import "./reset.css";
 if (location.hash === "#recorder" || location.hash === "#area")
   document.documentElement.classList.add("recorder-surface");

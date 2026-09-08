@@ -15,13 +15,13 @@ const s = sx.create({
     width: 540,
     maxWidth: "calc(100vw - 48px)",
     padding: 0,
-    borderRadius: 12,
+    borderRadius: "var(--radius-dialog)",
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: "#ffffff24",
-    backgroundColor: "#1b1d24",
-    color: "#eeeef3",
-    boxShadow: "0 24px 80px #0009",
+    borderColor: "var(--white-a24)",
+    backgroundColor: "var(--surface-raised)",
+    color: "var(--text-primary)",
+    boxShadow: "0 24px 80px var(--black-a99)",
   },
   search: {
     display: "flex",
@@ -30,7 +30,7 @@ const s = sx.create({
     padding: "17px 18px",
     borderBottomWidth: 1,
     borderBottomStyle: "solid",
-    borderBottomColor: "#ffffff12",
+    borderBottomColor: "var(--white-a12)",
   },
   input: {
     flex: 1,
@@ -38,7 +38,7 @@ const s = sx.create({
     backgroundColor: "transparent",
     borderWidth: 0,
     outline: "none",
-    color: "#f0f0f5",
+    color: "var(--text-primary)",
     fontSize: 15,
   },
   results: { maxHeight: 360, overflowY: "auto", padding: 6 },
@@ -51,18 +51,18 @@ const s = sx.create({
     cursor: "pointer",
     fontSize: 13,
   },
-  active: { backgroundColor: "#4d2ff5", color: "white" },
+  active: { backgroundColor: "var(--primary)", color: "var(--primary-text)" },
   disabled: { opacity: 0.4, cursor: "default" },
-  group: { fontSize: 11, color: "#aaaab7", marginLeft: "auto" },
+  group: { fontSize: 11, color: "var(--text-muted)", marginLeft: "auto" },
   footer: {
     display: "flex",
     gap: 14,
     padding: "10px 18px",
     borderTopWidth: 1,
     borderTopStyle: "solid",
-    borderTopColor: "#ffffff12",
+    borderTopColor: "var(--white-a12)",
     fontSize: 11,
-    color: "#9696a5",
+    color: "var(--text-subtle)",
   },
 });
 export default function CommandMenu({
@@ -187,7 +187,9 @@ export default function CommandMenu({
             </div>
           ))
         ) : (
-          <p style={{ padding: 12, color: "#a6a6b4" }}>No commands found.</p>
+          <p style={{ padding: 12, color: "var(--text-muted)" }}>
+            No commands found.
+          </p>
         )}
       </div>
       <div {...sx.props(s.footer)}>

@@ -11,11 +11,9 @@
     overflow: hidden;
   }
   body {
-    font-family:
-      -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro", "Segoe UI",
-      sans-serif;
-    background: #19191c;
-    color: #e6e6e9;
+    font-family: var(--font-ui);
+    background: var(--surface-raised);
+    color: var(--text-primary);
     font-size: 13px;
     font-weight: 450;
     font-synthesis: none;
@@ -44,7 +42,7 @@
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid #aa86ff;
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
   button {
@@ -54,8 +52,8 @@
     appearance: none;
     height: 4px;
     border-radius: 9px;
-    background: #48484e;
-    accent-color: #aaa8b5;
+    background: var(--slider-track);
+    accent-color: var(--text-muted);
     cursor: pointer;
     width: 100%;
     margin: 9px 0;
@@ -65,11 +63,11 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: #e4e3ea;
-    box-shadow: 0 1px 4px #0008;
+    background: var(--slider-thumb);
+    box-shadow: 0 1px 4px var(--black-a88);
   }
   input[type="checkbox"] {
-    accent-color: #9b6bea;
+    accent-color: var(--accent);
   }
   input[type="color"] {
     padding: 0;
@@ -80,18 +78,18 @@
     width: 38px;
   }
   select {
-    color: #d5d4dc;
-    background: #333238;
-    border: 1px solid #45434b;
+    color: var(--text-secondary);
+    background: var(--surface-control);
+    border: 1px solid var(--border-strong);
     padding: 5px 8px;
     border-radius: 5px;
   }
   input[type="number"],
   input[type="text"],
   textarea {
-    color: #e8e7ee;
-    background: #26252b;
-    border: 1px solid #45434b;
+    color: var(--text-primary);
+    background: var(--surface-popover);
+    border: 1px solid var(--border-strong);
     border-radius: 5px;
     padding: 6px;
     width: 100%;
@@ -101,7 +99,7 @@
     height: 6px;
   }
   ::-webkit-scrollbar-thumb {
-    background: #525159;
+    background: var(--scrollbar);
     border-radius: 6px;
   }
   svg {
@@ -114,7 +112,7 @@
     -webkit-app-region: drag;
   }
   dialog[data-command-menu]::backdrop {
-    background: #0006;
+    background: var(--black-a66);
   }
   .titlebar button,
   .titlebar button *,
@@ -132,7 +130,7 @@
 
   @media (prefers-reduced-transparency: reduce) {
     [role="dialog"] {
-      background: #28262d !important;
+      background: var(--surface-opaque) !important;
       backdrop-filter: none !important;
     }
   }
@@ -145,10 +143,10 @@
     button,
     select,
     input {
-      border: 1px solid #888;
+      border: 1px solid var(--contrast-border);
     }
     body {
-      color: #fff;
+      color: var(--white);
     }
   }
 

@@ -13,7 +13,7 @@ const s = sx.create({
     position: "fixed",
     inset: 0,
     zIndex: 100,
-    backgroundColor: "#0008",
+    backgroundColor: "var(--black-a88)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -24,11 +24,11 @@ const s = sx.create({
     height: 720,
     maxHeight: "94vh",
     borderRadius: 16,
-    backgroundColor: "#454846",
+    backgroundColor: "var(--surface-crop)",
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: "#ffffff25",
-    boxShadow: "0 20px 80px #0008",
+    borderColor: "var(--white-a25)",
+    boxShadow: "0 20px 80px var(--black-a88)",
     display: "flex",
     flexDirection: "column",
     padding: "10px 28px 20px",
@@ -46,11 +46,11 @@ const s = sx.create({
     width: 62,
     textAlign: "center",
     borderWidth: 0,
-    backgroundColor: "#ffffff05",
+    backgroundColor: "var(--white-a05)",
     height: 38,
-    color: "#eee",
+    color: "var(--text-primary)",
   },
-  label: { color: "#ffffff55", marginInline: 6 },
+  label: { color: "var(--white-a55)", marginInline: 6 },
   stage: {
     flex: 1,
     minHeight: 0,
@@ -70,7 +70,7 @@ const s = sx.create({
     position: "absolute",
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: "#ffffffa0",
+    borderColor: "var(--white-aa0)",
     cursor: "move",
     touchAction: "none",
   },
@@ -78,7 +78,7 @@ const s = sx.create({
   grid: {
     position: "absolute",
     pointerEvents: "none",
-    borderColor: "#ffffff26",
+    borderColor: "var(--white-a26)",
     borderStyle: "dashed",
     borderWidth: 0,
   },
@@ -91,8 +91,8 @@ const s = sx.create({
     borderRadius: "50%",
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: "#fff",
-    backgroundColor: "#30322f",
+    borderColor: "var(--white)",
+    backgroundColor: "var(--surface-crop-toolbar)",
     padding: 0,
     transform: "translate(-50%,-50%)",
     touchAction: "none",
@@ -329,7 +329,7 @@ export default function CropEditor({
               aria-hidden="true"
             >
               <path
-                fill="#0008"
+                fill="var(--black-a88)"
                 fillRule="evenodd"
                 d={`M0 0H${width}V${height}H0Z M${rect.x} ${rect.y}h${rect.width}v${rect.height}h${-rect.width}Z`}
               />
