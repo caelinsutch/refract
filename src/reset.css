@@ -117,6 +117,14 @@
   .titlebar input {
     -webkit-app-region: no-drag;
   }
+  [data-recorder-bar] {
+    -webkit-app-region: drag;
+    user-select: none;
+  }
+  [data-recorder-bar] button,
+  [data-recorder-bar] button * {
+    -webkit-app-region: no-drag;
+  }
 
   @media (prefers-reduced-transparency: reduce) {
     [role="dialog"] {

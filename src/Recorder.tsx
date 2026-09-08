@@ -23,6 +23,7 @@ import {
   Check,
   RefreshCw,
   Keyboard,
+  GripVertical,
 } from "lucide-react";
 import type {
   CaptureSources,
@@ -661,7 +662,13 @@ export default function Recorder() {
           ) : null}
         </section>
       ) : null}
-      <div {...sx.props(s.bar)}>
+      <div {...sx.props(s.bar)} data-recorder-bar>
+        <span
+          title="Drag to move recording controls"
+          style={{ display: "flex", flexShrink: 0, color: "#aaa5b4" }}
+        >
+          <GripVertical size={14} aria-label="Move recording controls" />
+        </span>
         {busy ? (
           <>
             <div {...sx.props(s.status)}>

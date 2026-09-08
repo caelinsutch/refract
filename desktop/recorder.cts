@@ -49,11 +49,22 @@ export function setupRecorder(
   }
   function resize(expanded: boolean) {
     if (!bar) return;
-    const bounds = screen.getPrimaryDisplay().workArea;
+    const current = bar.getBounds();
+    const bounds = screen.getDisplayMatching(current).workArea;
     const h = expanded ? 404 : 64;
     bar.setBounds({
-      x: Math.round(bounds.x + (bounds.width - 855) / 2),
-      y: Math.round(bounds.y + bounds.height - h - 54),
+      x: Math.round(
+        Math.max(bounds.x, Math.min(current.x, bounds.x + bounds.width - 855)),
+      ),
+      y: Math.round(
+        Math.max(
+          bounds.y,
+          Math.min(
+            current.y + current.height - h,
+            bounds.y + bounds.height - h,
+          ),
+        ),
+      ),
       width: 855,
       height: h,
     });
@@ -68,12 +79,16 @@ export function setupRecorder(
   }
   function show() {
     if (!bar) {
+      const bounds = screen.getPrimaryDisplay().workArea;
       bar = new BrowserWindow({
+        x: Math.round(bounds.x + (bounds.width - 855) / 2),
+        y: Math.round(bounds.y + bounds.height - 64 - 54),
         width: 855,
         height: 64,
         frame: false,
         transparent: true,
         resizable: false,
+        movable: true,
         hasShadow: false,
         alwaysOnTop: true,
         skipTaskbar: true,
