@@ -1,3 +1,4 @@
+import { recordedShortcuts, type RecordedKey } from "./recorded-shortcuts.js";
 import {
   createProject,
   uid,
@@ -9,8 +10,10 @@ export function recordedProject(
   source: Project["source"],
   events: CursorEvent[],
   title: string,
+  keys: RecordedKey[] = [],
 ): Project {
   const p = createProject(source, title);
+  p.shortcuts = recordedShortcuts(keys, source.duration);
   p.cursor = events
     .filter(
       (e) =>

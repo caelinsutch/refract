@@ -201,11 +201,22 @@ app.whenReady().then(() => {
       const cursor = JSON.parse(
         await fs.readFile(path.join(dir, "media/cursor.json"), "utf8"),
       );
+      let keys = [];
+      try {
+        keys = JSON.parse(
+          await fs.readFile(path.join(dir, "media/keyboard.json"), "utf8"),
+        );
+        if (!Array.isArray(keys))
+          throw Error("Invalid recorded keyboard data.");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
       const { recordedProject } = await import("../src/core/recording.js");
       const project = recordedProject(
         source,
         cursor,
         "Recording " + new Date().toLocaleString(),
+        keys,
       );
       const manifest = path.join(dir, "project.json");
       await fs.writeFile(manifest + ".tmp", JSON.stringify(project, null, 2));

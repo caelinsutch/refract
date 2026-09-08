@@ -31,3 +31,9 @@ Production build and 58 core tests passed, including a new test for event projec
 ## Actual 1080p60 export
 
 The packaged app exported the synthetic shortcut project through the native save dialog to an MP4. FFprobe counted 327 H.264 frames, 1920×1080 at 60/1 fps, with video duration 5.450000 seconds and AAC duration 5.439875 seconds. FFmpeg decoded the output without reporting an error. Decoded frames at 0.5 and 2 seconds show the two ⌘C occurrences; the frame at 4 seconds has no K badge because single-key display was disabled. Video content advances between these frames. The verification file and contact sheet remain ignored scratch artifacts. This is actual export evidence for saved shortcut events, not native keyboard capture.
+
+## Capture adapter
+
+The recording finalizer now accepts optional `media/keyboard.json` key-down samples on the pause-adjusted source clock. The adapter suppresses nearby unmodified key bursts (less than 500 ms apart), drops repeat events, normalizes modifier order, and caps each retained label at 1200 ms or the next retained event/source end. These durations are implementation choices awaiting reference comparison. Modified commands remain eligible during surrounding typing; isolated single-key actions remain available to the existing visibility control.
+
+Older recordings without the optional file remain supported. Tests cover a typing burst mixed with a command, repeated/duplicate modifiers, isolated keys, invalid timestamps, source-end bounds, and saved-project validation. Production build and 63 core tests passed. Native event collection and permission handling are still pending; this adapter is not evidence that keyboard input is being captured. The typing heuristic can misclassify unusually slow typing or rapidly repeated single-key commands and needs live evaluation.
