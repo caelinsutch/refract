@@ -418,7 +418,7 @@ export default function Recorder() {
   return (
     <div {...sx.props(s.root)}>
       {panel && !busy ? (
-        <section {...sx.props(s.panel)}>
+        <section {...sx.props(s.panel)} data-floating-surface="recorder">
           <div
             style={{
               display: "flex",

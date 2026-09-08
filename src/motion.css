@@ -1,0 +1,120 @@
+/* Interaction feedback is interruptible; never transition timeline geometry. */
+button,
+select,
+input,
+textarea,
+[data-motion-popover] label {
+  transition-property:
+    background-color, border-color, color, box-shadow, opacity, scale;
+  transition-duration: var(--motion-feedback);
+  transition-timing-function: var(--ease-responsive);
+}
+button:active:not(:disabled) {
+  scale: 0.96;
+  transition-duration: var(--motion-press);
+}
+/* Grabbing a clip or trim handle must not move its hit target. */
+[data-timeline] button:active,
+button[role="switch"]:active,
+button[data-motion="static"]:active {
+  scale: 1;
+}
+button:disabled {
+  transition-duration: 0ms;
+}
+button[data-active="true"],
+button[aria-expanded="true"] {
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px var(--white-a12);
+}
+select:hover:not(:disabled),
+input[type="number"]:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  border-color: var(--text-subtle);
+}
+input[type="range"]::-webkit-slider-thumb {
+  transition:
+    box-shadow var(--motion-feedback) var(--ease-responsive),
+    background-color var(--motion-feedback) var(--ease-responsive);
+}
+input[type="range"]:hover::-webkit-slider-thumb,
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 1px 4px var(--black-a88),
+    0 0 0 3px var(--white-a12);
+}
+input[type="range"]:active::-webkit-slider-thumb {
+  background: var(--white);
+  box-shadow:
+    0 1px 4px var(--black-a88),
+    0 0 0 4px var(--primary-border);
+}
+[data-motion-popover] {
+  transform-origin: bottom left;
+  opacity: 0;
+  transform: translateY(4px) scale(0.98);
+  transition:
+    opacity var(--motion-feedback) var(--ease-responsive),
+    transform var(--motion-surface) var(--ease-settle),
+    display var(--motion-surface) allow-discrete,
+    overlay var(--motion-surface) allow-discrete;
+}
+[data-motion-popover]:popover-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+@starting-style {
+  [data-motion-popover]:popover-open {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+/* Only newly opened task surfaces animate; routine panel changes stay immediate. */
+[data-floating-surface],
+dialog[data-command-menu][open] {
+  animation: surface-arrive var(--motion-surface) var(--ease-settle) both;
+}
+[data-floating-surface="recorder"] {
+  transform-origin: bottom center;
+}
+@keyframes surface-arrive {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button,
+  select,
+  input,
+  textarea,
+  [data-motion-popover] label {
+    transition-duration: 0ms;
+  }
+  button:active:not(:disabled) {
+    scale: 1;
+  }
+  [data-floating-surface],
+  dialog[data-command-menu][open] {
+    animation: none;
+  }
+  [data-motion-popover],
+  [data-motion-popover]:popover-open {
+    transform: none;
+    transition-duration: 0ms;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    transition: none;
+  }
+  @starting-style {
+    [data-motion-popover]:popover-open {
+      transform: none;
+    }
+  }
+}

@@ -1,5 +1,10 @@
 /* Shared UI tokens. Video composition colors belong to the project, not this theme. */
 :root {
+  --motion-press: 90ms;
+  --motion-feedback: 140ms;
+  --motion-surface: 180ms;
+  --ease-responsive: cubic-bezier(0.2, 0, 0, 1);
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
   --primary: #087f8c;
   --primary-hover: color-mix(in srgb, var(--primary), black 15%);
   --primary-text: #ffffff;

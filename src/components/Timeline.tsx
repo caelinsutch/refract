@@ -374,6 +374,7 @@ export default function Timeline({
   return (
     <div
       {...sx.props(s.root)}
+      data-timeline
       style={{ height: 145 + 60 * (Number(tracks.zoom) + Number(tracks.mask)) }}
     >
       <div {...sx.props(s.tools)}>

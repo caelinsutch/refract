@@ -105,9 +105,6 @@
   svg {
     flex-shrink: 0;
   }
-  button:active:not(:disabled) {
-    transform: scale(0.96);
-  }
   .titlebar {
     -webkit-app-region: drag;
   }
@@ -132,11 +129,6 @@
     [role="dialog"] {
       background: var(--surface-opaque) !important;
       backdrop-filter: none !important;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    button:active:not(:disabled) {
-      transform: none;
     }
   }
   @media (prefers-contrast: more) {

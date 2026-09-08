@@ -1875,11 +1875,24 @@ export default function App() {
                         }
                       />
                     )}
-                    <Toggle
-                      label="Click ripple"
-                      value={project.appearance.clickEffect}
-                      onChange={(clickEffect) => appearance({ clickEffect })}
-                    />
+                    <Row>
+                      <label htmlFor="click-effect">Click effect</label>
+                      <select
+                        id="click-effect"
+                        value={project.appearance.clickEffect}
+                        onChange={(e) =>
+                          appearance({
+                            clickEffect: e.target
+                              .value as Appearance["clickEffect"],
+                          })
+                        }
+                      >
+                        <option value="none">None</option>
+                        <option value="circle">Circle</option>
+                        <option value="ripple">Ripple</option>
+                      </select>
+                    </Row>
+                    <Divider />
                     <Toggle
                       label="Hide cursor if not moving"
                       value={project.appearance.cursorIdleMs !== null}
@@ -2266,6 +2279,7 @@ export default function App() {
             aria-modal="true"
             aria-label={modal === "export" ? "Export video" : "Presets"}
             {...sx.props(s.modal)}
+            data-floating-surface="dialog"
             onClick={(e) => e.stopPropagation()}
           >
             <Row>

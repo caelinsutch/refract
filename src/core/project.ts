@@ -55,7 +55,7 @@ export type Appearance = {
   cursorSpring?: SpringConfig;
   screenSpring?: SpringConfig;
   cursorAnimation: "smooth" | "medium" | "rapid" | "none";
-  clickEffect: boolean;
+  clickEffect: "none" | "circle" | "ripple";
   animation: "smooth" | "focused" | "instant";
   volume: number;
   muted: boolean;
@@ -109,7 +109,7 @@ export const defaults: Appearance = {
   cursorLoopMs: null,
   cursorSmooth: true,
   cursorAnimation: "smooth",
-  clickEffect: false,
+  clickEffect: "none",
   animation: "focused",
   volume: 1,
   muted: false,
@@ -261,6 +261,12 @@ export function validateProject(value: unknown): Project {
       throw new Error("The project has an invalid crop.");
   }
   p.appearance = { ...defaults, ...p.appearance };
+  // Earlier projects stored a boolean ripple toggle.
+  const legacyClickEffect: unknown = p.appearance.clickEffect;
+  if (typeof legacyClickEffect === "boolean")
+    p.appearance.clickEffect = legacyClickEffect ? "ripple" : "none";
+  if (!["none", "circle", "ripple"].includes(p.appearance.clickEffect))
+    throw new Error("The project has an invalid click effect.");
   if (
     !["smooth", "medium", "rapid", "none"].includes(
       p.appearance.cursorAnimation,

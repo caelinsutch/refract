@@ -9,3 +9,5 @@ Semantic groups cover primary actions, text hierarchy, editor/popover/recorder s
 These tokens style the application chrome. Project backgrounds, cursor artwork, masks, and rendered video colors remain composition data; changing the app theme does not recolor saved footage or exports.
 
 Verification: production TypeScript/StyleX build passed; all UI token references resolve and no literal hex colors remain in the editor, recorder, components, or reset stylesheet. Live desktop inspection confirmed teal Export, enabled cursor switches, and zoom timeline with retained layout. Recording stop remains red and clip/mask tracks retain distinct semantic colors.
+
+Interaction timings and easings are also tokens. `src/motion.css` applies them to hover/press feedback and floating surfaces, with reduced-motion overrides. Avoid animating timeline positions or dimensions during direct manipulation.

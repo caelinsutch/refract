@@ -120,6 +120,7 @@ export function Button({
       onClick={onClick}
       aria-label={title}
       aria-expanded={expanded}
+      data-active={active || undefined}
       title={title}
       disabled={disabled}
     >

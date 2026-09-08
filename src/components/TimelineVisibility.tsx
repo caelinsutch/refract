@@ -65,6 +65,7 @@ export function TimelineVisibility({
       <div
         ref={menu}
         popover="auto"
+        data-motion-popover
         onToggle={(e) => setOpen(e.newState === "open")}
         {...sx.props(s.menu)}
         role="group"

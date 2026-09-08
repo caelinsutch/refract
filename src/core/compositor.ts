@@ -267,6 +267,26 @@ export function drawFrame(
     )!;
     const cx = x + ((px * sw - sx) / cw) * w,
       cy = y + ((py * sh - sy) / ch) * h;
+    // Render click feedback beneath the pointer, using the same source clock
+    // as the cursor so seeking, clip speed, and export agree.
+    if (a.clickEffect !== "none") {
+      for (const click of recentClicks(p.cursor, source, 500)) {
+        const progress = (source - click.time) / 500;
+        const clickX = x + ((click.x * sw - sx) / cw) * w;
+        const clickY = y + ((click.y * sh - sy) / ch) * h;
+        c.beginPath();
+        if (a.clickEffect === "circle") {
+          c.arc(clickX, clickY, 22 * scale, 0, Math.PI * 2);
+          c.fillStyle = `rgba(255,255,255,${0.3 * (1 - progress)})`;
+          c.fill();
+        } else {
+          c.arc(clickX, clickY, (8 + progress * 30) * scale, 0, Math.PI * 2);
+          c.strokeStyle = `rgba(255,255,255,${1 - progress})`;
+          c.lineWidth = 3 * scale;
+          c.stroke();
+        }
+      }
+    }
     c.save();
     c.translate(cx, cy);
     c.scale(a.cursorSize * scale, a.cursorSize * scale);
@@ -285,22 +305,6 @@ export function drawFrame(
     c.fill();
     c.stroke();
     c.restore();
-    if (a.clickEffect) {
-      for (const click of recentClicks(p.cursor, source, 500)) {
-        const progress = (source - click.time) / 500;
-        c.beginPath();
-        c.arc(
-          x + ((click.x * sw - sx) / cw) * w,
-          y + ((click.y * sh - sy) / ch) * h,
-          8 + progress * 30 * scale,
-          0,
-          Math.PI * 2,
-        );
-        c.strokeStyle = `rgba(255,255,255,${1 - progress})`;
-        c.lineWidth = 3 * scale;
-        c.stroke();
-      }
-    }
   }
   c.restore();
   if (camera && p.source.camera && !a.cameraHidden) {
