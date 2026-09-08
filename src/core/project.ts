@@ -8,6 +8,8 @@ export type Segment = {
   end: number;
   speed: number;
   hideCursor?: boolean;
+  volume?: number;
+  muted?: boolean;
 };
 export type Zoom = {
   id: string;
@@ -224,7 +226,10 @@ export function validateProject(value: unknown): Project {
       s.end <= s.start ||
       s.speed < 0.1 ||
       s.speed > 16 ||
-      (s.hideCursor !== undefined && typeof s.hideCursor !== "boolean")
+      (s.hideCursor !== undefined && typeof s.hideCursor !== "boolean") ||
+      (s.muted !== undefined && typeof s.muted !== "boolean") ||
+      (s.volume !== undefined &&
+        (!valid(s.volume) || s.volume < 0 || s.volume > 1))
     )
       throw new Error("The project has an invalid clip range.");
   if (

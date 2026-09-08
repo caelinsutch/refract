@@ -1,3 +1,4 @@
+import { clipAudioGain } from "./audio.js";
 import { type Project, validateProject } from "./project.js";
 export function exportArgs(
   project: Project,
@@ -39,7 +40,7 @@ export function exportArgs(
         speed /= 0.5;
       }
       tempo.push("atempo=" + speed);
-      return `[1:a]atrim=start=${s.start / 1000}:end=${s.end / 1000},asetpts=PTS-STARTPTS,${tempo.join(",")},volume=${Math.max(0, Math.min(2, project.appearance.volume))}[a${i}]`;
+      return `[1:a]atrim=start=${s.start / 1000}:end=${s.end / 1000},asetpts=PTS-STARTPTS,${tempo.join(",")},volume=${clipAudioGain(project, s)}[a${i}]`;
     });
     filters.push(
       project.segments.map((_, i) => `[a${i}]`).join("") +

@@ -157,7 +157,8 @@ dialog[data-command-menu][open] {
   margin: 0;
   padding: 5px;
   width: 220px;
-  border-radius: var(--radius-panel);
+  border-radius: calc(var(--radius-control) + 5px);
+  transform-origin: top left;
   border: 1px solid var(--white-a20);
   background: var(--surface-popover);
   box-shadow: 0 8px 30px var(--black-a88);

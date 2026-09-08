@@ -48,6 +48,7 @@ Reference: Screen Studio 3.7.5-4595. Status: partial implementation with verifie
 - Timeline now supports Zooms, Camera layouts, and Masks with interval creation/trimming; the shortcut track remains open.
 - Reference track dimensions and base colors have been corrected. Full editor pixel matching, original assets, and several control arrangements remain open.
 - Live display capture with a separate cursor track and pause/resume passed. Window/area, microphone/system audio, and camera still need end-to-end checks.
+- Per-clip volume and mute now have saved controls and an actual FFmpeg gain/timing check; see [clip audio](clip-audio.md).
 - Per-clip cursor hiding now has context-menu/sidebar controls, saved state, and shared-compositor checks.
 - Retina preview resolution, paused media seeking, local Swift captions, and short 1080p MP4 exports at 30/60 fps have evidence in the verification documents. An intermittent export stall remains unresolved despite a successful retry; cancellation is bounded.
 - Timed camera layouts now have sidebar/timeline editing and a verified short 1080p30 MP4 export; exact reference motion and physical camera capture remain open. Motion blur, click sounds, audio enhancement/music, captured shortcuts, connected-device capture, recovery, and shareable links are not complete.

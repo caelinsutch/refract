@@ -1,3 +1,4 @@
+import { clipAudioGain } from "./core/audio";
 import { CameraLayouts } from "./components/CameraLayouts";
 import { StateIcon } from "./components/StateIcon";
 import { SpringControls } from "./components/SpringControls";
@@ -652,10 +653,10 @@ export default function App() {
   useEffect(() => {
     const v = video.current;
     if (!v || !project) return;
-    v.volume = Math.min(1, project.appearance.volume);
-    v.muted = project.appearance.muted;
     const source = sourceAt(project, time);
     if (!source) return;
+    v.volume = Math.min(1, clipAudioGain(project, source.segment));
+    v.muted = project.appearance.muted || !!source.segment.muted;
     const desired = Math.min(
       Math.max(0, v.duration - 0.02),
       source.time / 1000,
@@ -1615,6 +1616,42 @@ export default function App() {
                     })
                   }
                 />
+                {project.source.hasAudio && (
+                  <>
+                    <Toggle
+                      label="Mute clip audio"
+                      value={!!clip.muted}
+                      onChange={(muted) =>
+                        edit({
+                          ...project,
+                          segments: project.segments.map((c) =>
+                            c.id === clip.id ? { ...c, muted } : c,
+                          ),
+                        })
+                      }
+                    />
+                    <Range
+                      label="Clip volume"
+                      value={(clip.volume ?? 1) * 100}
+                      max={100}
+                      unit="%"
+                      resetValue={100}
+                      onChange={(volume) =>
+                        edit(
+                          {
+                            ...project,
+                            segments: project.segments.map((c) =>
+                              c.id === clip.id
+                                ? { ...c, volume: volume / 100 }
+                                : c,
+                            ),
+                          },
+                          `clip-volume:${clip.id}`,
+                        )
+                      }
+                    />
+                  </>
+                )}
                 <Range
                   label="Playback speed"
                   value={clip.speed}

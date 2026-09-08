@@ -2,7 +2,7 @@ import { ClipContextMenu } from "./ClipContextMenu";
 import { CameraTimeline } from "./CameraTimeline";
 import * as sx from "@stylexjs/stylex";
 import { useEffect, useRef, useState } from "react";
-import { Scissors, Plus, ZoomIn, EyeOff } from "lucide-react";
+import { Scissors, Plus, ZoomIn, EyeOff, VolumeX } from "lucide-react";
 import {
   type Project,
   type Zoom,
@@ -399,6 +399,22 @@ export default function Timeline({
           x={clipMenu.x}
           y={clipMenu.y}
           onClose={() => setClipMenu(null)}
+          hasAudio={project.source.hasAudio}
+          onVolume={(volume) =>
+            edit({
+              ...project,
+              segments: project.segments.map((c) =>
+                c.id === contextClip.id
+                  ? {
+                      ...c,
+                      ...(volume === 0
+                        ? { muted: true }
+                        : { volume, muted: false }),
+                    }
+                  : c,
+              ),
+            })
+          }
           onToggleCursor={() =>
             edit({
               ...project,
@@ -537,6 +553,13 @@ export default function Timeline({
                   <EyeOff
                     size={13}
                     aria-label="Cursor hidden in this clip"
+                    style={{ marginRight: 6 }}
+                  />
+                )}
+                {(clip.muted || clip.volume === 0) && (
+                  <VolumeX
+                    size={13}
+                    aria-label="Clip audio muted"
                     style={{ marginRight: 6 }}
                   />
                 )}
