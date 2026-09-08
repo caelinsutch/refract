@@ -41,6 +41,7 @@ export function setupRecorder(
   let quitAfterCapture = false;
   let stopWhenStarted = false;
   let checkingStart = false;
+  let startGeneration = 0;
   let state: RecorderState = { phase: "idle", countdown: 3, elapsed: 0 };
   const executable = path.join(
     __dirname,
@@ -276,8 +277,13 @@ export function setupRecorder(
     if (checkingStart || !["idle", "error"].includes(state.phase)) return;
     checkingStart = true;
     const requestedBar = bar;
+    const generation = startGeneration;
+    const stillWanted = () =>
+      generation === startGeneration &&
+      bar === requestedBar &&
+      !!bar?.isVisible();
     try {
-      if (!(await beforeStart())) return;
+      if (!(await beforeStart()) || !stillWanted()) return;
       if (!["display", "window", "area"].includes(selected.mode))
         throw Error("Invalid source type.");
       if (selected.microphoneId) {
@@ -296,7 +302,7 @@ export function setupRecorder(
         )
           throw Error("Camera access was not granted.");
       }
-      if (!bar || bar !== requestedBar) return;
+      if (!stillWanted()) return;
       await begin(selected);
     } finally {
       checkingStart = false;
@@ -308,6 +314,7 @@ export function setupRecorder(
   });
   register("recorder-stop", stop);
   register("recorder-close", () => {
+    startGeneration++;
     if (state.phase === "countdown") stop();
     if (["idle", "error"].includes(state.phase)) {
       bar?.hide();
@@ -390,6 +397,7 @@ export function setupRecorder(
     else if (state.phase === "paused") child?.stdin.write("resume\n");
   });
   function prepareQuit() {
+    startGeneration++;
     if (["starting", "recording", "paused", "stopping"].includes(state.phase)) {
       // Keep Electron alive until capture finalization and project persistence finish.
       quitAfterCapture = true;

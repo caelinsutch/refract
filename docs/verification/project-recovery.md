@@ -45,3 +45,11 @@ Editor close now resolves unsaved changes before hiding the editor; Cancel leave
 Transcription cancellation and recorder timer/global-shortcut cleanup now run on `will-quit`, not a potentially cancelled `before-quit`. Cancelling Quit therefore does not unregister the recorder shortcuts or abort transcription through that cleanup hook. Approved capture shutdown still finishes persistence before exit.
 
 67 tests and the production build pass. The lifecycle test uses event-emitter hosts to cover duplicate requests, cancelled close followed by another close, capture deferral, cancelled quit followed by another quit, and the approved quit/window-close re-entry. It is not an Electron/macOS interaction test. Native Quit/Close, long-running recording finalization, modal refusal, and renderer-unresponsive behavior remain to be exercised; exact reference parity is not established.
+
+## Competing-action race correction
+
+A pending confirmation now refuses a competing action instead of sharing its approval. Duplicate requests within a single Close/Quit/Start operation are already suppressed by their callers. This prevents approval of a recording-start prompt from also approving a simultaneous Quit. Stale request identifiers cannot settle a later request; reload/crash/close rejects the outstanding request.
+
+Recorder Close and Quit now invalidate a pending start generation. The start handler checks both that generation and recorder visibility after the project decision and after media permissions. Hiding the recorder during a delayed permission prompt therefore prevents a subsequent start, even though the BrowserWindow still exists.
+
+68 tests and production compilation pass. The new guard test injects an IPC host and event-emitter window to verify competing-action rejection, sender checks, stale replies, and lifecycle cancellation against the actual guard implementation. Native delayed-permission interaction remains unverified.
