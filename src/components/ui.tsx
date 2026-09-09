@@ -164,6 +164,8 @@ export function Range({
   step = 1,
   unit = "",
   resetValue,
+  preview = true,
+  formatValue,
 }: {
   label: string;
   value: number;
@@ -173,6 +175,8 @@ export function Range({
   step?: number;
   unit?: string;
   resetValue?: number;
+  preview?: boolean;
+  formatValue?: (value: number) => string;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const active = useRef(false);
@@ -203,6 +207,7 @@ export function Range({
       <div data-setting-slider-row {...sx.props(s.sliderRow)}>
         <div
           data-setting-slider-control
+          data-setting-preview={preview ? "below" : "tooltip"}
           style={
             {
               "--slider-fraction":
@@ -260,8 +265,9 @@ export function Range({
                   setDraft(String(value));
                 }}
               >
-                {Number(value.toFixed(2))}
-                {unit}
+                {formatValue
+                  ? formatValue(value)
+                  : `${Number(value.toFixed(2))}${unit}`}
               </button>
             ) : (
               <input

@@ -2533,6 +2533,7 @@ export default function App() {
                   project.appearance.background === "image") && (
                   <Range
                     label="Background blur"
+                    preview={false}
                     value={project.appearance.blur}
                     max={100}
                     onChange={(blur) => appearance({ blur })}
@@ -2540,6 +2541,8 @@ export default function App() {
                 )}
                 <Range
                   label="Padding"
+                  step={0.001}
+                  formatValue={(value) => `${value.toFixed(1)}%`}
                   resetValue={defaults.padding}
                   value={project.appearance.padding}
                   max={35}
@@ -2575,6 +2578,7 @@ export default function App() {
                 ) : null}
                 <Range
                   label="Shadow"
+                  preview={false}
                   resetValue={defaults.shadow * 100}
                   value={project.appearance.shadow * 100}
                   max={100}
@@ -2594,6 +2598,7 @@ export default function App() {
                   />
                   <Range
                     label="Shadow Distance"
+                    preview={false}
                     value={project.appearance.shadowDistance}
                     max={100}
                     resetValue={defaults.shadowDistance}
@@ -2611,6 +2616,7 @@ export default function App() {
                   />
                   <Range
                     label="Shadow Blur"
+                    preview={false}
                     value={project.appearance.shadowBlur}
                     min={5}
                     max={30}

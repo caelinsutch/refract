@@ -76,6 +76,36 @@ app.whenReady().then(async () => {
       await read("getComputedStyle(field.firstElementChild).fontSize"),
       "13px",
     );
+    const blurRect = await read(
+      `(()=>{window.blurSlider=document.querySelector('input[aria-label="Background blur"]');const r=blurSlider.getBoundingClientRect();return {x:Math.round(r.x+20),y:Math.round(r.y+r.height/2)}})()`,
+    );
+    c.sendInputEvent({ type: "mouseMove", ...blurRect });
+    await wait(500);
+    assert.equal(
+      await read(
+        `(()=>{const b=blurSlider.parentElement.querySelector('[data-setting-value]');return Number(getComputedStyle(b).opacity)===1 && b.getBoundingClientRect().bottom < blurSlider.getBoundingClientRect().top})()`,
+      ),
+      true,
+      "Blur tooltip should appear above thumb",
+    );
+    assert.equal(
+      await read(`bubble.textContent.trim()`),
+      "10.0%",
+      "Padding preview precision",
+    );
+    await read("slider.focus()");
+    c.sendInputEvent({ type: "keyDown", keyCode: "Right" });
+    c.sendInputEvent({ type: "keyUp", keyCode: "Right" });
+    await wait(100);
+    assert.equal(
+      await read("Number(slider.value)"),
+      10.35,
+      "Padding lost fractional precision",
+    );
+    await read(
+      `document.querySelector('button[aria-label="Reset Padding"]').click();document.activeElement.blur()`,
+    );
+    await wait(100);
     const rect = await read(
       "(()=>{const r=slider.getBoundingClientRect();return {x:Math.round(r.x+20),y:Math.round(r.y+r.height/2)}})()",
     );

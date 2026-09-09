@@ -413,7 +413,10 @@ input[data-setting-slider]:active::-webkit-slider-thumb {
   pointer-events: none;
   transition: opacity 200ms ease 200ms;
 }
-[data-setting-slider-row]:hover [data-setting-value],
+[data-setting-slider-row]:hover
+  [data-setting-preview="below"]
+  [data-setting-value],
+[data-setting-preview="tooltip"]:hover [data-setting-value],
 [data-setting-slider-control]:focus-within [data-setting-value] {
   opacity: 1;
   pointer-events: auto;
@@ -425,4 +428,10 @@ input[data-setting-slider]:active::-webkit-slider-thumb {
   [data-setting-value] {
     transition: none;
   }
+}
+
+[data-setting-preview="tooltip"] [data-setting-value] {
+  top: auto;
+  bottom: 100%;
+  transform: translate(-50%, -4px);
 }

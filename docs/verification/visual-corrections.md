@@ -794,3 +794,10 @@ continues to require the system permission; window-source listing still does too
 - Refract's shared ranges now use 13px labels, an 8px gap, and thumb-aligned contextual readouts instead of permanently placing numbers beside every label. Hovering Reset also reveals the slider feedback. Keyboard focus reveals the readout immediately; direct numeric entry remains available with Enter/Escape and focus restoration. The shared treatment includes ranges whose reference preview configuration still needs individual comparison.
 - Production build and the synthetic inspector fixture passed idle/hover visibility, thumb alignment, stationary geometry, numeric commit/cancel, keyboard increments, reset, keyboard visibility, reduced motion, and dark-theme response. Inspected the rendered light-theme screenshot.
 - The Mac locked during live Screen Studio inspection, so side-by-side runtime comparison and replacement of the running build remain pending unlock. No full visual-parity claim is made.
+
+### Background inspector preview configuration — 2026-09-09
+
+- Compared individual BackgroundStyleSettings slider arguments with the installed SliderPicker implementation. Padding, rounded corners, inset, and shadow angle request below-thumb previews; background blur, shadow intensity, distance, and blur omit that preview and retain above-thumb value tooltips.
+- Added per-field preview placement to shared ranges and configured those background controls accordingly. Below-thumb previews respond to the full row; above-thumb values respond to the slider itself. Direct numeric entry and keyboard visibility remain available.
+- Padding now uses the reference's 0.001 input step and one-decimal percent preview. Its arrow increment remains one hundredth of its 0–35 range (0.35), avoiding whole-number truncation.
+- Build and inspector fixture passed above-thumb blur positioning, below-thumb padding formatting, fractional adjustment, stationary geometry, Enter/Escape, reset, reduced motion, and theme checks. Other inspector panels still require field-by-field configuration comparison.
