@@ -33,6 +33,15 @@ declare global {
       ): Promise<{ captions: Project["captions"]; locale: string }>;
       cancelCaptions(): Promise<void>;
       showRecorder(): Promise<void>;
+      displayPickerOptions(request: {
+        automaticZooms: boolean;
+        completionAction: "create-project" | "export-file";
+        x: number;
+        y: number;
+      }): Promise<{
+        automaticZooms?: boolean;
+        completionAction?: "create-project" | "export-file";
+      } | null>;
       countdownCancel(): Promise<void>;
       onCountdownTick(cb: (seconds: number) => void): () => void;
       recorderPanelGlass?(

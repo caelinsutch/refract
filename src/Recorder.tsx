@@ -431,6 +431,24 @@ export default function Recorder() {
       area: CaptureChoice["area"];
       displayId: number;
     } | null>(null);
+  // Display-picker windows share the recorder's persistent preferences.
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.key === "refract.recorder.automaticZooms")
+        setAutomaticZooms(event.newValue !== "false");
+      if (event.key === "refract.recorder.completion") {
+        try {
+          setCompletion(
+            recordingCompletion(JSON.parse(event.newValue ?? "null")),
+          );
+        } catch {
+          /* Ignore malformed external preferences. */
+        }
+      }
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
   const areaStartButton = useRef<HTMLButtonElement>(null);
   const [hideDesktopIcons, setHideDesktopIcons] = useState(() => {
     try {

@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld("refract", {
     ipcRenderer.invoke("captions-generate", project, locale),
   cancelCaptions: () => ipcRenderer.invoke("captions-cancel"),
   showRecorder: () => ipcRenderer.invoke("recorder-show"),
+  displayPickerOptions: (request: unknown) =>
+    ipcRenderer.invoke("display-picker-options", request),
   countdownCancel: () => ipcRenderer.invoke("countdown-cancel"),
   onCountdownTick: (callback: (seconds: number) => void) => {
     const listener = (_event: unknown, seconds: number) => callback(seconds);

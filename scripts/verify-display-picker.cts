@@ -1,4 +1,4 @@
-import { app, BrowserWindow, screen, ipcMain } from "electron";
+import { app, BrowserWindow, screen, ipcMain, Menu } from "electron";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -25,6 +25,12 @@ void app.whenReady().then(async () => {
       cancel(): void;
     };
     const target = screen.getPrimaryDisplay();
+    let openedMenu: Menu | undefined;
+    const originalBuild = Menu.buildFromTemplate;
+    Menu.buildFromTemplate = (template) => {
+      openedMenu = originalBuild.call(Menu, template);
+      return openedMenu;
+    };
     for (const accept of [false, true]) {
       const selected = picker.open(target.id);
       let overlays: BrowserWindow[] = [];
@@ -58,6 +64,54 @@ void app.whenReady().then(async () => {
       assert.equal(before.button, "Start recording");
       assert.equal(before.transparent, "rgba(0, 0, 0, 0)");
       if (accept) {
+        const options =
+          "document.querySelector('[aria-label=\"Recording options\"]')";
+        await window.webContents.executeJavaScript(
+          `${options}.click();void 0;`,
+        );
+        await until(() => !!openedMenu, "Options did not open a native menu");
+        const menu = openedMenu!;
+        assert.equal(
+          menu.items.find((item) => item.label === "Automatically create zooms")
+            ?.checked,
+          true,
+        );
+        const exportItem = menu.items.find(
+          (item) => item.label === "Export and save to file",
+        )!;
+        exportItem.click(undefined as any, window, {} as any);
+        menu.closePopup();
+        await until(
+          () =>
+            window.webContents.executeJavaScript(
+              "JSON.parse(localStorage.getItem('refract.recorder.completion') || '{}').action === 'export-file'",
+            ),
+          "Export choice was not persisted",
+        );
+        await wait(1200);
+        openedMenu = undefined;
+        await window.webContents.executeJavaScript(
+          `${options}.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));void 0;`,
+        );
+        await until(() => !!openedMenu, "Down arrow did not reopen menu");
+        const zoomMenu = openedMenu! as Menu;
+        assert.equal(
+          zoomMenu.items.find(
+            (item) => item.label === "Export and save to file",
+          )?.checked,
+          true,
+        );
+        zoomMenu.items
+          .find((item) => item.label === "Automatically create zooms")!
+          .click(undefined as any, window, {} as any);
+        zoomMenu.closePopup();
+        await until(
+          () =>
+            window.webContents.executeJavaScript(
+              "localStorage.getItem('refract.recorder.automaticZooms') === 'false'",
+            ),
+          "Zoom preference was not persisted",
+        );
         await fs.mkdir(path.resolve("work/display-picker"), {
           recursive: true,
         });
@@ -154,6 +208,25 @@ void app.whenReady().then(async () => {
     );
     await evaluate("window.pick('Display')");
     await until(() => !!finish, "Display did not reopen");
+    // Use a real second renderer: Electron must deliver the storage event.
+    const preferences = new BrowserWindow({
+      show: false,
+      webPreferences: { sandbox: true },
+    });
+    await preferences.loadFile(path.resolve("dist/index.html"), {
+      hash: "display-picker",
+    });
+    await preferences.webContents
+      .executeJavaScript(`localStorage.setItem('refract.recorder.completion',JSON.stringify({action:'create-project',resolution:1080,fps:60}));
+      localStorage.setItem('refract.recorder.automaticZooms','true');void 0;`);
+    await until(
+      () =>
+        evaluate(
+          "JSON.parse(localStorage.getItem('refract.recorder.completion') || '{}').fps === 60",
+        ),
+      "Cross-window preference did not propagate",
+    );
+    await wait(50);
     finish!(target.id);
     await until(
       () => !!capture,
@@ -161,9 +234,18 @@ void app.whenReady().then(async () => {
     );
     assert.equal(capture.mode, "display");
     assert.equal(capture.displayId, target.id);
+    assert.equal(capture.automaticZooms, true);
+    assert.deepEqual(capture.completion, {
+      action: "create-project",
+      resolution: 1080,
+      fps: 60,
+    });
+    preferences.destroy();
     renderer.destroy();
     console.log(
       JSON.stringify({
+        nativeOptions:
+          "click, keyboard, checked state and preference handoff passed",
         displays: "all covered",
         escape: "cancelled",
         start: "selected display returned",

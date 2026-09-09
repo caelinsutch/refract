@@ -704,3 +704,12 @@ continues to require the system permission; window-source listing still does too
 - Error state hydration and a nonempty fallback prevent a heading-only error panel. This does not claim to resolve the underlying capture error or Screen Recording authorization.
 - Verification: TypeScript/renderer build, Swift native build, 152 core tests, native countdown/glass fixture (full display bounds, ticks, Escape, completion cleanup, native panel installation, invalid geometry rejection, error fallback), and display-picker renderer handoff/cancellation regression passed. Capture was not started by these fixtures.
 - Packaged display selection was also verified to open without requiring Screen Recording access. The packaged app still needs its own macOS capture authorization for an actual end-to-end recording test. Exact Screen Studio countdown motion and multi-monitor window targeting remain parity work.
+
+### Display-picker completion menu — 2026-09-09
+
+- Inspected Screen Studio's live full-display picker through Record → Record display. The separate arrow beside Start recording opens an AppKit menu with completion destinations and automatic zooms. Dismissed the reference picker without starting capture.
+- Added the split button and native options menu to Refract's display picker. Create project, export to file, and automatic zooms use the existing completion pipeline. Clipboard export/share links remain visibly disabled pending those workflows; quick-export settings are not yet exposed in this menu.
+- Menu selection persists the recorder preferences. The already-open recorder subscribes to cross-window storage changes, so the next capture uses the selected completion action and zoom preference. ArrowDown opens the menu; opening it does not select the display or start capture.
+- Increased the centered display title from 28 to 32 points based on the earlier live size comparison. The user-selected teal tint remains deliberate.
+- Verification: production build and native picker verifier passed, including menu clicks, ArrowDown, checked state, persistence, real cross-window preference delivery to a mounted recorder, captured request values, mode-switch cancellation, and window cleanup. The capture endpoint in the verifier is a stub; no desktop recording was started.
+- Final live visual comparison is pending because the Mac locked during this turn.

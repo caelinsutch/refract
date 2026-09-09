@@ -1,11 +1,19 @@
-import { BrowserWindow, ipcMain, screen, type WebContents } from "electron";
+import {
+  BrowserWindow,
+  ipcMain,
+  screen,
+  Menu,
+  type WebContents,
+} from "electron";
 import path from "node:path";
 
 /** One overlay per display; the recorder bar is never resized to host the picker. */
 export function createDisplayPicker() {
   const windows = new Map<BrowserWindow, number>();
+  let activeMenu: Menu | null = null;
   let complete: ((id: number | null) => void) | undefined;
   function cancel(id: number | null = null) {
+    activeMenu?.closePopup();
     const resolve = complete;
     complete = undefined;
     const open = [...windows.keys()];
@@ -27,6 +35,79 @@ export function createDisplayPicker() {
     if (!entry) throw Error("Unknown display picker sender.");
     cancel(accepted === true ? entry[1] : null);
   });
+  ipcMain.handle(
+    "display-picker-options",
+    (
+      event,
+      request: {
+        automaticZooms?: boolean;
+        completionAction?: string;
+        x?: number;
+        y?: number;
+      },
+    ) => {
+      const owner = [...windows.keys()].find(
+        (window) => window.webContents === event.sender,
+      );
+      if (!owner) throw Error("Unknown display picker sender.");
+      if (activeMenu || !request || typeof request !== "object") return null;
+      return new Promise((resolve) => {
+        let selection: {
+          automaticZooms?: boolean;
+          completionAction?: "create-project" | "export-file";
+        } | null = null;
+        const menu = Menu.buildFromTemplate([
+          { label: "After recording:", enabled: false },
+          {
+            label: "Create project",
+            type: "checkbox",
+            checked: request.completionAction !== "export-file",
+            click: () => {
+              selection = { completionAction: "create-project" };
+            },
+          },
+          { label: "Export and copy to clipboard", enabled: false },
+          { label: "Export and create shareable link", enabled: false },
+          {
+            label: "Export and save to file",
+            type: "checkbox",
+            checked: request.completionAction === "export-file",
+            click: () => {
+              selection = { completionAction: "export-file" };
+            },
+          },
+          { type: "separator" },
+          {
+            label: "Automatically create zooms",
+            type: "checkbox",
+            checked: request.automaticZooms !== false,
+            click: () => {
+              selection = { automaticZooms: request.automaticZooms === false };
+            },
+          },
+        ]);
+        activeMenu = menu;
+        const finish = () => {
+          if (activeMenu !== menu) return;
+          activeMenu = null;
+          owner.removeListener("closed", finish);
+          resolve(owner.isDestroyed() ? null : selection);
+        };
+        owner.once("closed", finish);
+        const bounds = owner.getContentBounds();
+        menu.popup({
+          window: owner,
+          x: Math.round(
+            Math.max(0, Math.min(bounds.width, Number(request.x) || 0)),
+          ),
+          y: Math.round(
+            Math.max(0, Math.min(bounds.height, Number(request.y) || 0)),
+          ),
+          callback: finish,
+        });
+      });
+    },
+  );
   const displayChanged = () => cancel();
   screen.on("display-removed", displayChanged);
   screen.on("display-metrics-changed", displayChanged);
