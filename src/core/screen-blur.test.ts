@@ -30,11 +30,14 @@ function fixture() {
     shadow: 0,
     hideCursor: true,
   });
+  p.appearance.screenMoveBlur = 0;
+  p.appearance.screenZoomBlur = 0;
   return p;
 }
 test("screen exposure separates translation and zoom, clamps cuts, and disables instant blur", () => {
   const p = fixture();
   const current = zoomAt(p, 1100);
+  p.appearance.motionBlurAmount = 1;
   p.appearance.screenZoomBlur = 1;
   let samples = screenExposure(p, 1100);
   assert.equal(samples.length, 12);
@@ -83,6 +86,7 @@ test("screen blur is deterministic and stationary content takes the unchanged pa
   };
   const sharp = render(1100),
     stationary = render(0);
+  p.appearance.motionBlurAmount = 1;
   p.appearance.screenZoomBlur = 1;
   p.appearance.screenMoveBlur = 1;
   const blur = render(1100);
@@ -99,6 +103,7 @@ test("screen blur is deterministic and stationary content takes the unchanged pa
 });
 test("opaque masks cover every temporal screen sample", () => {
   const p = fixture();
+  p.appearance.motionBlurAmount = 1;
   p.appearance.screenZoomBlur = 1;
   p.appearance.screenMoveBlur = 1;
   p.masks = [

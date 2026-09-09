@@ -2219,28 +2219,6 @@ export default function App() {
             ) : tab === "animations" ? (
               <>
                 <Heading>Animations</Heading>
-                <Range
-                  label="Screen movement blur"
-                  value={(project.appearance.screenMoveBlur ?? 0) * 100}
-                  min={0}
-                  max={100}
-                  step={1}
-                  unit="%"
-                  onChange={(value) =>
-                    appearance({ screenMoveBlur: value / 100 })
-                  }
-                />
-                <Range
-                  label="Screen zoom blur"
-                  value={(project.appearance.screenZoomBlur ?? 0) * 100}
-                  min={0}
-                  max={100}
-                  step={1}
-                  unit="%"
-                  onChange={(value) =>
-                    appearance({ screenZoomBlur: value / 100 })
-                  }
-                />
                 <span>Screen animation</span>
                 <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
                   {(["smooth", "focused", "instant"] as const).map((v) => (
@@ -2276,17 +2254,6 @@ export default function App() {
                   />
                 )}
                 <Divider />
-                <Range
-                  label="Cursor motion blur"
-                  value={(project.appearance.cursorMotionBlur ?? 0) * 100}
-                  min={0}
-                  max={100}
-                  step={1}
-                  unit="%"
-                  onChange={(value) =>
-                    appearance({ cursorMotionBlur: value / 100 })
-                  }
-                />
                 <span>Cursor animation style</span>
                 <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
                   {(["smooth", "medium", "rapid", "none"] as const).map(
@@ -2326,6 +2293,55 @@ export default function App() {
                       onReset={() => appearance({ cursorSpring: undefined })}
                     />
                   )}
+                <Divider />
+                <Range
+                  label="Motion blur"
+                  value={(project.appearance.motionBlurAmount ?? 0) * 100}
+                  min={0}
+                  max={100}
+                  step={1}
+                  unit="%"
+                  onChange={(value) =>
+                    appearance({ motionBlurAmount: value / 100 })
+                  }
+                />
+                <Note>Add motion blur while the cursor or screen moves.</Note>
+                <details>
+                  <summary>Advanced motion blur settings</summary>
+                  <Range
+                    label="Screen movement blur"
+                    value={(project.appearance.screenMoveBlur ?? 0) * 100}
+                    min={0}
+                    max={100}
+                    step={1}
+                    unit="%"
+                    onChange={(value) =>
+                      appearance({ screenMoveBlur: value / 100 })
+                    }
+                  />
+                  <Range
+                    label="Screen zoom blur"
+                    value={(project.appearance.screenZoomBlur ?? 0) * 100}
+                    min={0}
+                    max={100}
+                    step={1}
+                    unit="%"
+                    onChange={(value) =>
+                      appearance({ screenZoomBlur: value / 100 })
+                    }
+                  />
+                  <Range
+                    label="Cursor motion blur"
+                    value={(project.appearance.cursorMotionBlur ?? 0) * 100}
+                    min={0}
+                    max={100}
+                    step={1}
+                    unit="%"
+                    onChange={(value) =>
+                      appearance({ cursorMotionBlur: value / 100 })
+                    }
+                  />
+                </details>
               </>
             ) : tab === "captions" ? (
               <>

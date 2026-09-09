@@ -1,3 +1,4 @@
+import { normalizeMotionBlur } from "./motion-blur-settings.js";
 import type { Shortcut } from "./shortcuts.js";
 import type { CameraLayout } from "./camera-layout.js";
 import type { SpringConfig } from "./spring.js";
@@ -61,6 +62,7 @@ export type Appearance = {
   blur: number;
   ratio: string;
   cursorSize: number;
+  motionBlurAmount?: number;
   cursorMotionBlur?: number;
   screenMoveBlur?: number;
   screenZoomBlur?: number;
@@ -125,6 +127,10 @@ export const defaults: Appearance = {
   blur: 0,
   ratio: "Auto",
   cursorSize: 1.5,
+  motionBlurAmount: 0,
+  cursorMotionBlur: 1,
+  screenMoveBlur: 1,
+  screenZoomBlur: 1,
   hideCursor: false,
   cursorIdleMs: null,
   cursorLoopMs: null,
@@ -344,7 +350,11 @@ export function validateProject(value: unknown): Project {
     )
       throw new Error("The project has an invalid crop.");
   }
-  p.appearance = { ...defaults, ...p.appearance };
+  p.appearance = {
+    ...defaults,
+    ...p.appearance,
+    ...normalizeMotionBlur(p.appearance),
+  };
   if (
     p.appearance.cursorMotionBlur !== undefined &&
     (!valid(p.appearance.cursorMotionBlur) ||
@@ -353,6 +363,7 @@ export function validateProject(value: unknown): Project {
   )
     throw new Error("Invalid cursor motion blur strength.");
   for (const value of [
+    p.appearance.motionBlurAmount,
     p.appearance.screenMoveBlur,
     p.appearance.screenZoomBlur,
   ])

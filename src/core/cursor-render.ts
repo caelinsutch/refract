@@ -3,7 +3,8 @@ import { sourceAt, type Project } from "./project";
 export function cursorExposure(p: Project, time: number) {
   const at = sourceAt(p, time);
   if (!at) return [];
-  const amount = p.appearance.cursorMotionBlur ?? 0;
+  const amount =
+    (p.appearance.cursorMotionBlur ?? 0) * (p.appearance.motionBlurAmount ?? 1);
   if (amount <= 0) return [at.time];
   // A fixed output-time shutter keeps preview/export independent of display refresh.
   const exposure = (1000 / 60) * amount * at.segment.speed;

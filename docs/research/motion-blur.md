@@ -70,3 +70,11 @@ The same native benchmark measured 40.3 ms per 720p frame and 507.9 ms per 4K qu
 ## Live control comparison
 
 The updated Refract animation panel was visually inspected in macOS Light appearance; all three independent blur sliders are present at zero, along with Quality preview. Screen Studio's live accessibility tree confirms a different order: Screen animation style, Cursor animation style, then master Motion blur, followed by Advanced motion blur settings. Refract currently spreads the blur sliders around the style groups; regrouping and a master control remain needed for reference alignment. Screen Studio's editor screenshot still renders blank through the UI tool, so this observation establishes control order via accessibility, not a pixel-level visual match.
+
+## Master control and reference grouping
+
+The animation panel now follows the observed reference order: screen style, cursor style, master Motion blur, and collapsed Advanced motion blur settings. Advanced controls retain the independent screen movement, zoom and cursor strengths. The master multiplies each strength without destroying their relative settings. New projects remain at master zero, preserving the requested sharp default.
+
+Older projects that saved independent strengths are migrated by factoring their maximum into the master and normalizing the component values; the effective strengths remain unchanged. Projects with no blur settings migrate to master zero. Invalid pre-migration values are rejected before normalization. All 75 tests and production compilation pass, including a migration round trip, preserved effective strengths, invalid inputs and master-off preservation of component values.
+
+The refreshed verification app's accessibility tree confirms the new order and a zero master value on the legacy fixture. Live screenshot updates did not consistently follow the accessibility changes, so this is control-order evidence, not pixel-level visual approval. Advanced slider interaction, master-to-export verification, and exact reference strength/easing remain open.

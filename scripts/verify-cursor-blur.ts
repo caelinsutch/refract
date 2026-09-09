@@ -38,6 +38,9 @@ const p = createProject({
   hasAudio: false,
 });
 Object.assign(p.appearance, {
+  motionBlurAmount: 1,
+  screenMoveBlur: 0,
+  screenZoomBlur: 0,
   cursorMotionBlur: 1,
   cursorSmooth: false,
   cursorIdleMs: null,

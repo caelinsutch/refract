@@ -4,8 +4,9 @@ type Transform = ReturnType<typeof zoomAt>;
 export function screenExposure(p: Project, t: number): Transform[] {
   const at = sourceAt(p, t);
   const current = zoomAt(p, at?.time ?? 0);
-  const move = p.appearance.screenMoveBlur ?? 0,
-    zoom = p.appearance.screenZoomBlur ?? 0;
+  const amount = p.appearance.motionBlurAmount ?? 1;
+  const move = (p.appearance.screenMoveBlur ?? 0) * amount,
+    zoom = (p.appearance.screenZoomBlur ?? 0) * amount;
   if (!at || (!move && !zoom) || p.appearance.animation === "instant")
     return [current];
   const samples = Array.from({ length: 12 }, (_, i) => {

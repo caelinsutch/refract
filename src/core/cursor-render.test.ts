@@ -14,6 +14,7 @@ const fixture = () =>
   });
 test("cursor exposure stays in the active cut and respects clip speed", () => {
   const p = fixture();
+  p.appearance.motionBlurAmount = 1;
   p.appearance.cursorMotionBlur = 1;
   p.segments = [
     { id: "a", start: 0, end: 100, speed: 1 },
@@ -90,6 +91,7 @@ test("shared cursor blur is deterministic and absent at a clip boundary", () => 
   };
   const sharp = render(90),
     start = render(0);
+  p.appearance.motionBlurAmount = 1;
   p.appearance.cursorMotionBlur = 1;
   const blurred = render(90);
   assert.notDeepEqual(blurred, sharp);
