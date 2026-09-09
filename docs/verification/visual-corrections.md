@@ -291,3 +291,24 @@ This menu currently uses an HTML popover with semantic theme tokens. It does not
 establish native macOS menu material parity. The isolated editor verification
 covers all cycle transitions, selecting 0.25× using keyboard input, confirming
 that rate on the real video element, returning to 1×, and context-menu dismissal.
+
+## Preview performance panel — 2026-09-09
+
+Installed `VideoPerformanceOptions` uses a transparent gauge toolbar button,
+a 4px warning dot at top:5px/right:12px when quality or power is reduced,
+and a panel with 320px content width. It contains Preview mode (Quality or
+Performance), Power saving mode, and a preview-only explanation.
+
+Replaced the exposed quality dropdown with that panel. Performance continues to
+skip preview motion blur. Added a power-saving preview redraw cap of 30fps while
+keeping media transport updates independent; paused edits still invalidate
+immediately. The export rendering path does not read either preview setting.
+The panel follows semantic theme tokens and Escape restores trigger focus.
+
+Implementation difference: the reference requests a low-power WebGL context;
+Refract's Canvas implementation limits redraw frequency instead. This reduces
+rendering work but is not evidence of equivalent power consumption. The verifier
+checks option state, warning-dot reset, keyboard dismissal, and counts actual
+composition clears over 650ms of playback (2–23 allowed), while checking media
+continues advancing. Native popover material and exact segmented-choice styling
+remain unverified.

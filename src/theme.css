@@ -18,6 +18,7 @@
   --primary-hover: color-mix(in srgb, var(--primary), black 15%);
   --primary-text: #ffffff;
   --accent: #72d5dd;
+  --warning: #e7b54a;
   --focus: #b6becb;
   --sample-edge: #fff8;
   --sample-hover: color-mix(in srgb, var(--text-primary) 40%, transparent);

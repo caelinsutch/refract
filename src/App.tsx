@@ -1,3 +1,4 @@
+import { PreviewSettings } from "./components/PreviewSettings";
 import { PlaybackSpeed } from "./components/PlaybackSpeed";
 import {
   RecordingCompletions,
@@ -488,6 +489,7 @@ export default function App() {
   const [previewQuality, setPreviewQuality] = useState<
     "quality" | "performance"
   >("quality");
+  const [previewPowerSaving, setPreviewPowerSaving] = useState(false);
   const [captionLocale, setCaptionLocale] = useState("en-US");
   const [history, dispatchHistory] = useReducer(reduceHistory, emptyHistory);
   const { present: project, past, future } = history;
@@ -939,12 +941,22 @@ export default function App() {
   useEffect(() => {
     let id: number | undefined,
       lastState = performance.now();
+    let lastDraw = -Infinity;
     const tick = (now: number) => {
       id = undefined;
       const p = projectRef.current,
         c = canvas.current,
         v = video.current;
-      if (p && c && v && v.readyState >= 2) {
+      if (
+        p &&
+        c &&
+        v &&
+        v.readyState >= 2 &&
+        (!previewPowerSaving ||
+          !playingRef.current ||
+          now - lastDraw >= 1000 / 30 - 0.5)
+      ) {
+        lastDraw = now;
         const holder = c.parentElement!;
         const d = previewDimensions(
           p,
@@ -1086,7 +1098,15 @@ export default function App() {
       for (const v of media)
         for (const event of events) v.removeEventListener(event, invalidate);
     };
-  }, [previewSpeed, loop, url, cameraUrl, project?.id, previewQuality]);
+  }, [
+    previewSpeed,
+    loop,
+    url,
+    cameraUrl,
+    project?.id,
+    previewQuality,
+    previewPowerSaving,
+  ]);
   useEffect(() => {
     requestPreview.current();
   }, [project, time, playing, selection]);
@@ -2082,17 +2102,12 @@ export default function App() {
                   off={<Volume2 size={14} />}
                 />
               </Button>
-              <select
-                aria-label="Preview quality"
-                title="Performance preview skips motion blur. Export keeps all enabled effects."
-                value={previewQuality}
-                onChange={(e) =>
-                  setPreviewQuality(e.target.value as "quality" | "performance")
-                }
-              >
-                <option value="quality">Quality</option>
-                <option value="performance">Performance</option>
-              </select>
+              <PreviewSettings
+                quality={previewQuality}
+                powerSaving={previewPowerSaving}
+                onQuality={setPreviewQuality}
+                onPowerSaving={setPreviewPowerSaving}
+              />
               <PlaybackSpeed value={previewSpeed} onChange={setPreviewSpeed} />
             </div>
           </div>

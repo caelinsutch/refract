@@ -597,6 +597,33 @@ app.whenReady().then(async () => {
       if(document.querySelector('[aria-label="Playback speed options"]').matches(':popover-open')) throw Error('Escape did not dismiss speed menu');
       if(document.activeElement.getAttribute('aria-label')!=='Playback speed') throw Error('Escape did not restore speed focus');
     })()`);
+    await window.webContents.executeJavaScript(`(async () => {
+      const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+      const trigger=document.querySelector('button[aria-label="Video preview performance settings"]');
+      trigger.click();await wait(30);
+      const panel=document.querySelector('[role="dialog"][aria-label="Video preview performance settings"]');
+      if(!panel.matches(':popover-open')) throw Error('Preview settings did not open');
+      const choice=label=>Array.from(panel.querySelectorAll('button')).find(b=>b.textContent===label);
+      choice('Performance').click();await wait(30);
+      if(choice('Performance').getAttribute('aria-pressed')!=='true'||!document.querySelector('[data-preview-reduced]')) throw Error('Performance selection did not activate');
+      const power=panel.querySelector('[role="switch"]');power.click();await wait(30);
+      if(power.getAttribute('aria-checked')!=='true') throw Error('Power saving did not activate');
+      panel.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+      if(document.activeElement!==trigger) throw Error('Preview settings Escape did not restore focus');
+      document.querySelector('button[aria-label="Start"]').click();await wait(100);
+      const canvas=document.querySelector('canvas[aria-label="Video composition preview"]'),ctx=canvas.getContext('2d');
+      const clear=ctx.clearRect;let draws=0;ctx.clearRect=function(...args){draws++;return clear.apply(this,args);};
+      try {
+        document.querySelector('button[aria-label="Play"]').click();await wait(650);
+        document.querySelector('button[aria-label="Pause"]').click();
+        const video=Array.from(document.querySelectorAll('video')).find(v=>v.src.startsWith('blob:'));
+        if(draws<2||draws>23) throw Error('Power-saving redraw count outside expected cap: '+draws);
+        if(video.currentTime<0.3) throw Error('Power saving stalled playback');
+      } finally {ctx.clearRect=clear;}
+      trigger.click();await wait(30);choice('Quality').click();power.click();await wait(30);
+      if(document.querySelector('[data-preview-reduced]')) throw Error('Reduced-preview indicator remained after reset');
+      panel.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+    })()`);
     const smallBounds = window.getBounds();
     assert.equal(
       await window.webContents.executeJavaScript(
@@ -608,6 +635,7 @@ app.whenReady().then(async () => {
     window.show();
     app.focus({ steal: true });
     window.focus();
+    window.webContents.focus();
     await window.webContents.executeJavaScript(
       `new Promise(resolve => setTimeout(resolve, 100))`,
     );
@@ -688,6 +716,7 @@ app.whenReady().then(async () => {
         settingsReset: "passed",
         responsivePlaybackAndCopy: "passed",
         speedMenuAndMediaRate: "passed",
+        previewSettingsAndPowerCap: "passed",
       }),
     );
   } catch (error) {
