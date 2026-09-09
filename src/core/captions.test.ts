@@ -76,3 +76,36 @@ test("caption wrapping preserves words, explicit lines, and grapheme clusters", 
     emoji,
   ]);
 });
+
+test("caption layout preserves normal sizing and fits long text without dropping lines", async () => {
+  const { layoutCaption } = await import("./captions");
+  const measure = (text: string, size: number) =>
+    Array.from(text).length * size * 0.6;
+  const normal = layoutCaption("Hello world", 1280, 720, measure);
+  assert.equal(normal.fontSize, 30);
+  assert.equal(normal.boxHeight, 52);
+  assert.equal(normal.bottom, 33);
+  for (const [width, height] of [
+    [1280, 720],
+    [720, 1280],
+    [4096, 256],
+    [320, 180],
+  ]) {
+    for (const text of [
+      Array(150).fill("A caption line").join("\n"),
+      "Long caption words ".repeat(200).trim(),
+    ]) {
+      const result = layoutCaption(text, width, height, measure);
+      assert.ok(result.top >= result.bottom - 0.001);
+      assert.ok(
+        result.top + result.boxHeight <= height - result.bottom + 0.001,
+      );
+      assert.ok(result.textWidth + 36 * result.scale <= width * 0.84 + 0.001);
+      assert.ok(result.fontSize > 0);
+      assert.equal(
+        result.lines.join(" ").replace(/\s+/g, " "),
+        text.replace(/\s+/g, " "),
+      );
+    }
+  }
+});

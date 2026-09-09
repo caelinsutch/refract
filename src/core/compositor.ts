@@ -2,7 +2,7 @@ import { screenExposure, drawScreenExposure } from "./screen-blur";
 import { cursorExposure, drawCursorExposure } from "./cursor-render";
 import { drawShortcut } from "./shortcuts";
 import { cameraFrameAt } from "./camera-layout";
-import { wrapCaption } from "./captions";
+import { layoutCaption } from "./captions";
 import {
   animatedCursorAt,
   loopedCursorAt,
@@ -12,6 +12,15 @@ import {
   cursorLoopStart,
 } from "./cursor";
 import { type Project, sourceAt, zoomAt } from "./project";
+const captionLayoutCache = new WeakMap<
+  CanvasRenderingContext2D,
+  {
+    text: string;
+    width: number;
+    height: number;
+    layout: ReturnType<typeof layoutCaption>;
+  }
+>();
 export const wallpapers = [
   ["#bacdf4", "#527acf", "#ded6fb"],
   ["#313261", "#7c67ce", "#d295de"],
@@ -387,35 +396,41 @@ export function drawFrame(
   const caption = p.captions.find((s) => source >= s.start && source < s.end);
   let shortcutBottom = 33 * scale;
   if (caption) {
-    c.font = `600 ${30 * scale}px -apple-system, sans-serif`;
+    const cached = captionLayoutCache.get(c);
+    const layout =
+      cached?.text === caption.text &&
+      cached.width === width &&
+      cached.height === height
+        ? cached.layout
+        : layoutCaption(caption.text, width, height, (text, fontSize) => {
+            c.font = `600 ${fontSize}px -apple-system, sans-serif`;
+            return c.measureText(text).width;
+          });
+    if (layout !== cached?.layout)
+      captionLayoutCache.set(c, { text: caption.text, width, height, layout });
+    const { lines, textWidth, lineHeight, boxHeight, top } = layout;
+    const captionScale = layout.scale;
+    c.font = `600 ${layout.fontSize}px -apple-system, sans-serif`;
     c.textAlign = "center";
     c.textBaseline = "middle";
-    const lines = wrapCaption(
-      caption.text,
-      width * 0.84 - 36 * scale,
-      (text) => c.measureText(text).width,
-    );
-    const textWidth = Math.max(
-      ...lines.map((line) => c.measureText(line).width),
-    );
-    const lineHeight = 38 * scale;
-    const boxHeight = lines.length * lineHeight + 14 * scale;
-    const bottom = 33 * scale;
-    const top = height - bottom - boxHeight;
-    shortcutBottom += boxHeight + 12 * scale;
+    shortcutBottom = layout.bottom + boxHeight + 12 * scale;
     c.fillStyle = "#000b";
     rounded(
       c,
-      (width - textWidth) / 2 - 18 * scale,
+      (width - textWidth) / 2 - 18 * captionScale,
       top,
-      textWidth + 36 * scale,
+      textWidth + 36 * captionScale,
       boxHeight,
-      10 * scale,
+      10 * captionScale,
     );
     c.fill();
     c.fillStyle = "white";
     lines.forEach((line, index) =>
-      c.fillText(line, width / 2, top + 7 * scale + lineHeight * (index + 0.5)),
+      c.fillText(
+        line,
+        width / 2,
+        top + 7 * captionScale + lineHeight * (index + 0.5),
+      ),
     );
   }
   drawShortcut(c, p, t, width, height, shortcutBottom);
