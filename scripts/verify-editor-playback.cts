@@ -233,7 +233,7 @@ app.whenReady().then(async () => {
     await window.webContents.executeJavaScript(
       `document.querySelector('button[aria-label="Edit Trim start"]').click()`,
     );
-    for (const digit of ["0", ".", "7", "5"])
+    for (const digit of ["0", ".", "7", "5", "5"])
       await window.webContents.insertText(digit);
     assert.equal(
       await window.webContents.executeJavaScript(
@@ -246,10 +246,18 @@ app.whenReady().then(async () => {
     window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
     await window.webContents.executeJavaScript(`(async () => {
       const deadline=performance.now()+3000;
-      while(Number(document.querySelector('input[aria-label="Trim start"]').getAttribute("value"))!==0.75) {
+      while(Number(document.querySelector('input[aria-label="Trim start"]').getAttribute("value"))!==0.755) {
         if(performance.now()>deadline) throw Error('Exact trim entry did not commit: '+document.querySelector('input[aria-label="Trim start"]').outerHTML+' draft='+document.querySelector('input[aria-label="Trim start value"]')?.value);
         await new Promise(resolve=>setTimeout(resolve,20));
       }
+      document.querySelector('button[aria-label="Edit Trim start"]').click();
+    })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await window.webContents.executeJavaScript(`(async () => {
+      await new Promise(resolve=>setTimeout(resolve,30));
+      const value=Number(document.querySelector('input[aria-label="Trim start"]').getAttribute('value'));
+      if (value !== 0.755) throw Error('Unchanged numeric confirmation rounded trim to '+value);
       document.querySelector('button[aria-label="Edit Trim start"]').click();
     })()`);
     await window.webContents.insertText("0.9");
@@ -257,7 +265,7 @@ app.whenReady().then(async () => {
     window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
     await window.webContents.executeJavaScript(`(async () => {
       await new Promise(resolve=>setTimeout(resolve,30));
-      if(Number(document.querySelector('input[aria-label="Trim start"]').getAttribute("value"))!==0.75) throw Error('Escape changed trim');
+      if(Number(document.querySelector('input[aria-label="Trim start"]').getAttribute("value"))!==0.755) throw Error('Escape changed trim');
     })()`);
     console.log(
       JSON.stringify({

@@ -217,7 +217,7 @@ export function Range({
               }}
               onClick={() => {
                 active.current = true;
-                setDraft(String(Number(value.toFixed(2))));
+                setDraft(String(value));
               }}
             >
               {Number(value.toFixed(2))}
