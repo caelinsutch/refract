@@ -578,3 +578,29 @@ Opened the rebuilt package and visually inspected the toolbar. Its live renderer
 URL contains `nativeGlass=1`; the old visible grip is absent and the native light
 material sits behind the controls. All 150 core tests pass. This confirms the
 current macOS 26 integration, not full Screen Studio visual parity.
+
+## Shared hover surfaces — 2026-09-09
+
+Inspected the reference's recording-mode button and shared hover treatment. The
+animated element is a decorative background, separate from the label/icon. It
+scales from 0.8 to 1, follows the pointer by up to 2px on each axis, and escapes
+outward while fading on leave. The observed spring configuration uses stiffness
+1500, damping 100, and mass 2; a press reduces the background's longest dimension
+by 2px. These measurements informed a new original TypeScript implementation.
+
+Added one shared delegated hover controller for ordinary action buttons across
+recorder, editor, transport, and dialogs. Motion values are centralized; animation
+writes only decorative CSS variables and does not update React state. Existing
+filled/selected colors stay intact. Timeline handles, switches, wallpaper swatches,
+and menu rows keep their existing interaction treatment. Disabled buttons stay
+quiet and reduced motion uses a static highlight. No vendor implementation or
+assets were copied into the repository.
+
+The production-renderer hover verifier passes scale-in, pointer following,
+stationary button/glyph bounds, held-press release, fade-out, disabled controls,
+and reduced motion. It uses an unthrottled hidden Electron window to avoid the
+shared desktop's focus changes corrupting timing measurements. A focus-loss edge
+case was corrected: subsequent pointer movement or a press reactivates the fill.
+The full editor playback/keyboard verifier also passes. Its ratio Escape check now
+waits for native key delivery and focus restoration instead of asserting before
+the asynchronous key event arrives.

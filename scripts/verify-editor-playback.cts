@@ -710,7 +710,11 @@ app.whenReady().then(async () => {
     window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
     window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
     await window.webContents.executeJavaScript(`(async () => {
-      if(document.activeElement.getAttribute('aria-label')!=='Aspect ratio') throw Error('Ratio Escape did not restore focus');
+      const deadline=performance.now()+1500;
+      while(document.activeElement.getAttribute('aria-label')!=='Aspect ratio') {
+        if(performance.now()>deadline) throw Error('Ratio Escape did not restore focus: '+document.activeElement.outerHTML);
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
       document.querySelector('button[aria-label="Undo"]').click();
       await new Promise(resolve=>setTimeout(resolve,100));
       if(document.querySelector('button[aria-label="Aspect ratio"]').textContent!=='Auto') throw Error('Ratio was not restored by one Undo');

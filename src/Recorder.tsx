@@ -1257,6 +1257,7 @@ export default function Recorder() {
               ].map((m) => (
                 <button
                   key={m.id}
+                  aria-pressed={panel === m.id}
                   data-motion="static"
                   {...sx.props(s.mode, panel === m.id && s.active)}
                   onClick={() => pick(m.id)}

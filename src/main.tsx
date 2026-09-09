@@ -1,3 +1,4 @@
+import { installButtonHover } from "./ui/button-hover";
 import { CropWindow } from "./components/CropWindow";
 import React from "react";
 import { createRoot } from "react-dom/client";
@@ -48,3 +49,6 @@ createRoot(document.getElementById("root")!).render(
     )}
   </React.StrictMode>,
 );
+
+const disposeButtonHover = installButtonHover();
+import.meta.hot?.dispose(disposeButtonHover);

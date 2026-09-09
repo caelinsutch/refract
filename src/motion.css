@@ -357,3 +357,26 @@ input[data-setting-slider]:active::-webkit-slider-thumb {
     transition: none;
   }
 }
+
+/* Shared pointer-following fill. Its parent and glyphs never scale or move. */
+button[data-hover-surface] {
+  isolation: isolate;
+}
+button[data-hover-surface]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: var(--white-a13);
+  opacity: var(--hover-opacity, 0);
+  translate: var(--hover-x, 0px) var(--hover-y, 0px);
+  scale: var(--hover-scale, 0.8);
+}
+button[data-hover-surface="plain"]:hover:not([aria-pressed="true"]):not([aria-expanded="true"]):not([data-active="true"]) {
+  background-color: transparent !important;
+}
+button[data-hover-surface]:disabled::before {
+  opacity: 0;
+}
