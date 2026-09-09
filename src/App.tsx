@@ -446,6 +446,12 @@ export default function App() {
     playingRef = useRef(playing),
     bgImage = useRef<HTMLImageElement | null>(null),
     requestPreview = useRef<() => void>(() => {});
+  const cancelMaskDrag = () => {
+    if (!maskDrag.current) return;
+    maskDrag.current = null;
+    requestPreview.current();
+  };
+
   projectRef.current = project;
   dirtyRef.current = dirty;
   timeRef.current = time;
@@ -911,6 +917,7 @@ export default function App() {
   }, [project, time, playing]);
   useEffect(() => {
     const action = (a: string) => {
+      cancelMaskDrag();
       const focused = document.activeElement;
       const editingText =
         focused instanceof HTMLTextAreaElement ||
@@ -948,6 +955,8 @@ export default function App() {
     const off = window.refract?.onMenu(action);
     const key = (e: KeyboardEvent) => {
       if (cropping || e.defaultPrevented) return;
+      if (!["Shift", "Control", "Alt", "Meta"].includes(e.key))
+        cancelMaskDrag();
       if (
         (e.metaKey || e.ctrlKey) &&
         e.key.toLowerCase() === "k" &&
@@ -1545,9 +1554,7 @@ export default function App() {
                   style={{
                     cursor: mask ? "move" : z ? "crosshair" : "default",
                   }}
-                  onLostPointerCapture={() => {
-                    maskDrag.current = null;
-                  }}
+                  onLostPointerCapture={cancelMaskDrag}
                   onPointerDown={(e) => {
                     if (!mask || e.button !== 0) return;
                     const rect = e.currentTarget.getBoundingClientRect();
@@ -1586,7 +1593,7 @@ export default function App() {
                   }}
                   onPointerMove={(e) => {
                     const drag = maskDrag.current;
-                    if (drag)
+                    if (drag) {
                       drag.draft = moveMask(
                         drag.project,
                         drag.mask,
@@ -1596,10 +1603,12 @@ export default function App() {
                         e.clientX - drag.x,
                         e.clientY - drag.y,
                       );
+                      requestPreview.current();
+                    }
                   }}
                   onPointerUp={(e) => {
                     const drag = maskDrag.current;
-                    maskDrag.current = null;
+                    cancelMaskDrag();
                     if (!drag || project !== drag.project) return;
                     const moved = moveMask(
                       project,
@@ -1618,12 +1627,10 @@ export default function App() {
                         ),
                       });
                   }}
-                  onPointerCancel={() => {
-                    maskDrag.current = null;
-                  }}
+                  onPointerCancel={cancelMaskDrag}
                   onKeyDown={(e) => {
                     if (e.key === "Escape" && maskDrag.current) {
-                      maskDrag.current = null;
+                      cancelMaskDrag();
                       e.preventDefault();
                       e.stopPropagation();
                     }
