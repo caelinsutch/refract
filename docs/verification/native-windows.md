@@ -26,3 +26,18 @@ The current editor empty state, compact recorder, and expanded recording options
 ## Numeric-entry and lifecycle follow-up
 
 Empty and intermediate numeric strings now preserve the existing crop instead of coercing an empty string to zero and clamping it to one pixel. A core regression check covers cleared fields, incomplete values, valid replacement, and out-of-bounds clamping. Production build and 59 core tests passed. After restarting the final native host, opening crop and dismissing it with Escape returned focus to the editor's Crop button. The title override listener was corrected to listen on BrowserWindow rather than webContents. Full numeric replacement through the UI tool remains inconclusive; no claim of a successful 1000-pixel entry is made.
+
+## Live production-token regression check
+
+The main process explicitly selects `nativeTheme.themeSource = "system"` at startup, keeping native materials/dialogs and renderer media queries on macOS appearance. The existing `updated` listener also refreshes the opaque editor background.
+
+`scripts/verify-theme.cts` runs an isolated Electron process against the built production stylesheet. It checks 19 tokens covering editor surfaces, popovers, controls, modal/native material, recorder and expanded recorder, area labels, crop and toolbar, text, borders, sliders, and focus. Light → Dark → Light changes pass without reloading; every checked token changes and returns to its initial value. This test changes only the isolated process's theme override, restores `system`, and never opens a user project or changes macOS appearance. It verifies live computed styles, not complete visual or native-material parity.
+
+Reproduce after `npm run build`:
+
+```sh
+npx tsc scripts/verify-theme.cts --target ES2022 --module Node16 --moduleResolution Node16 --esModuleInterop --skipLibCheck --strict --outDir work/theme-check
+./node_modules/.bin/electron work/theme-check/verify-theme.cjs
+```
+
+Production TypeScript/Vite build passed. Electron requires macOS window-server access; the sandbox-only launch aborted before running the check, and the launch with window-server access passed.

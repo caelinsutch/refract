@@ -107,6 +107,9 @@ const handle = (name: string, fn: (...args: any[]) => unknown) =>
     return fn(...args);
   });
 app.whenReady().then(() => {
+  // Keep native materials, dialogs, and every renderer's media query in sync
+  // with macOS, including appearance changes while a window is open.
+  nativeTheme.themeSource = "system";
   protocol.handle("refract-media", async (request) => {
     const id = new URL(request.url).pathname.slice(1),
       file = media.get(id);
