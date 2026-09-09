@@ -1,3 +1,4 @@
+import { isExportFrameRate } from "./export-settings.js";
 import { clipAudioGain } from "./audio.js";
 import { type Project, validateProject, duration } from "./project.js";
 export function exportArgs(
@@ -11,7 +12,7 @@ export function exportArgs(
   clickAudioFile?: string,
 ): string[] {
   validateProject(project);
-  if (!(format === "gif" ? [24, 30, 50] : [24, 30, 60]).includes(fps))
+  if (!isExportFrameRate(format, fps))
     throw Error("Unsupported output frame rate.");
   const args = [
     "-hide_banner",

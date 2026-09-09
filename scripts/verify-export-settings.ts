@@ -1,3 +1,4 @@
+import { exportFrameRates } from "../src/core/export-settings";
 import { createCanvas } from "@napi-rs/canvas";
 import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -17,7 +18,7 @@ const results: object[] = [];
 // Short moving fixtures exercise every UI encoder setting without retaining many 4K frames.
 for (const format of ["mp4", "gif"] as const) {
   for (const max of [1280, 1920, 3840]) {
-    for (const fps of format === "gif" ? [24, 30, 50] : [24, 30, 60]) {
+    for (const fps of exportFrameRates[format]) {
       const p = createProject({
         file: "unused",
         width: 320,

@@ -1,3 +1,4 @@
+import { exportFrameRates } from "./core/export-settings";
 import { RecorderSymbol, RecorderSymbols } from "./components/RecorderSymbol";
 import { recordingCompletion } from "./core/recording-completion";
 import { captureAreaBetween } from "./core/capture-area";
@@ -955,7 +956,7 @@ export default function Recorder() {
             })
           }
         >
-          {[24, 30, 60].map((n) => (
+          {exportFrameRates.mp4.map((n) => (
             <option key={n} value={n}>
               {n} fps
             </option>

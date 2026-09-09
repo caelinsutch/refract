@@ -635,8 +635,10 @@ handle(
       throw Error("Invalid export destination.");
     if (job) throw Error("An export is already running.");
     if (!projectDir) throw Error("Import a video first.");
+    const { isExportFrameRate } =
+      await import("../src/core/export-settings.js");
     if (
-      !(format === "gif" ? [24, 30, 50] : [24, 30, 60]).includes(fps) ||
+      !isExportFrameRate(format, fps) ||
       !["mp4", "gif"].includes(format) ||
       ![width, height].every((n) => Number.isInteger(n) && n > 0 && n <= 4096)
     )

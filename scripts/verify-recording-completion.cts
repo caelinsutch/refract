@@ -270,7 +270,7 @@ app.whenReady().then(async () => {
       change('Export destination','clipboard');await wait();
       change('Export format','gif');await wait();
       change('Output size','1280');await wait();
-      change('Frame rate','24');await wait();
+      change('Frame rate','20');await wait();
       const button=document.querySelector('[data-dialog-default]');
       if(button.textContent.trim()!=='Export to clipboard') throw Error('Wrong default export action');
       button.focus();
@@ -311,7 +311,7 @@ app.whenReady().then(async () => {
     );
     assert.equal(manualProbe.streams[0].codec_name, "gif");
     assert.equal(manualProbe.streams[0].width, 1280);
-    assert.equal(Number(manualProbe.streams[0].nb_read_frames), 6);
+    assert.equal(Number(manualProbe.streams[0].nb_read_frames), 5);
     window.webContents.send("menu-action", "commands");
     await window.webContents.executeJavaScript(`(async()=>{
       const deadline=performance.now()+5000;
@@ -368,7 +368,7 @@ app.whenReady().then(async () => {
       "gif",
       "Quick export changed editor settings",
     );
-    assert.equal(requests.at(-1).fps, 24);
+    assert.equal(requests.at(-1).fps, 20);
     assert.equal(requests.at(-1).width, 1280);
     assert.equal(availability[0], false, "Empty editor enabled exports");
     assert.ok(

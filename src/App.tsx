@@ -1,3 +1,4 @@
+import { exportFrameRate, exportFrameRates } from "./core/export-settings";
 import { supportsDirectionalShadow } from "./core/shadow-layer";
 import { WallpaperPicker } from "./components/WallpaperPicker";
 import { BackgroundImagePicker } from "./components/BackgroundImagePicker";
@@ -3474,13 +3475,7 @@ export default function App() {
                       onChange={(e) => {
                         const next = e.target.value as "mp4" | "gif";
                         setFormat(next);
-                        setFps((current) =>
-                          next === "gif" && current === 60
-                            ? 50
-                            : next === "mp4" && current === 50
-                              ? 60
-                              : current,
-                        );
+                        setFps((current) => exportFrameRate(next, current));
                       }}
                     >
                       <option value="mp4">MP4 video</option>
@@ -3508,13 +3503,11 @@ export default function App() {
                       value={fps}
                       onChange={(e) => setFps(Number(e.target.value))}
                     >
-                      {(format === "gif" ? [24, 30, 50] : [24, 30, 60]).map(
-                        (n) => (
-                          <option key={n} value={n}>
-                            {n} fps
-                          </option>
-                        ),
-                      )}
+                      {exportFrameRates[format].map((n) => (
+                        <option key={n} value={n}>
+                          {n} fps
+                        </option>
+                      ))}
                     </select>
                   </Row>
                   <Divider />
