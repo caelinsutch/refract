@@ -78,7 +78,25 @@ app.whenReady().then(async () => {
       const small=new OffscreenCanvas(40,60);
       small.getContext('2d').fillRect(0,0,40,60);
       const resized=filter.render(small,2);
-      return {checks,alphaPixel,resized:[resized?.width,resized?.height]};
+      const resizedDimensions=[resized?.width,resized?.height];
+      const exports=[];
+      for(const width of [1280,3840]) {
+        const height=width*9/16;
+        const fixture=new OffscreenCanvas(width,height);
+        const fc=fixture.getContext('2d');
+        fc.fillStyle='#202020';fc.fillRect(0,0,width,height);
+        fc.fillStyle='white';fc.fillRect(width/4,0,width/2,height);
+        fc.fillStyle='red';fc.fillRect(0,0,width/8,height/4);
+        fc.fillStyle='blue';fc.fillRect(width*7/8,height*3/4,width/8,height/4);
+        const begin=performance.now();
+        const filtered=filter.render(fixture,width/20);
+        if(!filtered) throw Error('Large GPU filter unavailable');
+        const encoded=document.createElement('canvas');
+        encoded.width=width;encoded.height=height;
+        encoded.getContext('2d').drawImage(filtered,0,0);
+        exports.push({width,height,milliseconds:performance.now()-begin,png:encoded.toDataURL().split(',')[1]});
+      }
+      return {checks,alphaPixel,resized:resizedDimensions,exports};
     })()`);
     for (const check of result.checks) {
       assert.ok(check.max <= 3, JSON.stringify(check));
@@ -89,6 +107,14 @@ app.whenReady().then(async () => {
     assert.equal(result.alphaPixel[2], 0);
     assert.ok(result.alphaPixel[3] > 30 && result.alphaPixel[3] < 100);
     assert.deepEqual(result.resized, [40, 60]);
+    await fs.mkdir("work/background-filter", { recursive: true });
+    for (const frame of result.exports) {
+      await fs.writeFile(
+        `work/background-filter/gpu-${frame.width}.png`,
+        Buffer.from(frame.png, "base64"),
+      );
+      delete frame.png;
+    }
     console.log(JSON.stringify(result));
     app.exit(0);
   } catch (error) {
