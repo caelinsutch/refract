@@ -348,18 +348,6 @@ input[data-setting-slider]:active::-webkit-slider-thumb {
   white-space: nowrap;
 }
 
-[data-disclosure-header]:hover [data-disclosure-toggle] {
-  background-color: var(--white-a12);
-}
-[data-disclosure-toggle] {
-  transition: background-color var(--motion-feedback) var(--ease-responsive);
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-disclosure-toggle] {
-    transition: none;
-  }
-}
-
 /* Shared pointer-following fill. Its parent and glyphs never scale or move. */
 [data-hover-surface] {
   --hover-opacity: 0;

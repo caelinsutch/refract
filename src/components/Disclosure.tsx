@@ -9,6 +9,7 @@ const s = sx.create({
     gap: 2,
     width: "100%",
     minHeight: 32,
+    borderRadius: "var(--radius-control)",
     padding: 0,
     borderWidth: 0,
     backgroundColor: "transparent",

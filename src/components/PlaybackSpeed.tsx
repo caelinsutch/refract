@@ -42,7 +42,6 @@ const styles = sx.create({
     borderRadius: 5,
     backgroundColor: {
       default: "transparent",
-      ":hover": "var(--white-a12)",
       ":focus": "var(--white-a12)",
     },
     color: "var(--text-primary)",

@@ -68,6 +68,7 @@ app.whenReady().then(async () => {
       await wait(650);
       const rect = await read(`(() => {
         window.subject = document.querySelector(${JSON.stringify(selector)});
+        subject?.scrollIntoView({block:'nearest', behavior:'instant'});
         if (!subject?.dataset.hoverSurface) throw Error('Missing hover surface: '+${JSON.stringify(selector)});
         window.geometry = () => {const r=subject.getBoundingClientRect(); return [r.x,r.y,r.width,r.height]};
         window.before = geometry();
@@ -100,6 +101,12 @@ app.whenReady().then(async () => {
       results.push(selector);
     }
     await hover('button[aria-label="Play"]');
+    await hover('[data-disclosure-header]');
+    assert.equal(
+      await read("getComputedStyle(subject.querySelector('[data-disclosure-toggle]')).backgroundColor"),
+      'rgba(0, 0, 0, 0)',
+      'Disclosure still paints a competing static hover',
+    );
     await hover("[data-wallpaper-swatch]");
     await hover('[data-timeline] [role="button"]');
     assert.equal(

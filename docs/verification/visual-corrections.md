@@ -855,3 +855,9 @@ continues to require the system permission; window-source listing still does too
 - Paste handling ignores text inputs and editable content. It processes only the image attached to the user's paste event, without proactively reading the clipboard.
 - Production build and inspector fixture passed image drop, synthetic image paste, preview dimensions, composition background pixels, invalid-image recovery, and Undo. The fixture uses generated image bytes and does not read the user's clipboard.
 - The existing data-URL persistence path is retained; large-image memory/performance and exact live reference appearance still need comparison.
+
+### Editor hover consistency follow-up — 2026-09-09
+
+- Removed the disclosure chevron's independent static highlight and the duplicate hover fills in aspect-ratio and playback-speed menus. Disclosure headers now have the shared control radius and spring background.
+- Expanded shared hover enrollment to semantic switches, checkboxes, radios, links, and disclosure summaries, including non-button implementations.
+- Production build passed. The synthetic Electron editor fixture passed spring entrance/settling and stationary bounds for playback, disclosure headers, wallpaper swatches, timeline clips, playback menus, and switches. Nested trim controls remained isolated, and the disclosure chevron no longer painted a second hover background. The fixture scrolls inspector controls into view before pointer checks.

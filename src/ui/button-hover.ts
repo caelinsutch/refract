@@ -14,7 +14,7 @@ export function installButtonHover() {
   const fine = matchMedia("(hover: hover) and (pointer: fine)");
   const abort = new AbortController();
   const controls =
-    'button, [role="button"], [role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="tab"], [role="option"], [data-hover-control]';
+    'button, [role="button"], [role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="tab"], [role="option"], [role="switch"], [role="checkbox"], [role="radio"], a[href], summary, [data-hover-control]';
   const disabled = (button: HTMLElement) =>
     button.matches(':disabled, [aria-disabled="true"]') ||
     !!button.closest("[inert]");
