@@ -332,6 +332,8 @@ export default function Recorder() {
     [sources, setSources] = useState<CaptureSources | null>(null),
     [loading, setLoading] = useState(false),
     [error, setError] = useState(""),
+    [recordingDirectory, setRecordingDirectory] = useState(""),
+    [choosingDirectory, setChoosingDirectory] = useState(false),
     [systemAudio, setSystemAudio] = useState(false),
     [automaticZooms, setAutomaticZooms] = useState(() => {
       try {
@@ -399,6 +401,10 @@ export default function Recorder() {
   };
   useEffect(() => {
     void api?.recorderState().then(setState);
+    void api
+      ?.recorderDirectory()
+      .then(setRecordingDirectory)
+      .catch(() => {});
     const off = api?.onRecorderState((state) => {
       setState(state);
       if (state.phase === "error") {
@@ -721,6 +727,39 @@ export default function Recorder() {
             </p>
           ) : panel === "settings" ? (
             <>
+              <button
+                {...sx.props(s.item)}
+                disabled={choosingDirectory}
+                title={recordingDirectory || "Change recording directory"}
+                onClick={async () => {
+                  setChoosingDirectory(true);
+                  try {
+                    const directory = await api?.recorderChooseDirectory();
+                    if (directory) setRecordingDirectory(directory);
+                  } catch (error) {
+                    setError(String(error));
+                  } finally {
+                    setChoosingDirectory(false);
+                  }
+                }}
+              >
+                <FolderOpen size={17} style={{ flexShrink: 0 }} />
+                <span style={{ minWidth: 0 }}>
+                  <span {...sx.props(s.itemTitle)}>Save new recordings to</span>
+                  <span
+                    {...sx.props(s.itemDetail)}
+                    style={{
+                      display: "block",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {recordingDirectory || "Loading folder…"}
+                  </span>
+                  <span {...sx.props(s.itemDetail)}>Change directory…</span>
+                </span>
+              </button>
               <div {...sx.props(s.item)}>
                 <Video size={17} />
                 <span>Maximum camera resolution</span>

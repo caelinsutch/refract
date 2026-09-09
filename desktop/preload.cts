@@ -20,6 +20,9 @@ contextBridge.exposeInMainWorld("refract", {
   cancelCaptions: () => ipcRenderer.invoke("captions-cancel"),
   showRecorder: () => ipcRenderer.invoke("recorder-show"),
   recorderState: () => ipcRenderer.invoke("recorder-state"),
+  recorderDirectory: () => ipcRenderer.invoke("recorder-directory"),
+  recorderChooseDirectory: () =>
+    ipcRenderer.invoke("recorder-directory-choose"),
   recorderSources: () => ipcRenderer.invoke("recorder-sources"),
   recorderExpand: (expanded: boolean) =>
     ipcRenderer.invoke("recorder-expand", expanded),

@@ -32,6 +32,8 @@ declare global {
       cancelCaptions(): Promise<void>;
       showRecorder(): Promise<void>;
       recorderState(): Promise<RecorderState>;
+      recorderDirectory(): Promise<string>;
+      recorderChooseDirectory(): Promise<string | null>;
       recorderSources(): Promise<CaptureSources>;
       recorderExpand(expanded: boolean): Promise<void>;
       recorderStart(choice: CaptureChoice): Promise<void>;

@@ -1,4 +1,8 @@
 import {
+  readRecordingDestination,
+  saveRecordingDestination,
+} from "./recording-destination.cjs";
+import {
   app,
   BrowserWindow,
   ipcMain,
@@ -6,6 +10,7 @@ import {
   globalShortcut,
   shell,
   systemPreferences,
+  dialog,
 } from "electron";
 import path from "node:path";
 import fs from "node:fs/promises";
@@ -50,6 +55,15 @@ export function setupRecorder(
   let checkingStart = false;
   let startGeneration = 0;
   let state: RecorderState = { phase: "idle", countdown: 3, elapsed: 0 };
+  const destinationFile = path.join(
+    app.getPath("userData"),
+    "recording-directory.json",
+  );
+  let recordingDirectory = readRecordingDestination(
+    destinationFile,
+    path.join(app.getPath("userData"), "projects"),
+  );
+  let choosingDirectory = false;
   const positionFile = path.join(
     app.getPath("userData"),
     "recorder-position.json",
@@ -221,8 +235,7 @@ export function setupRecorder(
     send();
     try {
       const root = path.join(
-        app.getPath("userData"),
-        "projects",
+        recordingDirectory,
         crypto.randomUUID() + ".refract",
       );
       const dir = path.join(root, "media");
@@ -327,8 +340,39 @@ export function setupRecorder(
   register("recorder-state", () => state);
   register("recorder-sources", list);
   register("recorder-expand", (expanded: boolean) => resize(expanded));
+  register("recorder-directory", () => recordingDirectory);
+  register("recorder-directory-choose", async () => {
+    if (
+      choosingDirectory ||
+      checkingStart ||
+      !["idle", "error"].includes(state.phase)
+    )
+      return null;
+    choosingDirectory = true;
+    try {
+      const selected = await dialog.showOpenDialog(bar ?? editor, {
+        title: "Save new recordings to",
+        defaultPath: recordingDirectory,
+        properties: ["openDirectory", "createDirectory"],
+        buttonLabel: "Choose folder",
+      });
+      if (selected.canceled || !["idle", "error"].includes(state.phase))
+        return null;
+      const directory = selected.filePaths[0];
+      await saveRecordingDestination(destinationFile, directory);
+      recordingDirectory = directory;
+      return directory;
+    } finally {
+      choosingDirectory = false;
+    }
+  });
   register("recorder-start", async (selected: CaptureChoice) => {
-    if (checkingStart || !["idle", "error"].includes(state.phase)) return;
+    if (
+      choosingDirectory ||
+      checkingStart ||
+      !["idle", "error"].includes(state.phase)
+    )
+      return;
     checkingStart = true;
     const requestedBar = bar;
     const generation = startGeneration;
