@@ -46,3 +46,7 @@ At width 1280 and setting 100, modeled reference sigma is 18.57 pixels versus th
 4. Verify cancellation/cache invalidation, system theme independence, sharp recording/cursor layers, and the export renderer. Establish a measured error tolerance against reference pixels before calling this parity.
 
 The shipped filter remains unchanged in this research step. This avoids presenting an analytical approximation as a verified match.
+
+## Implementation follow-up
+
+The subsequent cached WebGL implementation is in `src/core/background-filter.ts` and `src/core/background-layer.ts`. It implements the specified kernel and parameter mapping, with a variance-matched Canvas fallback. The earlier statement that the shipped filter was unchanged describes the research commit only. Verification results and remaining reference-export checks are recorded in `docs/verification/visual-corrections.md` under “Cached background filter”.

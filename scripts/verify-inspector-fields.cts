@@ -422,6 +422,27 @@ app.whenReady().then(async () => {
       firstImage,
       "Image replacement undo failed",
     );
+    await read(
+      `(()=>{const input=document.querySelector('input[aria-label="Background blur"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'50');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));})()`,
+    );
+    await wait(600);
+    const blurredBackground = await read(
+      `Array.from(document.querySelector('canvas').getContext('2d').getImageData(1,1,1,1).data)`,
+    );
+    assert.equal(blurredBackground[0], 0);
+    assert.equal(blurredBackground[1], 0);
+    assert.ok(
+      blurredBackground[2] >= 254 && blurredBackground[3] > 0,
+      "Blurred image did not render in the editor",
+    );
+    await read(`document.querySelector('button[aria-label="Undo"]').click()`);
+    await wait(100);
+    assert.equal(
+      await read(
+        `document.querySelector('input[aria-label="Background blur"]').value`,
+      ),
+      "0",
+    );
     console.log(
       JSON.stringify({
         rest: "hidden",

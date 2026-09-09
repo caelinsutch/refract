@@ -867,3 +867,11 @@ continues to require the system permission; window-source listing still does too
 - Read-only inspection of the installed reference renderer found a maximum width/height scale with centered offsets for image backgrounds (`MG`, used by `py`). Refract previously stretched images independently on each axis.
 - The shared preview/export compositor now center-covers images using intrinsic dimensions, preserving proportions across output ratios. Existing blur overscan remains; exact reference blur/filter matching is not established by this change.
 - Production build and all 12 compositor tests passed. A distinctive banded image verifies the expected cropped corner in landscape and portrait outputs and the original corner in square output. The real Electron inspector fixture also passed image drop/paste rendering, invalid-image retention, Undo, and its existing inspector checks. No live desktop capture was used.
+
+### Cached background filter — 2026-09-09
+
+- Replaced the broad single Canvas blur with an independent WebGL2 separable five-tap implementation: 20 passes per axis, strength = output width × setting / 2000. Premultiplied pixels are filtered in reusable RGBA buffers.
+- Backgrounds are painted with fixed centered-cover geometry into padded surfaces. Blur no longer enlarges the image. The final background is cached by context, dimensions, setting, appearance values, and image identity; video/cursor/camera frames remain uncached and sharp.
+- GPU-unavailable/oversized paths use a Gaussian approximation matched to the repeated kernel's modeled variance, including subpixel sampling. This fallback is explicitly approximate.
+- Production build and all 173 core tests passed. Cache tests cover reuse and invalidation; a boundary test verifies fixed geometry. The Electron GPU fixture compared strengths 0/3/12/24 against an independent quantized CPU model: maximum interior channel error 1/255, mean below 0.084/255. Transparent red remained red after filtering (sample RGBA 255,0,0,57); texture resizing passed. The production editor fixture passed image blur and Undo plus existing inspector interactions.
+- This establishes kernel implementation evidence, not complete reference-export parity. Exact framebuffer boundary behavior, filter resolution across displays, and large-export performance still require comparison to reference exports.

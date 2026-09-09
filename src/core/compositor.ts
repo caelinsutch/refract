@@ -1,3 +1,4 @@
+import { drawBackgroundLayer } from "./background-layer";
 import { gradientColors } from "./gradient-presets";
 import { insetEdges } from "./inset-balance";
 import { screenCorners } from "./screen-corners";
@@ -177,104 +178,101 @@ export function drawFrame(
     sh = p.source.height;
   c.save();
   c.clearRect(0, 0, width, height);
-  c.save();
-  const backgroundBlur =
-    a.background === "image" || a.background === "wallpaper"
-      ? a.blur * scale
-      : 0;
-  const overscan = backgroundBlur * 3;
-  if (backgroundBlur > 0) c.filter = `blur(${backgroundBlur}px)`;
-  if (a.background === "color") {
-    c.fillStyle = a.color;
-    c.fillRect(
-      -overscan,
-      -overscan,
-      width + overscan * 2,
-      height + overscan * 2,
-    );
-  } else if (a.background === "image" && bgImage) {
-    // Use intrinsic dimensions: an image's DOM layout size is unrelated to
-    // its pixels. Center-cover keeps photographs undistorted at every ratio.
-    const dimensions = bgImage as {
-      naturalWidth?: number;
-      naturalHeight?: number;
-      videoWidth?: number;
-      videoHeight?: number;
-      displayWidth?: number;
-      displayHeight?: number;
-      width?: number;
-      height?: number;
-    };
-    const imageWidth =
-      dimensions.naturalWidth ??
-      dimensions.videoWidth ??
-      dimensions.displayWidth ??
-      dimensions.width ??
-      width;
-    const imageHeight =
-      dimensions.naturalHeight ??
-      dimensions.videoHeight ??
-      dimensions.displayHeight ??
-      dimensions.height ??
-      height;
-    if (imageWidth > 0 && imageHeight > 0) {
-      const fit = Math.max(
-        (width + overscan * 2) / imageWidth,
-        (height + overscan * 2) / imageHeight,
-      );
-      const fittedWidth = imageWidth * fit;
-      const fittedHeight = imageHeight * fit;
-      c.drawImage(
-        bgImage,
-        (width - fittedWidth) / 2,
-        (height - fittedHeight) / 2,
-        fittedWidth,
-        fittedHeight,
-      );
-    }
-  } else {
-    const colors = wallpapers[a.wallpaper % wallpapers.length];
-    const grad =
-      a.background === "gradient"
-        ? c.createLinearGradient(0, 0, width, height)
-        : c.createLinearGradient(0, height, width, 0);
-    if (a.background === "gradient") {
-      const stops = gradientColors(a);
-      stops.forEach((color, index) =>
-        grad.addColorStop(index / (stops.length - 1), color),
-      );
-    } else {
-      grad.addColorStop(0, colors[0]);
-      grad.addColorStop(0.6, colors[1]);
-      grad.addColorStop(1, colors[2]);
-    }
-    c.fillStyle = grad;
-    c.fillRect(
-      -overscan,
-      -overscan,
-      width + overscan * 2,
-      height + overscan * 2,
-    );
-    if (a.background === "wallpaper") {
-      c.globalAlpha = 0.23;
-      for (let i = 0; i < 4; i++) {
-        c.beginPath();
-        c.ellipse(
-          width * (0.1 + i * 0.32),
-          height * 0.1,
-          width * 0.55,
-          height * 1.3,
-          -0.55,
-          0,
-          Math.PI * 2,
-        );
-        c.fillStyle = colors[i % 3];
-        c.fill();
+  drawBackgroundLayer(
+    c,
+    width,
+    height,
+    a.background === "image" || a.background === "wallpaper" ? a.blur : 0,
+    JSON.stringify([
+      a.background,
+      a.wallpaper,
+      a.color,
+      a.color2,
+      a.gradientStops,
+    ]),
+    bgImage,
+    (c) => {
+      c.save();
+      if (a.background === "color") {
+        c.fillStyle = a.color;
+        c.fillRect(0, 0, width, height);
+      } else if (a.background === "image" && bgImage) {
+        // Use intrinsic dimensions: an image's DOM layout size is unrelated to
+        // its pixels. Center-cover keeps photographs undistorted at every ratio.
+        const dimensions = bgImage as {
+          naturalWidth?: number;
+          naturalHeight?: number;
+          videoWidth?: number;
+          videoHeight?: number;
+          displayWidth?: number;
+          displayHeight?: number;
+          width?: number;
+          height?: number;
+        };
+        const imageWidth =
+          dimensions.naturalWidth ??
+          dimensions.videoWidth ??
+          dimensions.displayWidth ??
+          dimensions.width ??
+          width;
+        const imageHeight =
+          dimensions.naturalHeight ??
+          dimensions.videoHeight ??
+          dimensions.displayHeight ??
+          dimensions.height ??
+          height;
+        if (imageWidth > 0 && imageHeight > 0) {
+          const fit = Math.max(width / imageWidth, height / imageHeight);
+          const fittedWidth = imageWidth * fit;
+          const fittedHeight = imageHeight * fit;
+          c.drawImage(
+            bgImage,
+            (width - fittedWidth) / 2,
+            (height - fittedHeight) / 2,
+            fittedWidth,
+            fittedHeight,
+          );
+        }
+      } else {
+        const colors = wallpapers[a.wallpaper % wallpapers.length];
+        const grad =
+          a.background === "gradient"
+            ? c.createLinearGradient(0, 0, width, height)
+            : c.createLinearGradient(0, height, width, 0);
+        if (a.background === "gradient") {
+          const stops = gradientColors(a);
+          stops.forEach((color, index) =>
+            grad.addColorStop(index / (stops.length - 1), color),
+          );
+        } else {
+          grad.addColorStop(0, colors[0]);
+          grad.addColorStop(0.6, colors[1]);
+          grad.addColorStop(1, colors[2]);
+        }
+        c.fillStyle = grad;
+        c.fillRect(0, 0, width, height);
+        if (a.background === "wallpaper") {
+          c.globalAlpha = 0.23;
+          for (let i = 0; i < 4; i++) {
+            c.beginPath();
+            c.ellipse(
+              width * (0.1 + i * 0.32),
+              height * 0.1,
+              width * 0.55,
+              height * 1.3,
+              -0.55,
+              0,
+              Math.PI * 2,
+            );
+            c.fillStyle = colors[i % 3];
+            c.fill();
+          }
+          c.globalAlpha = 1;
+        }
       }
-      c.globalAlpha = 1;
-    }
-  }
-  c.restore();
+      c.restore();
+    },
+  );
   const { x, y, w, h, sx, sy, cw, ch, z, source } = videoGeometry(
     p,
     t,
