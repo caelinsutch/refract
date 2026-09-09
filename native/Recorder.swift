@@ -144,7 +144,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         if config.systemAudio { try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: queue) }
         if #available(macOS 15.0, *), config.microphoneId != nil { try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: queue) }
         try await stream.startCapture()
-        let keyboardCapture = KeyboardCapture { [weak self] event, timestamp in
+        let keyboardCapture = KeyboardCapture(receive: { [weak self] event, timestamp in
             guard let self else { return }
             self.queue.async {
                 guard let origin = self.origin, self.pausedAt == nil, !self.stopped, timestamp >= self.keyboardAfter else { return }
@@ -152,7 +152,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                 guard time >= 0 else { return }
                 var sample = event; sample["time"] = time; self.keyboard.append(sample)
             }
-        }
+        }, receiveClick: { [weak self] location, timestamp in
+            guard let self else { return }
+            self.queue.async {
+                self.recordClick(location, timestamp: timestamp)
+            }
+        })
         self.keyboardCapture = keyboardCapture
         keyboardStatus = keyboardCapture.start()
         emit(["event": "started", "width": settings.width, "height": settings.height, "keyboardStatus": keyboardStatus])
@@ -161,9 +166,18 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         timer.setEventHandler { [weak self] in self?.sampleCursor() }
         cursorTimer = timer; timer.resume()
     }
+    // Called only on the capture queue, like the periodic pointer samples.
+    func recordClick(_ location: CGPoint, timestamp: Double) {
+        guard let origin, pausedAt == nil, !stopped, timestamp >= keyboardAfter,
+              let point = normalizedQuartzCursorPosition(location, bounds: bounds) else { return }
+        let time = (timestamp - CMTimeGetSeconds(origin) - CMTimeGetSeconds(pauseOffset)) * 1000
+        guard time >= 0 else { return }
+        cursor.append(["time": time, "x": point.x, "y": point.y, "click": true, "visible": true])
+        cursorInside = true
+    }
     func sampleCursor() {
         let recording = origin != nil && pausedAt == nil && !stopped
-        let click = cursorButtons.sample(NSEvent.pressedMouseButtons, recording: recording)
+        let click = cursorButtons.sample(NSEvent.pressedMouseButtons, recording: recording && keyboardStatus != "available")
         guard recording else { return }
         let location = NSEvent.mouseLocation
         let mainHeight = CGDisplayBounds(CGMainDisplayID()).height
