@@ -45,32 +45,64 @@ export function drawScreenExposure(
   height: number,
   transforms: Transform[],
   paint: (context: CanvasRenderingContext2D, transform: Transform) => void,
+  bounds?: { x: number; y: number; width: number; height: number },
 ) {
   if (transforms.length === 1) {
     paint(c, transforms[0]);
     return;
   }
+  // Chromium filters can round edge pixels differently on off-canvas surfaces.
+  // Keep the established full-frame path when any recording edge is outside.
+  if (
+    bounds &&
+    (bounds.x < 0 ||
+      bounds.y < 0 ||
+      bounds.x + bounds.width > width ||
+      bounds.y + bounds.height > height)
+  ) {
+    bounds = undefined;
+  }
+  // Integer origins preserve the full-frame pixel grid, including fractional clips.
+  const left = Math.max(0, Math.min(width, Math.floor(bounds?.x ?? 0)));
+  const top = Math.max(0, Math.min(height, Math.floor(bounds?.y ?? 0)));
+  const right = Math.max(
+    left,
+    Math.min(width, Math.ceil(bounds ? bounds.x + bounds.width : width)),
+  );
+  const bottom = Math.max(
+    top,
+    Math.min(height, Math.ceil(bounds ? bounds.y + bounds.height : height)),
+  );
+  const bufferWidth = right - left,
+    bufferHeight = bottom - top;
+  if (!bufferWidth || !bufferHeight) return;
   let cached = layers.get(c);
   if (
     !cached ||
-    cached.sample.width !== width ||
-    cached.sample.height !== height
+    cached.sample.width !== bufferWidth ||
+    cached.sample.height !== bufferHeight
   ) {
     cached = {
-      sample: createRenderSurface(c, width, height),
-      sum: createRenderSurface(c, width, height),
+      sample: createRenderSurface(c, bufferWidth, bufferHeight),
+      sum: createRenderSurface(c, bufferWidth, bufferHeight),
     };
     layers.set(c, cached);
   }
   const sample = cached.sample.getContext("2d") as CanvasRenderingContext2D,
     sum = cached.sum.getContext("2d") as CanvasRenderingContext2D;
-  sum.clearRect(0, 0, width, height);
+  sum.clearRect(0, 0, bufferWidth, bufferHeight);
   sum.globalCompositeOperation = "lighter";
   sum.globalAlpha = 1 / transforms.length;
   for (const transform of transforms) {
-    sample.clearRect(0, 0, width, height);
-    paint(sample, transform);
+    sample.clearRect(0, 0, bufferWidth, bufferHeight);
+    sample.save();
+    sample.translate(-left, -top);
+    try {
+      paint(sample, transform);
+    } finally {
+      sample.restore();
+    }
     sum.drawImage(cached.sample, 0, 0);
   }
-  c.drawImage(cached.sum, 0, 0);
+  c.drawImage(cached.sum, left, top);
 }

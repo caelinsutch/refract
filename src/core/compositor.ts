@@ -257,6 +257,7 @@ export function drawFrame(
         }
       }
     },
+    { x, y, width: w, height: h },
   );
   const cursorStyle = a.cursorSmooth ? a.cursorAnimation : "none";
   const firstSource = p.segments[0].start;

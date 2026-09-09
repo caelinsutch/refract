@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createCanvas } from "@napi-rs/canvas";
 import { createProject, zoomAt, validateProject } from "./project";
-import { screenExposure } from "./screen-blur";
+import { screenExposure, drawScreenExposure } from "./screen-blur";
 import { drawFrame } from "./compositor";
 function fixture() {
   const p = createProject({
@@ -140,5 +140,82 @@ test("opaque masks cover every temporal screen sample", () => {
     const i = (y * 400 + x) * 4;
     assert.ok(data[i] > 245 && data[i + 1] > 200 && data[i + 2] > 70);
     assert.equal(data[i + 3], 255);
+  }
+});
+
+test("bounded exposure matches full-frame pixels across clips and buffer reuse", () => {
+  const full = createCanvas(160, 120),
+    bounded = createCanvas(160, 120);
+  const source = createCanvas(160, 120),
+    sc = source.getContext("2d");
+  for (let x = 0; x < 160; x += 3) {
+    sc.fillStyle = x % 2 ? "#25b5aacc" : "#fd7833";
+    sc.fillRect(x, 0, 3, 120);
+  }
+  const transforms = screenExposure(
+    Object.assign(fixture(), {
+      appearance: {
+        ...fixture().appearance,
+        screenMoveBlur: 1,
+        screenZoomBlur: 1,
+        motionBlurAmount: 1,
+      },
+    }),
+    1100,
+  );
+  for (const bounds of [
+    { x: 20, y: 15, width: 90, height: 75 },
+    { x: 20.25, y: 15.75, width: 90.5, height: 75.1 },
+    { x: -12.25, y: -5.5, width: 90.5, height: 75.1 },
+    { x: 100.25, y: 90.5, width: 90.5, height: 75.1 },
+    { x: 21.25, y: 16.75, width: 90.5, height: 75.1 },
+  ]) {
+    for (const canvas of [full, bounded]) {
+      const c = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+      c.clearRect(0, 0, 160, 120);
+      c.save();
+      c.beginPath();
+      c.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 7.5);
+      c.clip();
+      drawScreenExposure(
+        c,
+        160,
+        120,
+        transforms,
+        (sample, transform) => {
+          sample.drawImage(
+            source as unknown as CanvasImageSource,
+            transform.x * 10,
+            0,
+            120,
+            100,
+            bounds.x,
+            bounds.y,
+            bounds.width,
+            bounds.height,
+          );
+          sample.save();
+          sample.beginPath();
+          sample.rect(bounds.x, bounds.y, 30, bounds.height);
+          sample.clip();
+          sample.filter = "blur(4px)";
+          sample.drawImage(
+            source as unknown as CanvasImageSource,
+            bounds.x,
+            bounds.y,
+          );
+          sample.restore();
+          sample.fillStyle = "#ffd55088";
+          sample.fillRect(bounds.x + 15, bounds.y + 10, 20, 30);
+        },
+        canvas === bounded ? bounds : undefined,
+      );
+      c.restore();
+    }
+    assert.deepEqual(
+      Buffer.from(bounded.getContext("2d").getImageData(0, 0, 160, 120).data),
+      Buffer.from(full.getContext("2d").getImageData(0, 0, 160, 120).data),
+      JSON.stringify(bounds),
+    );
   }
 });
