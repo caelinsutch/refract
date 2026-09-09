@@ -62,7 +62,7 @@ app.whenReady().then(async () => {
         ['Shortcuts', 'No keyboard shortcuts during recording'],
       ]) {
         const control = button(label);
-        check(control?.disabled && control.title === explanation, label + ' must explain its missing track');
+        check(control?.disabled && document.getElementById(control.getAttribute('aria-describedby'))?.textContent === explanation, label + ' must explain its missing track');
         check(Math.abs(Number(getComputedStyle(control).opacity) - 0.3) < 0.001, label + ' must use the reference disabled opacity');
       }
       check(!button('Audio').disabled && !button('Captions').disabled, 'Media import tools must remain reachable');
@@ -92,9 +92,30 @@ app.whenReady().then(async () => {
       button('Pause').click();
       return { pausedAt:paused, restartedAt:video().currentTime, canvasCount:document.querySelectorAll('canvas').length };
     })()`);
-    await window.webContents.executeJavaScript(
-      `document.querySelector('button[aria-label="End"]').focus()`,
-    );
+    const tooltipTarget = await window.webContents.executeJavaScript(`(() => {
+      const bounds = document.querySelector('button[aria-label="Cursor"]').getBoundingClientRect();
+      return {x: Math.round(bounds.x + bounds.width / 2), y: Math.round(bounds.y + bounds.height / 2)};
+    })()`);
+    window.webContents.sendInputEvent({ type: "mouseMove", ...tooltipTarget });
+    await window.webContents.executeJavaScript(`(async () => {
+      const deadline = performance.now() + 3000;
+      let tip;
+      while (!(tip = document.querySelector('[role="tooltip"]:popover-open'))) {
+        if (performance.now() > deadline) throw Error('Disabled tool did not show its tooltip');
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      if (tip.textContent !== 'There is no mouse cursor recorded') throw Error('Wrong tooltip explanation');
+      const target = document.querySelector('button[aria-label="Cursor"]');
+      if (tip.getBoundingClientRect().right > target.getBoundingClientRect().left - 7) throw Error('Tooltip must appear left of the rail');
+      if (target === document.activeElement) throw Error('Hovering a disabled tool stole focus');
+    })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    await window.webContents.executeJavaScript(`(() => {
+      if (document.querySelector('[role="tooltip"]:popover-open')) throw Error('Escape did not dismiss tooltip');
+      document.querySelector('button[aria-label="End"]').focus();
+    })()`);
+    window.webContents.sendInputEvent({ type: "mouseMove", x: 10, y: 10 });
     window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Space" });
     window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Space" });
     await window.webContents.executeJavaScript(`(async () => {

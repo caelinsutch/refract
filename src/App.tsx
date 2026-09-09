@@ -1,3 +1,4 @@
+import { Tooltip } from "./components/Tooltip";
 import { Disclosure } from "./components/Disclosure";
 import { AspectRatioPicker } from "./components/AspectRatioPicker";
 import { playbackTime } from "./core/playback-time";
@@ -477,12 +478,14 @@ const tabs = [
   { id: "shortcuts", title: "Shortcuts", icon: Keyboard },
   { id: "animations", title: "Animations", icon: Clapperboard },
 ];
-function unavailableTool(id: string, project: Project | null): string | undefined {
+function unavailableTool(
+  id: string,
+  project: Project | null,
+): string | undefined {
   if (!project) return "Open a recording to edit its settings";
   if (id === "cursor" && !project.cursor.length)
     return "There is no mouse cursor recorded";
-  if (id === "camera" && !project.source.camera)
-    return "No camera recorded";
+  if (id === "camera" && !project.source.camera) return "No camera recorded";
   if (id === "shortcuts" && !project.shortcuts?.length)
     return "No keyboard shortcuts during recording";
 }
@@ -1969,29 +1972,35 @@ export default function App() {
                 const active = tab === t.id && !selection;
                 const unavailable = unavailableTool(t.id, project);
                 return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    title={unavailable ?? t.title}
-                    aria-label={t.title}
-                    aria-pressed={active}
-                    disabled={!!unavailable}
-                    data-motion="static"
-                    {...sx.props(
-                      s.tool,
-                      active && s.toolActive,
-                      !!unavailable && s.toolUnavailable,
+                  <Tooltip key={t.id} label={unavailable ?? t.title}>
+                    {(descriptionId) => (
+                      <button
+                        type="button"
+                        aria-describedby={descriptionId}
+                        aria-label={t.title}
+                        aria-pressed={active}
+                        disabled={!!unavailable}
+                        data-motion="static"
+                        {...sx.props(
+                          s.tool,
+                          active && s.toolActive,
+                          !!unavailable && s.toolUnavailable,
+                        )}
+                        onClick={() => {
+                          setTab(t.id);
+                          setSelection(null);
+                        }}
+                      >
+                        <t.icon size={16} strokeWidth={1.5} />
+                        {active && !unavailable && (
+                          <span
+                            aria-hidden="true"
+                            {...sx.props(s.toolIndicator)}
+                          />
+                        )}
+                      </button>
                     )}
-                    onClick={() => {
-                      setTab(t.id);
-                      setSelection(null);
-                    }}
-                  >
-                    <t.icon size={16} strokeWidth={1.5} />
-                    {active && !unavailable && (
-                      <span aria-hidden="true" {...sx.props(s.toolIndicator)} />
-                    )}
-                  </button>
+                  </Tooltip>
                 );
               })}
             </nav>
