@@ -1,4 +1,5 @@
 import { BackgroundFilter } from "./background-filter";
+import { blurShadowAlpha } from "./shadow-blur";
 import { createRenderSurface } from "./cursor-render";
 import type { Appearance } from "./project";
 
@@ -94,17 +95,14 @@ export function drawFrameShadow(
         filter ??= new BackgroundFilter();
         blurred = filter.render(input, 0, kernels);
       } catch {
-        /* GPU-unavailable paths retain a variance-matched approximation. */
+        /* Use the same sampling passes in software when GPU access fails. */
       }
     }
     if (blurred) output.drawImage(blurred, 0, 0);
     else {
-      const variance = kernels.reduce((sum, offset) => {
-        const fraction = offset - Math.floor(offset);
-        return sum + offset ** 2 + fraction * (1 - fraction);
-      }, 0);
-      output.filter = `blur(${Math.sqrt(variance)}px)`;
-      output.drawImage(input, 0, 0);
+      const pixels = context.getImageData(0, 0, sw, sh);
+      blurShadowAlpha(pixels.data, sw, sh, kernels);
+      output.putImageData(pixels, 0, 0);
     }
     cached = { key, surface, padding };
     cache.set(c, cached);

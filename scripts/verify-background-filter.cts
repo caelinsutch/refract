@@ -16,8 +16,12 @@ app.whenReady().then(async () => {
     const source = (
       await fs.readFile("work/background-filter/background-filter.js", "utf8")
     ).replace("export class BackgroundFilter", "class BackgroundFilter");
+    const software = (
+      await fs.readFile("work/background-filter/shadow-blur.js", "utf8")
+    ).replace("export function blurShadowAlpha", "function blurShadowAlpha");
     const result = await window.webContents.executeJavaScript(`(() => {
       ${source}
+      ${software}
       const size = 128;
       const input = new OffscreenCanvas(size,size);
       const c = input.getContext('2d');
@@ -92,6 +96,33 @@ app.whenReady().then(async () => {
         kawaseMax=Math.max(kawaseMax,delta);kawaseSum+=delta;kawaseCount++;
       }
       const kawase={max:kawaseMax,mean:kawaseSum/kawaseCount};
+      const softwareChecks=[];
+      const shadowSource=new OffscreenCanvas(size,size);
+      const sc=shadowSource.getContext('2d');
+      sc.fillRect(0,0,96,83);
+      sc.clearRect(20,20,35,27);
+      sc.fillStyle='rgba(0,0,0,.37)';sc.fillRect(80,70,48,58);
+      const shadowCases=[0,5,15,30].map(blur=> {
+        const quality=Math.max(1,Math.round(blur*.625));
+        return {blur,passes:Array.from({length:quality},(_,i)=>blur*(1-i/quality)+.5)};
+      });
+      // Isolate per-pass texture precision from accumulated RGBA8 rounding.
+      for(const offset of shadowCases[2].passes) shadowCases.push({offset,passes:[offset]});
+      for(const {blur,offset,passes} of shadowCases) {
+        const expected=sc.getImageData(0,0,size,size).data;
+        blurShadowAlpha(expected,size,size,passes);
+        const gpu=filter.render(shadowSource,0,passes);
+        if(!gpu) throw Error('Shadow GPU filter unavailable');
+        const output=new OffscreenCanvas(size,size).getContext('2d');
+        output.drawImage(gpu,0,0);
+        const actual=output.getImageData(0,0,size,size).data;
+        let max=0,sum=0;
+        for(let i=3;i<actual.length;i+=4) {
+          const delta=Math.abs(actual[i]-expected[i]);
+          max=Math.max(max,delta);sum+=delta;
+        }
+        softwareChecks.push({blur,offset,passes:passes.length,max,mean:sum/(size*size)});
+      }
       const translucent=new OffscreenCanvas(128,128);
       const tc=translucent.getContext('2d');
       tc.fillStyle='rgba(255,0,0,0.5)';tc.fillRect(0,0,64,128);
@@ -122,11 +153,15 @@ app.whenReady().then(async () => {
         encoded.getContext('2d').drawImage(filtered,0,0);
         exports.push({width,height,milliseconds:performance.now()-begin,png:encoded.toDataURL().split(',')[1]});
       }
-      return {checks,kawase,alphaPixel,resized:resizedDimensions,exports};
+      return {checks,kawase,softwareChecks,alphaPixel,resized:resizedDimensions,exports};
     })()`);
     for (const check of result.checks) {
       assert.ok(check.max <= 3, JSON.stringify(check));
       assert.ok(check.mean < 0.8, JSON.stringify(check));
+    }
+    for (const check of result.softwareChecks) {
+      assert.ok(check.max <= 1, JSON.stringify(check));
+      assert.ok(check.mean < 0.5, JSON.stringify(check));
     }
     assert.ok(result.kawase.max <= 2, JSON.stringify(result.kawase));
     assert.ok(result.kawase.mean < 0.5, JSON.stringify(result.kawase));

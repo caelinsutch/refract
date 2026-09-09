@@ -920,3 +920,9 @@ Inspection of the installed reference renderer established that the directional 
 Validation: production build and all 177 core tests passed. Synthetic Electron inspector checks passed, including the directional toggle, changed canvas output, and Undo. The directional screenshot was inspected. The editor hover fixture also passed across playback, disclosures, wallpaper choices/context menus, timeline controls, speed menu items, and switches; geometry stayed stationary and nested controls remained isolated.
 
 Exact exported pixel parity remains unverified: the installed reference requires activation to export. Filter resolution, large shadow texture scaling, and translucent inset overlap still need comparison. The synthetic checks do not establish full capture/export or complete UI parity.
+
+## Software shadow filtering — September 9
+
+Replaced the Gaussian shadow fallback with independent software diagonal bilinear passes. Black shadows filter only alpha, retain fractional precision between the two axes, and quantize after each full pass. The cached result still survives zoom and intensity changes. This removes a different blur profile when WebGL is unavailable.
+
+Actual Electron GPU comparisons use an opaque shape with a cutout, translucent overlap, and texture-edge coverage. Blur settings 0, 5, 15, and 30, plus every individual pass of setting 15, differ by at most 1/255 alpha on this Mac; the largest mean error is 0.118/255. The comparison caught and fixed float64 half-texel boundary handling by matching float32 shader offsets. This evidence covers the sampling fallback, not complete reference export parity or software performance at large source sizes.
