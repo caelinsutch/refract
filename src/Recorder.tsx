@@ -1,3 +1,4 @@
+import { recordingCompletion } from "./core/recording-completion";
 import { captureAreaBetween } from "./core/capture-area";
 import { StateIcon } from "./components/StateIcon";
 import { useEffect, useState, useRef } from "react";
@@ -340,6 +341,25 @@ export function AreaPicker() {
 }
 export default function Recorder() {
   const api = window.refract;
+  const [completion, setCompletion] = useState(() => {
+    try {
+      return recordingCompletion(
+        JSON.parse(
+          localStorage.getItem("refract.recorder.completion") ?? "null",
+        ),
+      );
+    } catch {
+      return recordingCompletion(null);
+    }
+  });
+  const updateCompletion = (next: typeof completion) => {
+    setCompletion(next);
+    try {
+      localStorage.setItem("refract.recorder.completion", JSON.stringify(next));
+    } catch {
+      /* Keep session settings. */
+    }
+  };
   const [state, setState] = useState<RecorderState>({
       phase: "idle",
       countdown: 3,
@@ -389,6 +409,7 @@ export default function Recorder() {
     microphone,
     camera,
     automaticZooms,
+    completion,
     cameraResolution,
   });
   options.current = {
@@ -396,6 +417,7 @@ export default function Recorder() {
     microphone,
     camera,
     automaticZooms,
+    completion,
     cameraResolution,
   };
   const expand = (next: string | null) => {
@@ -420,6 +442,7 @@ export default function Recorder() {
         ...choice,
         systemAudio: options.current.systemAudio,
         automaticZooms: options.current.automaticZooms,
+        completion: options.current.completion,
         microphoneId: options.current.microphone,
         cameraId: options.current.camera,
         cameraResolution: options.current.cameraResolution,
@@ -758,6 +781,64 @@ export default function Recorder() {
             </p>
           ) : panel === "settings" ? (
             <>
+              <label {...sx.props(s.item)}>
+                <span>After recording</span>
+                <select
+                  aria-label="After recording"
+                  value={completion.action}
+                  onChange={(e) =>
+                    updateCompletion({
+                      ...completion,
+                      action: e.target.value as typeof completion.action,
+                    })
+                  }
+                >
+                  <option value="create-project">Create project</option>
+                  <option value="export-file">Export and save to file</option>
+                </select>
+              </label>
+              {completion.action === "export-file" && (
+                <>
+                  <label {...sx.props(s.item)}>
+                    <span>MP4 resolution</span>
+                    <select
+                      aria-label="Quick export resolution"
+                      value={completion.resolution}
+                      onChange={(e) =>
+                        updateCompletion({
+                          ...completion,
+                          resolution: Number(e.target.value),
+                        })
+                      }
+                    >
+                      {[720, 1080, 1920, 2560, 3840].map((n) => (
+                        <option key={n} value={n}>
+                          {n}px
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label {...sx.props(s.item)}>
+                    <span>Frame rate</span>
+                    <select
+                      aria-label="Quick export frame rate"
+                      value={completion.fps}
+                      onChange={(e) =>
+                        updateCompletion({
+                          ...completion,
+                          fps: Number(e.target.value),
+                        })
+                      }
+                    >
+                      {[24, 30, 60].map((n) => (
+                        <option key={n} value={n}>
+                          {n} fps
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              )}
               <button
                 {...sx.props(s.item)}
                 disabled={choosingDirectory}

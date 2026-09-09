@@ -31,3 +31,11 @@ Thus only Create project is implemented. Automatic file export, video clipboard 
 7. Cover no-audio, microphone, system-audio, cursor, pause/resume, camera (when hardware is available), and failed/interrupted finalization. Synthetic completion events can test dispatch but cannot replace a real capture-to-export check.
 
 Next implementation priority is the completion coordinator plus the file-export path, with exact-once dispatch and cancellation verified before clipboard and service-backed delivery.
+
+## Implemented file completion
+
+Recorder settings now persist Create project / Export and save to file, MP4 output long-edge size, and frame rate. CaptureChoice snapshots these settings; the finalized recording event carries them after manifest persistence and project replacement approval. The renderer normalizes settings, deduplicates project IDs for this session, loads the recording, and invokes its existing compositor/export flow with explicit new-recording media and settings. The native destination sheet remains the file selection mechanism. Cancelling it closes the automatic export dialog and retains the saved project. Manual exports also use a synchronous in-flight guard.
+
+Verification: production build and 126 core tests passed. `scripts/verify-recording-completion.cts` runs the production editor with a narrow test preload: it checks duplicate events, capture-time settings, a cancelled destination, and create-project behavior. Its success fixture feeds six actual compositor PNG frames to FFmpeg and probes a 0.25-second, 24-fps, 720-pixel-long-edge MP4. The preload substitutes destination choice and encoder IPC; this does not prove fresh native capture through the production save sheet and encoder host. Existing encoder tests cover separate pipeline behavior.
+
+Remaining: native Record-menu synchronization, separate quick-export widget, GIF quick settings, clipboard delivery, share service, restart-persistent dispatch recovery, and a fresh capture-to-export end-to-end check. These gaps remain part of the full objective.

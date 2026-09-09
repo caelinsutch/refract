@@ -1,3 +1,8 @@
+import {
+  RecordingCompletions,
+  recordingCompletion,
+  type RecordingCompletion,
+} from "./core/recording-completion";
 import { previewTransport } from "./core/preview-transport";
 import { useClickAudio } from "./media/use-click-audio";
 import {
@@ -1146,21 +1151,44 @@ export default function App() {
       setCaptionBusy(false);
     }
   }
-  async function exportVideo() {
-    if (!project || !window.refract) {
+  const completedRecordings = useRef(new RecordingCompletions());
+  const exportBusy = useRef(false);
+  async function exportVideo(recording?: {
+    project: Project;
+    url: string;
+    cameraUrl?: string;
+    completion: RecordingCompletion;
+  }) {
+    if (exportBusy.current) return;
+    const exportProject = recording?.project ?? project;
+    const exportUrl = recording?.url ?? url;
+    const exportCameraUrl = recording ? recording.cameraUrl : cameraUrl;
+    const exportResolution = recording?.completion.resolution ?? resolution;
+    const exportFps = recording?.completion.fps ?? fps;
+    const exportFormat = recording ? "mp4" : format;
+    if (!exportProject || !window.refract) {
       tell("Video export is available in the desktop app.");
       return;
     }
     const api = window.refract,
-      p = structuredClone(project),
-      size = dimensions(p, resolution);
+      p = structuredClone(exportProject),
+      size = dimensions(p, exportResolution);
+    exportBusy.current = true;
     pausePreview();
     cancelExport.current = false;
     let v: HTMLVideoElement | undefined;
     let cam: HTMLVideoElement | undefined;
     try {
-      const id = await api.exportStart({ project: p, ...size, fps, format });
-      if (!id) return;
+      const id = await api.exportStart({
+        project: p,
+        ...size,
+        fps: exportFps,
+        format: exportFormat,
+      });
+      if (!id) {
+        if (recording) setModal(null);
+        return;
+      }
       setExporting(true);
       setExportError("");
       setProgress(0);
@@ -1168,21 +1196,21 @@ export default function App() {
       v.crossOrigin = "anonymous";
       v.muted = true;
       v.preload = "auto";
-      await loadExportVideo(v, url);
-      if (cameraUrl) {
+      await loadExportVideo(v, exportUrl);
+      if (exportCameraUrl) {
         cam = document.createElement("video");
         cam.crossOrigin = "anonymous";
         cam.muted = true;
-        await loadExportVideo(cam, cameraUrl);
+        await loadExportVideo(cam, exportCameraUrl);
       }
       const out = document.createElement("canvas");
       out.width = size.width;
       out.height = size.height;
       const ctx = out.getContext("2d")!;
-      const frames = Math.ceil((duration(p) / 1000) * fps);
+      const frames = Math.ceil((duration(p) / 1000) * exportFps);
       for (let i = 0; i < frames; i++) {
         if (cancelExport.current) throw Error("Export cancelled.");
-        const t = (i / fps) * 1000,
+        const t = (i / exportFps) * 1000,
           source = sourceAt(p, t)!.time / 1000;
         const target = Math.min(source, v.duration - 0.001);
         await seekExportVideo(v, target);
@@ -1197,7 +1225,7 @@ export default function App() {
           t,
           size.width,
           size.height,
-          bgImage.current ?? undefined,
+          recording ? undefined : (bgImage.current ?? undefined),
           cam,
         );
         const blob = await new Promise<Blob>((resolve, reject) =>
@@ -1226,6 +1254,7 @@ export default function App() {
         video.load();
         video.remove();
       }
+      exportBusy.current = false;
       setExporting(false);
     }
   }
@@ -1248,7 +1277,22 @@ export default function App() {
   useEffect(
     () =>
       window.refract?.onRecordingFinished((result) => {
-        load(validateProject(result.project), result.url, result.cameraUrl);
+        const next = validateProject(result.project);
+        if (!completedRecordings.current.accept(next.id)) return;
+        load(next, result.url, result.cameraUrl);
+        const completion = recordingCompletion(result.completion);
+        if (completion.action === "export-file") {
+          setModal("export");
+          setResolution(completion.resolution);
+          setFps(completion.fps);
+          setFormat("mp4");
+          void exportVideo({
+            project: next,
+            url: result.url,
+            cameraUrl: result.cameraUrl,
+            completion,
+          });
+        }
       }),
     [],
   );
@@ -3138,7 +3182,11 @@ export default function App() {
                   </Note>
                   <Row>
                     <Button onClick={() => setModal(null)}>Cancel</Button>
-                    <Button primary defaultAction onClick={exportVideo}>
+                    <Button
+                      primary
+                      defaultAction
+                      onClick={() => void exportVideo()}
+                    >
                       <Upload size={14} />
                       Export to file
                     </Button>

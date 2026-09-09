@@ -20,6 +20,7 @@ export type CaptureChoice = {
   area?: { x: number; y: number; width: number; height: number };
   systemAudio: boolean;
   automaticZooms?: boolean;
+  completion?: import("./recording-completion.js").RecordingCompletion;
   microphoneId?: string;
   cameraId?: string;
   cameraResolution?: 720 | 1080 | 2160;

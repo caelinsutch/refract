@@ -258,6 +258,7 @@ app.whenReady().then(() => {
       }
       projectDir = dir;
       win.webContents.send("recording-finished", {
+        completion: choice.completion,
         project,
         source,
         url: expose(file),

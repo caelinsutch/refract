@@ -48,6 +48,7 @@ declare global {
       onRecorderState(cb: (state: RecorderState) => void): () => void;
       onRecordingFinished(
         cb: (data: {
+          completion?: import("./core/recording-completion").RecordingCompletion;
           project: Project;
           source: Project["source"];
           url: string;
