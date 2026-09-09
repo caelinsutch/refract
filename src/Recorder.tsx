@@ -1,7 +1,12 @@
 import { recordingCompletion } from "./core/recording-completion";
 import { captureAreaBetween } from "./core/capture-area";
 import { StateIcon } from "./components/StateIcon";
-import { useEffect, useState, useRef } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import * as sx from "@stylexjs/stylex";
 import {
   Monitor,
@@ -591,6 +596,27 @@ export default function Recorder() {
       button.focus({ preventScroll: true });
     }
   };
+  const inputMenuKey = (
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    kind: RecorderInputMenu["kind"],
+  ) => {
+    if (
+      event.nativeEvent.isComposing ||
+      event.repeat ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey
+    )
+      return;
+    if (
+      event.key === "ArrowDown" ||
+      event.key === "ContextMenu" ||
+      (event.key === "F10" && event.shiftKey)
+    ) {
+      event.preventDefault();
+      void pickInput(kind, event.currentTarget);
+    }
+  };
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -1147,6 +1173,11 @@ export default function Recorder() {
                 !camera && s.inputInactive,
               )}
               onClick={(event) => void pickInput("camera", event.currentTarget)}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                void pickInput("camera", event.currentTarget);
+              }}
+              onKeyDown={(event) => inputMenuKey(event, "camera")}
             >
               {camera ? (
                 <Video size={16} style={{ flexShrink: 0 }} />
@@ -1173,6 +1204,11 @@ export default function Recorder() {
               onClick={(event) =>
                 void pickInput("microphone", event.currentTarget)
               }
+              onContextMenu={(event) => {
+                event.preventDefault();
+                void pickInput("microphone", event.currentTarget);
+              }}
+              onKeyDown={(event) => inputMenuKey(event, "microphone")}
             >
               {microphone ? (
                 <Mic size={16} style={{ flexShrink: 0 }} />
@@ -1191,6 +1227,11 @@ export default function Recorder() {
               data-motion="static"
               {...sx.props(s.choice, !systemAudio && s.inputInactive)}
               onClick={(event) => void pickInput("audio", event.currentTarget)}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                void pickInput("audio", event.currentTarget);
+              }}
+              onKeyDown={(event) => inputMenuKey(event, "audio")}
             >
               <StateIcon
                 active={systemAudio}

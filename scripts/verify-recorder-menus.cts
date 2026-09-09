@@ -56,26 +56,39 @@ void app.whenReady().then(async () => {
     await contents.executeJavaScript(`window.originalBar = document.querySelector('[data-recorder-bar]');
       window.originalControls = Array.from(window.originalBar.querySelectorAll('button'));
       window.openAudio = () => window.originalControls.find(button => /system audio/i.test(button.textContent)).click(); void 0;`);
-    for (const select of [false, true, false]) {
+    for (const [activation, select] of [
+      ["context", false],
+      ["keyboard", true],
+      ["click", false],
+    ] as const) {
       inputMenu = undefined;
       bar!.focus();
       const point = await contents.executeJavaScript(`(() => {
         const rect = window.originalControls.find(button => ${cameraMode ? "/camera/i" : "/system audio/i"}.test(button.textContent)).getBoundingClientRect();
         return {x: Math.round(rect.x + rect.width/2), y: Math.round(rect.y + rect.height/2)};
       })()`);
-      contents.sendInputEvent({ type: "mouseMove", ...point });
-      contents.sendInputEvent({
-        type: "mouseDown",
-        button: "left",
-        clickCount: 1,
-        ...point,
-      });
-      contents.sendInputEvent({
-        type: "mouseUp",
-        button: "left",
-        clickCount: 1,
-        ...point,
-      });
+      if (activation === "keyboard") {
+        await contents.executeJavaScript(
+          `window.originalControls.find(button => ${cameraMode ? "/camera/i" : "/system audio/i"}.test(button.textContent)).focus()`,
+        );
+        contents.sendInputEvent({ type: "keyDown", keyCode: "Down" });
+        contents.sendInputEvent({ type: "keyUp", keyCode: "Down" });
+      } else {
+        const button = activation === "context" ? "right" : "left";
+        contents.sendInputEvent({ type: "mouseMove", ...point });
+        contents.sendInputEvent({
+          type: "mouseDown",
+          button,
+          clickCount: 1,
+          ...point,
+        });
+        contents.sendInputEvent({
+          type: "mouseUp",
+          button,
+          clickCount: 1,
+          ...point,
+        });
+      }
       await until(() => !!inputMenu, "Native input menu was not built");
       await wait(100);
       assert.deepEqual(

@@ -463,3 +463,17 @@ bridge, invokes the 4K submenu callback, verifies persisted 2160, verifies camer
 selection is unchanged, and checks toolbar identity and zero native resizes.
 This verifies menu integration; it does not prove a physical camera delivered
 4K frames. Reference camera-preview visibility controls remain missing.
+
+## Recorder menu input methods — 2026-09-09
+
+The reference camera control opens its native menu from both click and context
+menu actions. Refract's camera, microphone, and system-audio controls now support
+right-click as well as primary click. Arrow Down, the context-menu key, and
+Shift-F10 also open the menu from a focused control; Enter and Space keep native
+button activation. Repeated/composing keys and unrelated command chords are ignored.
+
+The production native-menu verifier now uses actual Electron right-button events,
+Down-key events, and left-button events across cancellation and selection cycles.
+Camera resolution selection passes through this path with unchanged camera input,
+toolbar identity, and native bounds. This does not replace the pending live
+comparison with Screen Studio on the unlocked Mac.
