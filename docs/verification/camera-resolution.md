@@ -21,3 +21,13 @@ work/verify-camera-format
 ```
 
 Live option persistence, physical camera format negotiation, output dimensions, and camera/screen synchronization at all three settings remain unverified. Compilation and synthetic format choices do not prove a real 4K camera recording or complete reference camera parity.
+
+## Packaged-app follow-up
+
+The updated recorder visibly shows the maximum camera-resolution selector at its default 720p alongside the existing recording options. A native AVFoundation discovery query returned zero cameras in this environment, so physical camera captures could not be verified.
+
+The UI check exposed a separate recorder-window problem: showing the existing recorder reset its native bounds to collapsed while React retained its open options panel. The controls could therefore remain in accessibility while being visually clipped. `show()` now preserves the existing expanded state; a newly created recorder starts collapsed. Selection/persistence verification continues after this fix.
+
+The rebuilt controller retained its visible options panel during the repeated interaction that previously clipped it. The native resolution popup still did not open reliably through the UI tool, so the control now uses directly selectable 720p/1080p/4K buttons with pressed-state semantics, consistent with the reference's visible choices. The live check successfully changed the selected state from 720p to 4K. No inference about physical camera output is made from this UI result.
+
+A native View → Reload followed by reopening Recording options retained 4K as selected, verifying persistence across renderer reload. The test then restored 720p. The production build passed after the controller and direct-button changes. Physical camera verification remains unavailable with the current zero-device discovery result.

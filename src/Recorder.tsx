@@ -137,6 +137,18 @@ const s = sx.create({
     margin: "0 0 12px",
     color: "var(--text-primary)",
   },
+  cameraLimits: { display: "flex", gap: 2, marginLeft: "auto", flexShrink: 0 },
+  cameraLimit: {
+    borderWidth: 0,
+    borderRadius: 6,
+    padding: "6px 8px",
+    color: "var(--text-secondary)",
+    backgroundColor: { default: "transparent", ":hover": "var(--white-a0d)" },
+  },
+  cameraLimitSelected: {
+    backgroundColor: "var(--surface-control)",
+    color: "var(--text-primary)",
+  },
   item: {
     width: "100%",
     display: "flex",
@@ -709,31 +721,40 @@ export default function Recorder() {
             </p>
           ) : panel === "settings" ? (
             <>
-              <label {...sx.props(s.item)}>
+              <div {...sx.props(s.item)}>
                 <Video size={17} />
-                Maximum camera resolution
-                <select
+                <span>Maximum camera resolution</span>
+                <div
+                  {...sx.props(s.cameraLimits)}
+                  role="group"
                   aria-label="Maximum camera resolution"
-                  value={cameraResolution}
-                  onChange={(event) => {
-                    const value = Number(event.target.value) as
-                      720 | 1080 | 2160;
-                    setCameraResolution(value);
-                    try {
-                      localStorage.setItem(
-                        "refract.recorder.cameraResolution",
-                        String(value),
-                      );
-                    } catch {
-                      /* Use this selection for the current session. */
-                    }
-                  }}
                 >
-                  <option value={720}>720p</option>
-                  <option value={1080}>1080p</option>
-                  <option value={2160}>4K</option>
-                </select>
-              </label>
+                  {([720, 1080, 2160] as const).map((value) => (
+                    <button
+                      type="button"
+                      key={value}
+                      aria-pressed={cameraResolution === value}
+                      {...sx.props(
+                        s.cameraLimit,
+                        cameraResolution === value && s.cameraLimitSelected,
+                      )}
+                      onClick={() => {
+                        setCameraResolution(value);
+                        try {
+                          localStorage.setItem(
+                            "refract.recorder.cameraResolution",
+                            String(value),
+                          );
+                        } catch {
+                          /* Keep the current session choice. */
+                        }
+                      }}
+                    >
+                      {value === 2160 ? "4K" : `${value}p`}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button
                 {...sx.props(s.item)}
                 aria-pressed={automaticZooms}

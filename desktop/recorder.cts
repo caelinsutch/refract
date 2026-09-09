@@ -109,6 +109,7 @@ export function setupRecorder(
   }
   function show() {
     if (!bar) {
+      expanded = false;
       bar = new BrowserWindow({
         ...recorderBounds(
           position,
@@ -159,7 +160,8 @@ export function setupRecorder(
       });
       loadWindow(bar, "recorder");
     }
-    resize(false);
+    // React retains the open panel when this existing window is shown again.
+    resize(expanded);
     bar.show();
     bar.focus();
   }
