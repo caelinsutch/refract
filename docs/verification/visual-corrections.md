@@ -731,3 +731,11 @@ continues to require the system permission; window-source listing still does too
 - Retained checks for duplicate completion suppression, destination cancellation, and create-project avoiding export. The fixture now disables hidden-window throttling and explicitly preserves a nonzero exit status on failure.
 - The initial synchronous PNG batch fixture stalled on the first larger case. Confirmed and stopped its idle encoder, then replaced that test-only path with production streaming. The corrected full matrix completed successfully. This was a verifier change; no application encoding change was required.
 - Scope limits: synthetic silent footage, short durations, normal-speed clips. This does not prove long recordings, captured audio synchronization, permissions, or visual parity with Screen Studio.
+
+### Countdown attempt isolation — 2026-09-09
+
+- Found a startup race in the full-display countdown: a completed countdown waited for overlay closure, then checked only `phase === countdown`. Cancelling and starting a new countdown during that wait could let the old source start recording.
+- Each recording countdown now has an attempt generation. Timer ticks, overlay readiness, load failures, and the final capture handoff must belong to the current attempt. Cancellation/failure invalidate it; quitting or closing the recorder also cancels a pending countdown.
+- The overlay manager separately invalidates pending opens, including the microtask gap before window creation. Immediate close and superseding opens no longer create stale or duplicate fullscreen windows.
+- Verified against the production recorder state machine with only the overlay and capture process stubbed: finish old countdown, cancel it, start a new source, release old window closure, assert no capture, release current closure, assert exactly the new source reaches the capture request. Quit cancellation also passed. No real capture process was launched.
+- Native overlay regression passed immediate cancellation, concurrent opens, full-display bounds, live ticks, Escape, close-before-capture lifecycle, and native panel glass checks. Builds passed. Live reference appearance remains a separate pending check.

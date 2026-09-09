@@ -4,12 +4,13 @@ import path from "node:path";
 /** Countdown owns no capture timer: the recorder remains the single clock. */
 export function createCountdownWindow(cancel: () => void) {
   let window: BrowserWindow | null = null;
+  let generation = 0;
   ipcMain.handle("countdown-cancel", (event) => {
     if (event.sender !== window?.webContents)
       throw Error("Unknown countdown sender.");
     cancel();
   });
-  async function close() {
+  async function closeWindow() {
     const current = window;
     window = null;
     if (!current || current.isDestroyed()) return;
@@ -18,13 +19,19 @@ export function createCountdownWindow(cancel: () => void) {
       current.close();
     });
   }
+  function close() {
+    generation++;
+    return closeWindow();
+  }
   return {
     close,
     update(seconds: number) {
       window?.webContents.send("countdown-tick", seconds);
     },
     async open(seconds: number, displayId?: number) {
-      await close();
+      const attempt = ++generation;
+      await closeWindow();
+      if (attempt !== generation) return false;
       const display =
         screen.getAllDisplays().find((item) => item.id === displayId) ??
         screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
@@ -70,7 +77,12 @@ export function createCountdownWindow(cancel: () => void) {
             path.join(__dirname, "../../dist/index.html"),
             { hash: "countdown", query },
           );
-        if (current !== window || current.isDestroyed()) return false;
+        if (
+          attempt !== generation ||
+          current !== window ||
+          current.isDestroyed()
+        )
+          return false;
         current.show();
         current.focus();
         return true;

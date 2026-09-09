@@ -68,6 +68,7 @@ export function setupRecorder(
   let stopWhenStarted = false;
   let checkingStart = false;
   let startGeneration = 0;
+  let countdownGeneration = 0;
   let state: RecorderState = { phase: "idle", countdown: 3, elapsed: 0 };
   const destinationFile = path.join(
     app.getPath("userData"),
@@ -204,6 +205,7 @@ export function setupRecorder(
       bar.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
       bar.webContents.on("will-navigate", (e) => e.preventDefault());
       bar.on("closed", () => {
+        if (state.phase === "countdown") stop();
         displayPicker.cancel();
         bar = null;
       });
@@ -238,6 +240,7 @@ export function setupRecorder(
     }
   }
   function fail(error: unknown) {
+    countdownGeneration++;
     void countdownWindow.close();
     if (countdownTimer) clearInterval(countdownTimer);
     countdownTimer = null;
@@ -252,6 +255,7 @@ export function setupRecorder(
   }
   async function begin(selected: CaptureChoice) {
     if (!["idle", "error"].includes(state.phase)) return;
+    const attempt = ++countdownGeneration;
     choice = selected;
     stopWhenStarted = false;
     const seconds = countdownDuration(selected.countdownSeconds);
@@ -266,29 +270,36 @@ export function setupRecorder(
     send();
     try {
       if (!(await countdownWindow.open(seconds, selected.displayId))) return;
+      if (attempt !== countdownGeneration) return;
       if (state.phase !== "countdown") {
         await countdownWindow.close();
         return;
       }
     } catch (error) {
-      fail(error);
+      if (attempt === countdownGeneration) fail(error);
       return;
     }
     const deadline = performance.now() + seconds * 1000;
-    countdownTimer = setInterval(() => {
+    const interval = setInterval(() => {
+      if (attempt !== countdownGeneration || state.phase !== "countdown") {
+        clearInterval(interval);
+        return;
+      }
       const remaining = countdownRemaining(deadline, performance.now());
       if (remaining !== state.countdown) {
         state.countdown = remaining;
         send();
       }
       if (state.countdown <= 0) {
-        clearInterval(countdownTimer!);
+        clearInterval(interval);
         countdownTimer = null;
         void countdownWindow.close().then(() => {
-          if (state.phase === "countdown") void record(selected);
+          if (attempt === countdownGeneration && state.phase === "countdown")
+            void record(selected);
         });
       }
     }, 100);
+    countdownTimer = interval;
   }
   async function record(selected: CaptureChoice) {
     state = { ...state, phase: "starting" };
@@ -384,6 +395,7 @@ export function setupRecorder(
       return;
     }
     if (state.phase === "countdown") {
+      countdownGeneration++;
       void countdownWindow.close();
       if (countdownTimer) clearInterval(countdownTimer);
       countdownTimer = null;
@@ -800,6 +812,7 @@ export function setupRecorder(
   });
   function prepareQuit() {
     startGeneration++;
+    if (state.phase === "countdown") stop();
     if (["starting", "recording", "paused", "stopping"].includes(state.phase)) {
       // Keep Electron alive until capture finalization and project persistence finish.
       quitAfterCapture = true;

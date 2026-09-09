@@ -26,6 +26,25 @@ void app.whenReady().then(async () => {
       void countdown.close();
     });
     const display = screen.getPrimaryDisplay();
+    const cancelledOpen = countdown.open(3, display.id);
+    await countdown.close();
+    assert.equal(
+      await cancelledOpen,
+      false,
+      "Immediate cancellation resurrected overlay",
+    );
+    assert.equal(BrowserWindow.getAllWindows().length, 0);
+    const superseded = countdown.open(5, display.id);
+    const replacement = countdown.open(3, display.id);
+    assert.equal(await superseded, false, "Superseded open completed");
+    assert.equal(await replacement, true);
+    assert.equal(
+      BrowserWindow.getAllWindows().length,
+      1,
+      "Concurrent opens leaked overlay",
+    );
+    await countdown.close();
+
     assert.equal(await countdown.open(5, display.id), true);
     let overlay = BrowserWindow.getAllWindows()[0];
     assert.deepEqual(overlay.getBounds(), display.bounds);
@@ -113,6 +132,7 @@ void app.whenReady().then(async () => {
     bar.close();
     console.log(
       JSON.stringify({
+        openingRaces: true,
         fullscreen: true,
         ticks: true,
         escape: true,
