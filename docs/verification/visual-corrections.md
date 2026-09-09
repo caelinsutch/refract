@@ -343,7 +343,8 @@ project. The verifier selects Tall with Enter, checks the real composition ratio
 checks that the picker remains open, and restores Auto with one Undo.
 
 The reference's conditional “Always keep zoomed in” option for vertical outputs
-remains missing; this pass does not claim complete aspect-ratio feature parity.
+was missing in this pass and was subsequently implemented; see
+`../research/vertical-framing.md` for behavior and remaining geometry differences.
 Popup material and exact option-row dimensions have not been visually matched.
 
 ## Shared advanced-field disclosures — 2026-09-09
@@ -362,3 +363,25 @@ The editor verifier exercises Space activation, ensures playback stays paused,
 and confirms collapsed fields are removed.
 
 This matches the observed disclosure structure, not verified whole-app pixels.
+
+## Missing-track tools and packaged launch — 2026-09-09
+
+Read-only inspection of the reference RecordingTools component confirms missing
+cursor, camera, and shortcut tracks disable their buttons with 0.3 opacity and
+specific tooltip explanations. Refract now applies these states to its tool rail
+and excludes the same unavailable actions from keyboard commands. Disabled tools
+do not display an active indicator or hover fill. Audio and captions remain
+reachable because Refract currently places media import actions in those panels;
+this is a remaining workflow difference from the reference.
+
+The production editor verifier checks missing-track button states, explanations,
+and computed opacity using an imported video with no input or camera tracks.
+
+Built both Swift helpers and the production renderer, then packaged Electron
+44.3.0 for arm64. CUA confirmed Refract was not running before opening the package
+at `release/current-verification/Refract-darwin-arm64/Refract.app`. Its accessibility
+tree confirms the recorder route, drag handle, capture modes, camera, microphone,
+system audio, and options controls loaded. This package predates this section's
+tool-availability change. CUA screenshots remain blank even when accessibility
+works, so launch verification is not a claim of pixel equality. Full Screen Studio
+parity is still incomplete.

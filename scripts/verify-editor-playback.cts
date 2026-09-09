@@ -56,6 +56,16 @@ app.whenReady().then(async () => {
       const button = label => document.querySelector('button[aria-label="' + label + '"]');
       const video = () => Array.from(document.querySelectorAll('video')).find(v => v.src.startsWith('blob:'));
       await until(() => video()?.readyState >= 2 && !button('Play')?.disabled, 'Video did not load');
+      for (const [label, explanation] of [
+        ['Cursor', 'There is no mouse cursor recorded'],
+        ['Camera', 'No camera recorded'],
+        ['Shortcuts', 'No keyboard shortcuts during recording'],
+      ]) {
+        const control = button(label);
+        check(control?.disabled && control.title === explanation, label + ' must explain its missing track');
+        check(Math.abs(Number(getComputedStyle(control).opacity) - 0.3) < 0.001, label + ' must use the reference disabled opacity');
+      }
+      check(!button('Audio').disabled && !button('Captions').disabled, 'Media import tools must remain reachable');
       button('Play').click();
       await until(() => video().currentTime > 0.35, 'Play did not advance media');
       const renderBlockEnds=performance.now()+120;

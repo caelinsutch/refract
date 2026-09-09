@@ -278,6 +278,10 @@ const s = sx.create({
     color: "var(--text-primary)",
   },
   toolActive: { color: "var(--accent)" },
+  toolUnavailable: {
+    opacity: 0.3,
+    backgroundColor: { default: "transparent", ":hover": "transparent" },
+  },
   toolIndicator: {
     position: "absolute",
     right: 5,
@@ -473,6 +477,15 @@ const tabs = [
   { id: "shortcuts", title: "Shortcuts", icon: Keyboard },
   { id: "animations", title: "Animations", icon: Clapperboard },
 ];
+function unavailableTool(id: string, project: Project | null): string | undefined {
+  if (!project) return "Open a recording to edit its settings";
+  if (id === "cursor" && !project.cursor.length)
+    return "There is no mouse cursor recorded";
+  if (id === "camera" && !project.source.camera)
+    return "No camera recorded";
+  if (id === "shortcuts" && !project.shortcuts?.length)
+    return "No keyboard shortcuts during recording";
+}
 export default function App() {
   const [cropping, setCropping] = useState(false);
   const maskDrag = useRef<{
@@ -1641,7 +1654,7 @@ export default function App() {
       id: `settings-${item.id}`,
       label: `Show ${item.title.toLowerCase()} settings`,
       group: "Settings",
-      disabled: !project,
+      disabled: !!unavailableTool(item.id, project),
       run: () => {
         setSelection(null);
         setTab(item.id);
@@ -1954,22 +1967,28 @@ export default function App() {
             <nav aria-label="Recording tools" {...sx.props(s.tools)}>
               {tabs.map((t) => {
                 const active = tab === t.id && !selection;
+                const unavailable = unavailableTool(t.id, project);
                 return (
                   <button
                     key={t.id}
                     type="button"
-                    title={t.title}
+                    title={unavailable ?? t.title}
                     aria-label={t.title}
                     aria-pressed={active}
+                    disabled={!!unavailable}
                     data-motion="static"
-                    {...sx.props(s.tool, active && s.toolActive)}
+                    {...sx.props(
+                      s.tool,
+                      active && s.toolActive,
+                      !!unavailable && s.toolUnavailable,
+                    )}
                     onClick={() => {
                       setTab(t.id);
                       setSelection(null);
                     }}
                   >
                     <t.icon size={16} strokeWidth={1.5} />
-                    {active && (
+                    {active && !unavailable && (
                       <span aria-hidden="true" {...sx.props(s.toolIndicator)} />
                     )}
                   </button>
