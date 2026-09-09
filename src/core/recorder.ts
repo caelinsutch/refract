@@ -1,3 +1,4 @@
+export type DisplayPickerResult = number | { settings: "quick-export" } | null;
 export type CaptureSource = {
   id: number;
   name: string;

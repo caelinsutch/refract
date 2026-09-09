@@ -1,3 +1,6 @@
+import type { DisplayPickerResult } from "../src/core/recorder.js" with {
+  "resolution-mode": "import",
+};
 import { app, BrowserWindow, screen, ipcMain, Menu } from "electron";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -21,7 +24,7 @@ void app.whenReady().then(async () => {
       path.resolve("dist-electron/desktop/display-picker.cjs"),
     );
     const picker = createDisplayPicker() as {
-      open(id?: number): Promise<number | null>;
+      open(id?: number): Promise<DisplayPickerResult>;
       cancel(): void;
     };
     const target = screen.getPrimaryDisplay();
@@ -141,6 +144,37 @@ void app.whenReady().then(async () => {
         "An overlay remained after finishing",
       );
     }
+    await wait(1200);
+    openedMenu = undefined;
+    const settingsResult = picker.open(target.id);
+    let settingsWindow: BrowserWindow | undefined;
+    await until(() => {
+      settingsWindow = BrowserWindow.getAllWindows().find((window) =>
+        window.webContents.getURL().endsWith("#display-picker"),
+      );
+      return !!settingsWindow;
+    }, "Settings picker did not open");
+    await until(
+      () =>
+        settingsWindow!.webContents.executeJavaScript(
+          "!!document.querySelector('[aria-label=\"Recording options\"]')",
+        ),
+      "Settings menu button did not mount",
+    );
+    await settingsWindow!.webContents.executeJavaScript(
+      "document.querySelector('[aria-label=\"Recording options\"]').click();void 0;",
+    );
+    await until(() => !!openedMenu, "Settings native menu did not open");
+    const settingsMenu = openedMenu! as Menu;
+    settingsMenu.items
+      .find((item) => item.label === "Quick export settings…")!
+      .click(undefined as any, settingsWindow!, {} as any);
+    settingsMenu.closePopup();
+    assert.deepEqual(await settingsResult, { settings: "quick-export" });
+    assert.ok(
+      settingsWindow!.isDestroyed(),
+      "Settings handoff left picker open",
+    );
     const preload = path.resolve("work/display-picker/preload.cjs");
     await fs.writeFile(
       preload,
@@ -152,7 +186,7 @@ void app.whenReady().then(async () => {
       recorderStart:choice=>ipcRenderer.invoke('verify-capture',choice)
     });`,
     );
-    let finish: ((id: number | null) => void) | undefined, capture: any;
+    let finish: ((id: DisplayPickerResult) => void) | undefined, capture: any;
     const expansions: boolean[] = [];
     ipcMain.handle("verify-expand", (_, value) => {
       expansions.push(value);
@@ -208,6 +242,35 @@ void app.whenReady().then(async () => {
     );
     await evaluate("window.pick('Display')");
     await until(() => !!finish, "Display did not reopen");
+    finish!({ settings: "quick-export" });
+    await until(
+      () =>
+        evaluate(
+          "!!document.querySelector('[aria-label=\"Quick export resolution\"]')",
+        ),
+      "Quick export panel did not open",
+    );
+    assert.equal(Boolean(capture), false, "Opening settings started recording");
+    assert.equal(await evaluate("document.activeElement?.textContent"), "Done");
+    await evaluate(
+      `const resolution=document.querySelector('[aria-label="Quick export resolution"]');resolution.value='3840';resolution.dispatchEvent(new Event('change',{bubbles:true}));void 0;`,
+    );
+    await until(
+      () =>
+        evaluate(
+          "JSON.parse(localStorage.getItem('refract.recorder.completion')).resolution === 3840",
+        ),
+      "Resolution control did not persist",
+    );
+    await evaluate("document.activeElement.click();void 0;");
+    await until(
+      () =>
+        evaluate("!document.querySelector('[data-floating-surface=recorder]')"),
+      "Done did not close settings",
+    );
+    finish = undefined;
+    await evaluate("window.pick('Display')");
+    await until(() => !!finish, "Display did not reopen after settings");
     // Use a real second renderer: Electron must deliver the storage event.
     const preferences = new BrowserWindow({
       show: false,
@@ -244,6 +307,8 @@ void app.whenReady().then(async () => {
     renderer.destroy();
     console.log(
       JSON.stringify({
+        quickExport:
+          "native action, cleanup, no capture, editable settings and Done passed",
         nativeOptions:
           "click, keyboard, checked state and preference handoff passed",
         displays: "all covered",

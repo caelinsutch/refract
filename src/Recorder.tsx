@@ -662,7 +662,11 @@ export default function Recorder() {
       const id = await api?.recorderDisplayPicker?.(selectedId);
       if (generation !== displayRequest.current) return;
       setPanel(null);
-      if (id != null) await start({ mode: "display", displayId: id });
+      if (typeof id === "object" && id?.settings === "quick-export") {
+        setPanel("quick-export");
+        void api?.recorderExpand(true);
+      } else if (typeof id === "number")
+        await start({ mode: "display", displayId: id });
     } catch (error) {
       if (generation !== displayRequest.current) return;
       setError(String(error));
@@ -863,6 +867,48 @@ export default function Recorder() {
   ].includes(state.phase);
   const micName =
     sources?.microphones.find((m) => m.id === microphone)?.name ?? "Microphone";
+  const quickExportControls = (
+    <>
+      <label {...sx.props(s.item)}>
+        <span>MP4 resolution</span>
+        <select
+          aria-label="Quick export resolution"
+          value={completion.resolution}
+          onChange={(e) =>
+            updateCompletion({
+              ...completion,
+              resolution: Number(e.target.value),
+            })
+          }
+        >
+          {[720, 1080, 1920, 2560, 3840].map((n) => (
+            <option key={n} value={n}>
+              {n}px
+            </option>
+          ))}
+        </select>
+      </label>
+      <label {...sx.props(s.item)}>
+        <span>Frame rate</span>
+        <select
+          aria-label="Quick export frame rate"
+          value={completion.fps}
+          onChange={(e) =>
+            updateCompletion({
+              ...completion,
+              fps: Number(e.target.value),
+            })
+          }
+        >
+          {[24, 30, 60].map((n) => (
+            <option key={n} value={n}>
+              {n} fps
+            </option>
+          ))}
+        </select>
+      </label>
+    </>
+  );
   return (
     <RecorderSymbols.Provider value={symbols}>
       <div {...sx.props(s.root)}>
@@ -893,6 +939,7 @@ export default function Recorder() {
                       camera: "Camera",
                       device: "Connected device",
                       settings: "Recording",
+                      "quick-export": "Quick export settings",
                       error: "Recording needs attention",
                     } as Record<string, string>
                   )[panel]
@@ -1150,6 +1197,20 @@ export default function Recorder() {
                 Direct iPhone and iPad capture is not connected yet. To record
                 an iPhone Mirroring window, choose Window.
               </p>
+            ) : panel === "quick-export" ? (
+              <>
+                {quickExportControls}
+                <p {...sx.props(s.text)}>
+                  These settings apply when exporting after recording.
+                </p>
+                <button
+                  {...sx.props(s.primary)}
+                  autoFocus
+                  onClick={() => expand(null)}
+                >
+                  Done
+                </button>
+              </>
             ) : panel === "settings" ? (
               <>
                 <label {...sx.props(s.item)}>
@@ -1193,48 +1254,7 @@ export default function Recorder() {
                     <option value="export-file">Export and save to file</option>
                   </select>
                 </label>
-                {completion.action === "export-file" && (
-                  <>
-                    <label {...sx.props(s.item)}>
-                      <span>MP4 resolution</span>
-                      <select
-                        aria-label="Quick export resolution"
-                        value={completion.resolution}
-                        onChange={(e) =>
-                          updateCompletion({
-                            ...completion,
-                            resolution: Number(e.target.value),
-                          })
-                        }
-                      >
-                        {[720, 1080, 1920, 2560, 3840].map((n) => (
-                          <option key={n} value={n}>
-                            {n}px
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label {...sx.props(s.item)}>
-                      <span>Frame rate</span>
-                      <select
-                        aria-label="Quick export frame rate"
-                        value={completion.fps}
-                        onChange={(e) =>
-                          updateCompletion({
-                            ...completion,
-                            fps: Number(e.target.value),
-                          })
-                        }
-                      >
-                        {[24, 30, 60].map((n) => (
-                          <option key={n} value={n}>
-                            {n} fps
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </>
-                )}
+                {completion.action === "export-file" && quickExportControls}
                 <button
                   {...sx.props(s.item)}
                   disabled={choosingDirectory}

@@ -52,7 +52,9 @@ declare global {
       recorderChooseDirectory(): Promise<string | null>;
       recorderSymbols(): Promise<Record<string, string>>;
       recorderSources(): Promise<CaptureSources>;
-      recorderDisplayPicker?(id?: number): Promise<number | null>;
+      recorderDisplayPicker?(
+        id?: number,
+      ): Promise<import("./core/recorder").DisplayPickerResult>;
       recorderDisplayPickerCancel(): Promise<void>;
       displayPickerFinish(accepted: boolean): Promise<void>;
       recorderSourceMenu(

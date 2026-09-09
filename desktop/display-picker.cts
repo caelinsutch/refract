@@ -1,3 +1,6 @@
+import type { DisplayPickerResult } from "../src/core/recorder.js" with {
+  "resolution-mode": "import",
+};
 import {
   BrowserWindow,
   ipcMain,
@@ -11,8 +14,8 @@ import path from "node:path";
 export function createDisplayPicker() {
   const windows = new Map<BrowserWindow, number>();
   let activeMenu: Menu | null = null;
-  let complete: ((id: number | null) => void) | undefined;
-  function cancel(id: number | null = null) {
+  let complete: ((id: DisplayPickerResult) => void) | undefined;
+  function cancel(id: DisplayPickerResult = null) {
     activeMenu?.closePopup();
     const resolve = complete;
     complete = undefined;
@@ -53,6 +56,7 @@ export function createDisplayPicker() {
       if (activeMenu || !request || typeof request !== "object") return null;
       return new Promise((resolve) => {
         let selection: {
+          settings?: "quick-export";
           automaticZooms?: boolean;
           completionAction?: "create-project" | "export-file";
         } | null = null;
@@ -85,6 +89,13 @@ export function createDisplayPicker() {
               selection = { automaticZooms: request.automaticZooms === false };
             },
           },
+          { type: "separator" },
+          {
+            label: "Quick export settings…",
+            click: () => {
+              selection = { settings: "quick-export" };
+            },
+          },
         ]);
         activeMenu = menu;
         const finish = () => {
@@ -92,6 +103,8 @@ export function createDisplayPicker() {
           activeMenu = null;
           owner.removeListener("closed", finish);
           resolve(owner.isDestroyed() ? null : selection);
+          if (!owner.isDestroyed() && selection?.settings === "quick-export")
+            cancel({ settings: "quick-export" });
         };
         owner.once("closed", finish);
         const bounds = owner.getContentBounds();
@@ -118,7 +131,7 @@ export function createDisplayPicker() {
       );
     },
     cancel: () => cancel(),
-    open(selectedId?: number): Promise<number | null> {
+    open(selectedId?: number): Promise<DisplayPickerResult> {
       cancel();
       return new Promise((resolve) => {
         complete = resolve;

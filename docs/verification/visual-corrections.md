@@ -713,3 +713,12 @@ continues to require the system permission; window-source listing still does too
 - Increased the centered display title from 28 to 32 points based on the earlier live size comparison. The user-selected teal tint remains deliberate.
 - Verification: production build and native picker verifier passed, including menu clicks, ArrowDown, checked state, persistence, real cross-window preference delivery to a mounted recorder, captured request values, mode-switch cancellation, and window cleanup. The capture endpoint in the verifier is a stub; no desktop recording was started.
 - Final live visual comparison is pending because the Mac locked during this turn.
+
+### Quick-export settings entry point — 2026-09-09
+
+- Read-only reference inspection confirmed that the picker menu's Quick export settings action opens the reference's widget settings section.
+- Added the corresponding native menu action in Refract. It returns a typed settings destination from the picker, waits for the picker windows to close, and opens the recorder's native-glass quick-export panel without starting capture.
+- Resolution and frame-rate controls are shared with the existing advanced recording settings. Changes persist in the same completion preference and feed the established MP4 export pipeline. Done receives initial keyboard focus; Escape closes the panel through the recorder's existing shortcut handling.
+- Production build and the extended native verifier passed: native settings action, all picker windows closed before handoff, no capture on settings navigation, editable/persisted resolution, focused Done, return to recording, and cross-window completion/zoom preferences reaching the capture request.
+- The verifier now imports the shared result type; its compiled entry point is `work/display-picker-runner/scripts/verify-display-picker.cjs`. The new verifier was run at that path and reported the quickExport checks explicitly.
+- Live appearance remains unverified while the Mac is locked. Refract currently exposes a focused recorder panel rather than the reference's full settings section; broader settings layout parity remains open.
