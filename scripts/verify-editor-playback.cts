@@ -525,6 +525,29 @@ app.whenReady().then(async () => {
         throw Error('Status message overlaps timeline');
     })()`);
     await window.webContents.executeJavaScript(`(async () => {
+      const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+      const mode=label=>Array.from(document.querySelectorAll('aside button')).find(b=>b.textContent===label);
+      mode('Auto').click();await wait(30);
+      if(document.querySelector('input[aria-label="Horizontal target"]')) throw Error('Auto mode still exposes manual targets');
+      const advanced=Array.from(document.querySelectorAll('[data-disclosure-header]')).find(b=>b.textContent==='Advanced');
+      if(!advanced) throw Error('Auto zoom has no Advanced section');
+      advanced.click();await wait(30);
+      const slider=document.querySelector('input[aria-label="Snap to edges"]');
+      if(!slider||Number(slider.value)!==25||Number(slider.max)!==45) throw Error('Incorrect snap control defaults');
+      document.querySelector('button[aria-label="Edit Snap to edges"]').click();
+    })()`);
+    await window.webContents.insertText("40");
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await window.webContents.executeJavaScript(`(async () => {
+      const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));await wait(30);
+      if(Number(document.querySelector('input[aria-label="Snap to edges"]').value)!==40) throw Error('Snap numeric edit did not commit');
+      document.querySelector('button[aria-label="Reset Snap to edges"]').click();await wait(30);
+      if(Number(document.querySelector('input[aria-label="Snap to edges"]').value)!==25) throw Error('Snap reset failed');
+      Array.from(document.querySelectorAll('aside button')).find(b=>b.textContent==='Manual').click();await wait(30);
+      if(document.querySelector('input[aria-label="Snap to edges"]')||!document.querySelector('input[aria-label="Horizontal target"]')) throw Error('Manual mode did not restore target controls');
+    })()`);
+    await window.webContents.executeJavaScript(`(async () => {
       const close=document.querySelector('button[title="Close Zoom editor"]');
       if (!close) throw Error('Selected zoom has no close-editor row');
       close.click();
@@ -765,6 +788,7 @@ app.whenReady().then(async () => {
         previewSettingsAndPowerCap: "passed",
         aspectRatioCompositionAndUndo: "passed",
         disclosureKeyboard: "passed",
+        autoSnapControls: "passed",
       }),
     );
   } catch (error) {

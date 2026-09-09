@@ -2164,28 +2164,52 @@ export default function App() {
                   unit="×"
                   onChange={(scale) => zoomEdit({ scale })}
                 />
-                <Range
-                  label="Horizontal target"
-                  value={z.x * 100}
-                  onChange={(x) => zoomEdit({ x: x / 100 })}
-                  unit="%"
-                />
-                <Range
-                  label="Vertical target"
-                  value={z.y * 100}
-                  onChange={(y) => zoomEdit({ y: y / 100 })}
-                  unit="%"
-                />
+                {z.mode === "manual" && (
+                  <>
+                    <Range
+                      label="Horizontal target"
+                      value={z.x * 100}
+                      onChange={(x) => zoomEdit({ x: x / 100 })}
+                      unit="%"
+                    />
+                    <Range
+                      label="Vertical target"
+                      value={z.y * 100}
+                      onChange={(y) => zoomEdit({ y: y / 100 })}
+                      unit="%"
+                    />
+                  </>
+                )}
                 <Note>
                   {z.mode === "manual"
                     ? "Click the preview to choose a focus point."
-                    : "Auto zoom uses recorded click events. Imported video does not include click metadata."}
+                    : "Auto zoom follows recorded mouse movement. Imported videos do not include cursor metadata."}
                 </Note>
                 <Toggle
                   label="Enabled"
                   value={!z.disabled}
                   onChange={(v) => zoomEdit({ disabled: !v })}
                 />
+                {z.mode === "auto" && (
+                  <Disclosure label="Advanced">
+                    <Range
+                      label="Snap to edges"
+                      value={(z.snapToEdgesRatio ?? 0.25) * 100}
+                      min={0}
+                      max={45}
+                      step={1}
+                      unit="% of visible area"
+                      resetValue={25}
+                      onChange={(value) =>
+                        zoomEdit({ snapToEdgesRatio: value / 100 })
+                      }
+                    />
+                    <Note>
+                      Bring nearby recording edges into view as the camera
+                      follows the cursor.
+                    </Note>
+                  </Disclosure>
+                )}
                 <Divider />
                 <Button onClick={removeSelection}>
                   <Trash2 size={13} />

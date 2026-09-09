@@ -1,3 +1,4 @@
+import { snapAutoTarget } from "./edge-snap.js";
 import { effectiveZooms } from "./system-zooms.js";
 import { initialZoomScale } from "./framing.js";
 import { autoZoomTargets } from "./auto-zoom.js";
@@ -87,11 +88,15 @@ export function screenMotionAt(p: Project, time: number): Target {
       if (active) {
         const { z, targets } = active;
         const targetPoint = targets.findLast((c) => c.time <= t) ?? targets[0];
-        target = {
-          scale: z.scale * initialScale,
-          x: targetPoint?.x ?? z.x,
-          y: targetPoint?.y ?? z.y,
-        };
+        const position = targetPoint
+          ? snapAutoTarget(
+              p,
+              targetPoint,
+              z.scale * initialScale,
+              z.snapToEdgesRatio ?? 0.25,
+            )
+          : { x: z.x, y: z.y };
+        target = { scale: z.scale * initialScale, ...position };
       }
       point = { ...point, target };
       checkpoints.push(point);

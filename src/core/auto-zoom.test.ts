@@ -4,6 +4,7 @@ import { autoZoomTargets } from "./auto-zoom";
 import { createProject, zoomAt, type Zoom } from "./project";
 const zoom: Zoom = {
   id: "auto",
+  snapToEdgesRatio: 0,
   start: 1000,
   end: 4000,
   scale: 2,

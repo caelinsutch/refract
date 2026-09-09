@@ -174,3 +174,25 @@ with range 0–0.45, reset value 0.25, and a percentage-of-visible-area readout.
 The manual path supplies snap ratio zero. That setting and its visible-area
 remapping are still absent; removing the obsolete clamp does not implement auto
 edge snapping.
+
+## Automatic edge snapping — 2026-09-09
+
+Added per-zoom `snapToEdgesRatio` with an implicit 0.25 default and validation of
+persisted explicit values in 0–0.45. Auto zoom's Advanced disclosure exposes the
+percentage control and a 25% reset. Manual target sliders are now shown only in
+Manual mode. Derived vertical gap ranges use the observed system value 0.5.
+
+Automatic group centers are remapped through crop-local edge bands, limited by
+visible output/content extent, effective zoom and the initial framing scale.
+The small denominator epsilon from the observed remapping avoids division by
+zero. Manual targets bypass the remapping. The resulting target enters spring
+checkpoints, preserving continuity rather than snapping rendered frames directly.
+
+Tests separate no-snap tracking from edge behavior, and cover corners, zero snap,
+manual bypass, cropped coordinates, portrait bounds, serialization and invalid
+values. All 145 core tests pass. The Electron verifier exercises Auto/Manual field
+visibility, Advanced disclosure, numeric Enter commit, and Reset.
+
+The rule is implemented against Refract's current size normalization. Matching
+inset normalization, special cursor-target overrides and reference-rendered
+trajectories still requires verification; this is not a pixel-parity claim.

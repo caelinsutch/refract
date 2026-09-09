@@ -29,6 +29,7 @@ export function effectiveZooms(project: Project): Zoom[] {
         x: 0.5,
         y: 0.5,
         mode: "auto",
+        snapToEdgesRatio: 0.5,
         disabled: false,
       });
   };

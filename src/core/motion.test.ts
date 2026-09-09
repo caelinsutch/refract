@@ -64,7 +64,7 @@ test("screen motion honors instantaneous changes and ignores disabled or empty a
 
 test("automatic zoom retargets preserve motion at click timestamps", () => {
   const p = fixture();
-  p.zooms = [{ ...p.zooms[0], end: 5000, mode: "auto" }];
+  p.zooms = [{ ...p.zooms[0], end: 5000, mode: "auto", snapToEdgesRatio: 0 }];
   p.cursor = [
     { time: 1100, x: 0.2, y: 0.3, click: true },
     { time: 1600, x: 0.8, y: 0.7, click: true },

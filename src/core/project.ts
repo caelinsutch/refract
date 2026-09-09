@@ -14,6 +14,7 @@ export type Segment = {
   muted?: boolean;
 };
 export type Zoom = {
+  snapToEdgesRatio?: number;
   id: string;
   start: number;
   end: number;
@@ -417,7 +418,11 @@ export function validateProject(value: unknown): Project {
       z.x < 0 ||
       z.x > 1 ||
       z.y < 0 ||
-      z.y > 1
+      z.y > 1 ||
+      (z.snapToEdgesRatio !== undefined &&
+        (!valid(z.snapToEdgesRatio) ||
+          z.snapToEdgesRatio < 0 ||
+          z.snapToEdgesRatio > 0.45))
     )
       throw new Error("The project has an invalid zoom.");
   if (p.crop) {
