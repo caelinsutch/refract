@@ -1,3 +1,4 @@
+import { alignMicrophoneArgs } from "./microphone-audio.cjs";
 import {
   audioExtensions,
   listAudioLibrary,
@@ -163,7 +164,7 @@ app.whenReady().then(() => {
     win,
     async (dir, choice) => {
       const raw = path.join(dir, "media/screen.mp4");
-      const mic = path.join(dir, "media/microphone.m4a");
+      const mic = path.join(dir, "media/microphone.mov");
       const file = raw;
       let microphoneAudio: Project["microphoneAudio"];
       if (choice.microphoneId) {
@@ -190,8 +191,10 @@ app.whenReady().then(() => {
           throw Error(
             "The microphone recording could not be read. The original recording files remain in the project folder.",
           );
+        const aligned = path.join(dir, "media/microphone.wav");
+        await run(tool("ffmpeg"), alignMicrophoneArgs(mic, aligned));
         microphoneAudio = {
-          file: "media/microphone.m4a",
+          file: "media/microphone.wav",
           volume: 1,
           muted: false,
         };

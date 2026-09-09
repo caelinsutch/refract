@@ -25,3 +25,20 @@ During saved-project verification, the native picker disabled Open for a `.refra
 The existing four-case background/source/microphone verifier still passes after the change, including frequency amplitudes across the 2× clip. Production build and all 93 core tests pass. This does not yet establish handling of delayed first microphone timestamps or physical capture alignment.
 
 A subsequent live check in the active editor confirmed the Undo button restores microphone mute to off and its gain to 40%, disabling Undo and enabling Redo. The earlier failed automated attempts were not sufficient evidence of a history bug; keyboard shortcut delivery remains separately unverified.
+
+## Leading microphone delay
+
+A synthetic AVFoundation writer fixture uses the same AAC settings and zero session origin as capture, then appends generated PCM with a 600 ms timestamp offset. The `.m4a` output did not retain that offset: both zero-offset and delayed fixtures reported the same 44 ms start, and normal FFmpeg decoding began the tone immediately. This is a container behavior observed in the fixture, not a physical microphone measurement.
+
+The `.mov` version reports a 600 ms stream start. New native microphone recordings therefore use `media/microphone.mov`. Recording completion keeps that original and creates `media/microphone.wav` using `-copyts` and `aresample=async=1:first_pts=0`, encoded as 24-bit PCM. The project references the WAV, so preview, captions, and export all consume actual leading silence on the recording clock. Existing project assets are unchanged. This adds an uncompressed audio asset and a post-recording conversion step.
+
+Reproduction (from the repository root):
+
+```sh
+node --import tsx scripts/verify-short-audio.ts
+swiftc -parse-as-library -module-cache-path native/.build/module-cache scripts/verify-microphone-timing.swift -o work/verify-microphone-timing
+work/verify-microphone-timing work/short-audio/short.wav work/short-audio/delayed.mov 0.6
+node --import tsx scripts/verify-microphone-timing.ts
+```
+
+The native synthetic writer requires normal macOS codec-service access; inside the restricted tool sandbox, AVFoundation rejected the AAC input. The same generated-audio command succeeded outside that sandbox. The production alignment argument helper is exercised directly by the TypeScript verifier. It measures onset at 0.6000208 seconds, confirms leading silence through 0.59 seconds, and decodes 1.004 seconds including the tone. Desktop/renderer and Swift builds pass. Real microphone start/pause/resume alignment remains unverified.

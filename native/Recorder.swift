@@ -97,7 +97,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         let audioSettings: [String: Any] = [AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: 48000, AVNumberOfChannelsKey: 2, AVEncoderBitRateKey: 192000]
         if config.systemAudio { let audio = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings); audio.expectsMediaDataInRealTime = true; writer.add(audio); audioInput = audio }
         if config.microphoneId != nil {
-            let mic = try AVAssetWriter(outputURL: URL(fileURLWithPath: output).appendingPathComponent("microphone.m4a"), fileType: .m4a)
+            let mic = try AVAssetWriter(outputURL: URL(fileURLWithPath: output).appendingPathComponent("microphone.mov"), fileType: .mov)
             let input = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings); input.expectsMediaDataInRealTime = true; mic.add(input); micWriter = mic; micInput = input
         }
         if let cameraId = config.cameraId {
