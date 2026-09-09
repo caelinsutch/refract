@@ -108,6 +108,89 @@ app.whenReady().then(async () => {
         ? ["1", "0", "0", "0"]
         : ["8", "0", "0"])
         await child.webContents.insertText(digit);
+      if (action === "confirm") {
+        const settle = () =>
+          child!.webContents.executeJavaScript(
+            `new Promise(resolve=>setTimeout(resolve,40))`,
+          );
+        const cropSize = () =>
+          child!.webContents.executeJavaScript(`({
+          width:Number(document.querySelector('[aria-label="Crop width"]').value),
+          height:Number(document.querySelector('[aria-label="Crop height"]').value)
+        })`);
+        const handle = await child.webContents.executeJavaScript(`(() => {
+          const r=document.querySelector('[aria-label="Resize crop e. Use arrow keys."]').getBoundingClientRect();
+          return {x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};
+        })()`);
+        child.webContents.sendInputEvent({
+          type: "mouseDown",
+          ...handle,
+          button: "left",
+          clickCount: 1,
+        });
+        child.webContents.sendInputEvent({
+          type: "mouseMove",
+          x: handle.x - 40,
+          y: handle.y,
+          button: "left",
+        });
+        await settle();
+        assert.ok(
+          (await cropSize()).width < 1000,
+          "Crop draft did not follow drag",
+        );
+        child.webContents.sendInputEvent({
+          type: "keyDown",
+          keyCode: "Escape",
+        });
+        child.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+        child.webContents.sendInputEvent({
+          type: "mouseUp",
+          x: handle.x - 40,
+          y: handle.y,
+          button: "left",
+          clickCount: 1,
+        });
+        await settle();
+        assert.deepEqual(
+          await cropSize(),
+          { width: 1000, height: 1000 },
+          "Escape did not restore crop",
+        );
+        assert.equal(
+          await parent.webContents.executeJavaScript(
+            `window.cropResult===undefined`,
+          ),
+          true,
+          "Drag Escape closed crop window",
+        );
+        child.webContents.sendInputEvent({
+          type: "mouseDown",
+          ...handle,
+          button: "left",
+          clickCount: 1,
+        });
+        child.webContents.sendInputEvent({
+          type: "mouseUp",
+          x: handle.x - 60,
+          y: handle.y,
+          button: "left",
+          clickCount: 1,
+        });
+        await settle();
+        const resized = await cropSize();
+        assert.ok(resized.width < 950, "Crop ignored final release position");
+        assert.equal(
+          resized.width,
+          resized.height,
+          "Handle resize lost square aspect ratio",
+        );
+        await child.webContents.executeJavaScript(`(() => {
+          const field=document.querySelector('[aria-label="Crop width"]');field.focus();field.select();
+        })()`);
+        await child.webContents.insertText("1000");
+        console.log("crop pointer release and Escape passed");
+      }
       if (action === "close") child.close();
       else {
         const keyCode = action === "confirm" ? "Return" : "Escape";

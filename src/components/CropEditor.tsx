@@ -134,6 +134,10 @@ export default function CropEditor({
   const [rect, setRect] = useState<CropRect>(
     initial ?? { x: 0, y: 0, width, height },
   );
+  const activeDrag = useRef<{ cancel: () => void; cleanup: () => void } | null>(
+    null,
+  );
+  useEffect(() => () => activeDrag.current?.cleanup(), []);
   const [ratio, setRatio] = useState<number | null>(null);
   const [fieldDraft, setFieldDraft] = useState<{
     key: keyof CropRect;
@@ -170,36 +174,60 @@ export default function CropEditor({
     setRect((r) => editCropField(r, key, value, width, height, ratio));
   };
   function drag(e: PointerEvent, edge: string) {
+    if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
+    activeDrag.current?.cancel();
+    setFieldDraft(null);
     const target = e.currentTarget as HTMLElement;
+    target.focus({ preventScroll: true });
     target.setPointerCapture(e.pointerId);
     const start = rect,
       x = e.clientX,
       y = e.clientY;
-    const move = (ev: globalThis.PointerEvent) =>
-      setRect(
-        resizeCrop(
-          start,
-          edge,
-          ((ev.clientX - x) * width) / size.width,
-          ((ev.clientY - y) * height) / size.height,
-          width,
-          height,
-          ratio,
-        ),
+    const at = (ev: globalThis.PointerEvent) =>
+      resizeCrop(
+        start,
+        edge,
+        ((ev.clientX - x) * width) / size.width,
+        ((ev.clientY - y) * height) / size.height,
+        width,
+        height,
+        ratio,
       );
-    const end = () => {
+    const move = (ev: globalThis.PointerEvent) => setRect(at(ev));
+    const cleanup = () => {
+      activeDrag.current = null;
       target.removeEventListener("pointermove", move);
       target.removeEventListener("pointerup", end);
-      target.removeEventListener("pointercancel", end);
-      target.removeEventListener("lostpointercapture", end);
+      target.removeEventListener("pointercancel", cancel);
+      target.removeEventListener("lostpointercapture", cancel);
+      window.removeEventListener("keydown", key, true);
+      if (target.hasPointerCapture(e.pointerId))
+        target.releasePointerCapture(e.pointerId);
     };
+    const cancel = () => {
+      cleanup();
+      setRect(start);
+    };
+    const end = (ev: globalThis.PointerEvent) => {
+      cleanup();
+      setRect(at(ev));
+    };
+    const key = (ev: globalThis.KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      cancel();
+    };
+    activeDrag.current = { cancel, cleanup };
     target.addEventListener("pointermove", move);
     target.addEventListener("pointerup", end);
-    target.addEventListener("pointercancel", end);
-    target.addEventListener("lostpointercapture", end);
+    target.addEventListener("pointercancel", cancel);
+    target.addEventListener("lostpointercapture", cancel);
+    window.addEventListener("keydown", key, true);
   }
+
   function key(e: KeyboardEvent, edge: string) {
     const delta = e.shiftKey ? 10 : 1;
     const dx =

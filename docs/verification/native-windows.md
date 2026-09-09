@@ -95,3 +95,9 @@ The full-editor verifier now captures light/dark renderer screenshots after fini
 Visual inspection found that the status message still obscured the selected zoom label even though it no longer intercepted clicks. Status is now positioned within the preview stage above the transport/timeline, with width constrained to that stage. The updated light-theme screenshot shows unobstructed zoom/clip labels and controls. A layout assertion checks that status ends above the timeline. Full-editor interaction checks and production build pass. These captures use a synthetic video and do not establish reference visual parity; Screen Studio's editor capture remains white.
 
 Screenshots are generated at `work/editor-playback/light.png` and `dark.png` by the existing full-editor verifier. Process-local theme overrides are reset to system on exit, and the user's running session is not changed.
+
+## Crop pointer completion and cancellation
+
+Crop resize/move handles now sample the final pointer-up coordinates. Escape during an active gesture restores its starting rectangle and keeps the crop window open; pointer cancellation and lost capture also restore the starting rectangle. Gesture listeners are removed on unmount, and starting a handle gesture clears the numeric field draft.
+
+The isolated native crop verifier passed real Electron pointer input: resizing a 1000×1000 crop visibly changes the draft, Escape restores both dimensions while leaving native IPC pending, and a second resize with no intermediate move applies its release coordinates while retaining the selected 1:1 ratio. Enter then confirms through production native IPC; later Escape and close discard correctly. Light/dark token switching and the 200-pixel minimum checks also pass in this verifier. Build and all 124 core tests pass. Lost capture and every handle direction were not independently exercised in this run; native material parity remains unproven.
