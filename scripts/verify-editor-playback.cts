@@ -155,6 +155,52 @@ app.whenReady().then(async () => {
       }
       if (document.activeElement.textContent.trim() !== 'Presets') throw Error('Dialog did not restore trigger focus');
     })()`);
+    const openCrop = async () => {
+      await window!.webContents.executeJavaScript(`(async () => {
+        const trigger = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Crop');
+        if (!trigger) throw Error('Missing Crop control');
+        trigger.focus(); trigger.click();
+        const deadline = performance.now() + 3000;
+        while (!document.querySelector('[aria-label="Crop width"]')) {
+          if (performance.now() > deadline) throw Error('Crop did not open');
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+      })()`);
+    };
+    await openCrop();
+    await window.webContents.executeJavaScript(
+      `const field=document.querySelector('[aria-label="Crop width"]'); field.focus(); field.select();`,
+    );
+    for (const digit of ["2", "5", "6"])
+      await window.webContents.insertText(digit);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    const waitForCropClose = async () =>
+      window!.webContents.executeJavaScript(`(async () => {
+      const deadline = performance.now() + 3000;
+      while (document.querySelector('[aria-label="Crop width"]')) {
+        if (performance.now() > deadline) throw Error('Crop did not dismiss');
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+    })()`);
+    await waitForCropClose();
+    await openCrop();
+    await window.webContents.executeJavaScript(`(() => {
+      const field=document.querySelector('[aria-label="Crop width"]');
+      if (field.value !== '256') throw Error('Multi-digit crop was not retained: '+field.value);
+      field.focus(); field.select();
+    })()`);
+    await window.webContents.insertText("123");
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    await waitForCropClose();
+    await openCrop();
+    await window.webContents.executeJavaScript(`
+      if (document.querySelector('[aria-label="Crop width"]').value !== '256') throw Error('Escape committed a crop draft');
+    `);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    await waitForCropClose();
     console.log(
       JSON.stringify({
         ...result,
@@ -162,6 +208,7 @@ app.whenReady().then(async () => {
         reservedSpace: "passed",
         presetEnterEscapeFocus: "passed",
         modalTabContainment: "passed",
+        cropKeyboard: "passed",
       }),
     );
   } catch (error) {

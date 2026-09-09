@@ -49,3 +49,11 @@ The isolated production-renderer verifier now opens Presets, checks initial name
 A forward-Tab check initially failed on the first key: Chromium placed focus on BODY after the name field while Save was disabled. The shared Modal now wraps Tab/Shift-Tab at its focusable boundaries, excluding disabled, hidden, and inert controls. If no eligible controls exist, focus remains on the dialog itself. Eight forward Tabs and eight reverse Tabs now pass without leaving the dialog, followed by successful Enter/Escape/focus restoration.
 
 Run the full-editor verifier documented in `preview-transport.md`. The production build and all 121 core tests pass. This is actual Presets interaction in an isolated browser-import editor, not proof of every native crop/export dialog path. Each verifier run uses its own Electron profile so test presets do not affect the user's preferences or subsequent runs.
+
+## Crop multi-digit entry verified in the full editor
+
+The isolated production-renderer verifier now opens the shared CropEditor from the real editor control, selects the width field, and inserts `2`, `5`, and `6` as separate Electron text-input operations. Real Enter key events confirm the crop. Reopening shows width 256, establishing that incremental typing and default-action submission retain the complete value.
+
+The verifier then replaces width with 123, dismisses with real Escape events, and reopens. Width remains 256, confirming that Escape discards the draft rather than modifying the saved project crop. The complete full-editor verification passes alongside the earlier playback, focused-button, preset, and modal focus checks.
+
+This closes the earlier uncertainty about multi-digit input for the shared React crop component. It runs in browser-import mode using the in-editor modal; separate native window IPC, native material appearance, and native-window focus restoration remain distinct verification work. No user project or running application was changed.
