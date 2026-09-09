@@ -817,3 +817,11 @@ continues to require the system permission; window-source listing still does too
 - Sampling is debounced after source load, seek, crop change, and pause; it does not run continuously during playback. The source video is sampled before effects, respecting the current crop. Suggestions do not change the project until selected, and selections use ordinary undoable appearance edits.
 - Build, color-ranking unit checks, and the synthetic inspector fixture passed. The editor produced suggestions, applied one, and restored the original color through Undo while prior inset/corner and keyboard checks remained green.
 - Exact palette parity on identical decoded reference frames remains to be measured. Asymmetric inset positioning is still missing.
+
+### Asymmetric inset balance — 2026-09-09
+
+- Inspected the reference PointPositionPicker and inset redistribution logic. It uses a 16:9 grid, 24px draggable marker, 10px outer radius, normalized left/top proportions, center snapping within 0.01, and Reset. Native accessibility slider actions did not reliably alter the reference's inset, so this behavior evidence comes from installed definitions.
+- Added a collapsible Inset balance pad with pointer capture, release/cancel handling, center snapping, keyboard adjustment, and Reset. The drag readout floats above the pad without changing layout.
+- Optional insetBalance project data redistributes the fixed inset total between opposing edges. Shared preview/export geometry shifts the video within a stationary outer frame; cursor/mask geometry and preview targeting follow it. Old projects default to centered balance. Project validation rejects out-of-range balance coordinates.
+- Production build and focused compositor/balance tests passed default compatibility, edge totals, snapping, frame invariance, hit testing, round trip, and validation. The editor fixture passed keyboard movement, a pointer drag to a new position, Reset, and prior inset/color checks. Exact reference motion and live side-by-side pixel comparison remain open.
+- Inset opacity remains a separate missing control.

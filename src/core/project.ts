@@ -61,6 +61,7 @@ export type Appearance = {
   radius: number;
   outerRadius?: number;
   inset: number;
+  insetBalance?: { x: number; y: number };
   insetColor: string;
   shadow: number;
   shadowDirectional: boolean;
@@ -522,6 +523,14 @@ export function validateProject(value: unknown): Project {
       p.appearance.cursorLoopMs > 4000)
   )
     throw new Error("The project has an invalid cursor loop duration.");
+  if (
+    p.appearance.insetBalance !== undefined &&
+    (!p.appearance.insetBalance ||
+      [p.appearance.insetBalance.x, p.appearance.insetBalance.y].some(
+        (v) => !valid(v) || v < 0 || v > 1,
+      ))
+  )
+    throw new Error("The project has an invalid inset balance.");
   if (
     p.appearance.outerRadius !== undefined &&
     (!valid(p.appearance.outerRadius) ||

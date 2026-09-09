@@ -221,6 +221,50 @@ app.whenReady().then(async () => {
     await wait(100);
     assert.equal(await read("Number(corners.value)"), 58);
     await read(
+      `Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Inset balance').click()`,
+    );
+    await wait(100);
+    await read(
+      `window.balance=document.querySelector('[data-inset-balance]');balance.scrollIntoView({block:'center'});balance.focus()`,
+    );
+    c.sendInputEvent({
+      type: "keyDown",
+      keyCode: "Right",
+      modifiers: ["shift"],
+    });
+    c.sendInputEvent({ type: "keyUp", keyCode: "Right", modifiers: ["shift"] });
+    await wait(100);
+    assert.ok(
+      (await read(`balance.getAttribute('aria-description')`)).includes(
+        "Left 60 percent",
+      ),
+    );
+    const balanceRect = await read(
+      `(()=>{const r=balance.getBoundingClientRect();return {x:Math.round(r.left+r.width*.25),y:Math.round(r.top+r.height*.75)}})()`,
+    );
+    c.sendInputEvent({ type: "mouseMove", ...balanceRect });
+    c.sendInputEvent({ type: "mouseDown", button: "left", ...balanceRect });
+    const dragged = await read(
+      `(()=>{const r=balance.getBoundingClientRect();return {x:Math.round(r.left+r.width*.75),y:Math.round(r.top+r.height*.25)}})()`,
+    );
+    c.sendInputEvent({ type: "mouseMove", ...dragged });
+    c.sendInputEvent({ type: "mouseUp", button: "left", ...dragged });
+    await wait(100);
+    assert.ok(
+      (await read(`balance.getAttribute('aria-description')`)).includes(
+        "Left 75 percent",
+      ),
+    );
+    await read(
+      `document.querySelector('button[aria-label="Reset inset balance"]').click()`,
+    );
+    await wait(100);
+    assert.ok(
+      (await read(`balance.getAttribute('aria-description')`)).includes(
+        "Left 50 percent, top 50 percent",
+      ),
+    );
+    await read(
       `document.querySelector('button[aria-label="Reset Inset"]').click()`,
     );
     await wait(100);

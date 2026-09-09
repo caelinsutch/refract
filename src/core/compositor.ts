@@ -1,3 +1,4 @@
+import { insetEdges } from "./inset-balance";
 import { screenCorners } from "./screen-corners";
 import { screenExposure, drawScreenExposure } from "./screen-blur";
 import { cursorExposure, drawCursorExposure } from "./cursor-render";
@@ -115,7 +116,20 @@ export function videoGeometry(
     sy = crop.y,
     cw = crop.width,
     ch = crop.height;
-  return { x, y, w, h, sx, sy, cw, ch, z, source };
+  const edges = insetEdges(a),
+    insetScale = (width / 1280) * z.scale;
+  return {
+    x: x + ((edges.left - edges.right) / 2) * insetScale,
+    y: y + ((edges.top - edges.bottom) / 2) * insetScale,
+    w,
+    h,
+    sx,
+    sy,
+    cw,
+    ch,
+    z,
+    source,
+  };
 }
 
 /** Resolve a composition pixel to the visible source pixel; ignore background clicks. */
@@ -243,7 +257,8 @@ export function drawFrame(
       const corners = screenCorners(a);
       const r = corners.inner * scale * transform.scale;
       const outerRadius = corners.outer * scale * transform.scale;
-      const inset = a.inset * scale * transform.scale;
+      const edges = insetEdges(a);
+      const edgeScale = scale * transform.scale;
       c.save();
       c.shadowColor = `rgba(0,0,0,${a.shadow * 0.6})`;
       c.shadowBlur = a.shadowBlur * 2 * scale * transform.scale;
@@ -255,10 +270,10 @@ export function drawFrame(
       c.shadowOffsetY = Math.sin(angle) * distance;
       rounded(
         c,
-        x - inset,
-        y - inset,
-        w + inset * 2,
-        h + inset * 2,
+        x - edges.left * edgeScale,
+        y - edges.top * edgeScale,
+        w + (edges.left + edges.right) * edgeScale,
+        h + (edges.top + edges.bottom) * edgeScale,
         outerRadius,
       );
       c.fillStyle = a.insetColor;

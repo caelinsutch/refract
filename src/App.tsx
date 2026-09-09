@@ -1,3 +1,4 @@
+import { InsetBalance } from "./components/InsetBalance";
 import { InsetColors } from "./components/InsetColors";
 import { insetAppearance, screenCorners } from "./core/screen-corners";
 import { Tooltip } from "./components/Tooltip";
@@ -2584,6 +2585,14 @@ export default function App() {
                     onChange={(insetColor) => appearance({ insetColor })}
                   />
                 ) : null}
+                {project.appearance.inset > 0 && (
+                  <Disclosure label="Inset balance">
+                    <InsetBalance
+                      value={project.appearance.insetBalance}
+                      onChange={(insetBalance) => appearance({ insetBalance })}
+                    />
+                  </Disclosure>
+                )}
                 <Range
                   label="Shadow"
                   preview={false}
