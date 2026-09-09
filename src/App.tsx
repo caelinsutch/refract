@@ -201,13 +201,37 @@ const s = sx.create({
     flexShrink: 0,
   },
   transportLeft: { display: "flex", alignItems: "center", minWidth: 0, gap: 1 },
-  transportCenter: { display: "flex", alignItems: "center", justifyContent: "center", minWidth: 0, gap: 0 },
-  transportRight: { display: "flex", alignItems: "center", justifyContent: "flex-end", minWidth: 0, gap: 1 },
+  transportCenter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 0,
+    gap: 2,
+    containerType: "inline-size",
+    containerName: "playback",
+  },
+  transportRight: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    minWidth: 0,
+    gap: 1,
+  },
+  playButtons: { display: "flex", alignItems: "center", gap: 1, flexShrink: 0 },
   time: {
-    fontSize: 11,
+    fontSize: 13,
     fontVariantNumeric: "tabular-nums",
-    color: "var(--text-secondary)",
-    width: 119,
+    color: {
+      default: "var(--text-subtle)",
+      ":hover": "var(--text-secondary)",
+      ":active": "var(--text-primary)",
+    },
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    padding: 0,
+    whiteSpace: "nowrap",
+    minWidth: 0,
+    overflow: "hidden",
   },
   audioTrackName: {
     minWidth: 0,
@@ -1710,103 +1734,126 @@ export default function App() {
       <main {...sx.props(s.body)}>
         <div {...sx.props(s.workspace)}>
           <div {...sx.props(s.previewRow)}>
-          <section {...sx.props(s.stage)}>
-            <div
-              {...sx.props(s.stageTools)}
-              style={!project ? { visibility: "hidden" } : undefined}
-            >
-              {project ? (
-                <>
-                  <select
-                    aria-label="Aspect ratio"
-                    value={project.appearance.ratio}
-                    onChange={(e) => appearance({ ratio: e.target.value })}
-                  >
-                    {["Auto", "16:9", "9:16", "1:1", "4:3", "4:5", "21:9"].map(
-                      (x) => (
+            <section {...sx.props(s.stage)}>
+              <div
+                {...sx.props(s.stageTools)}
+                style={!project ? { visibility: "hidden" } : undefined}
+              >
+                {project ? (
+                  <>
+                    <select
+                      aria-label="Aspect ratio"
+                      value={project.appearance.ratio}
+                      onChange={(e) => appearance({ ratio: e.target.value })}
+                    >
+                      {[
+                        "Auto",
+                        "16:9",
+                        "9:16",
+                        "1:1",
+                        "4:3",
+                        "4:5",
+                        "21:9",
+                      ].map((x) => (
                         <option key={x}>{x}</option>
-                      ),
-                    )}
-                  </select>
-                  <Button
-                    onClick={() => {
-                      void openCrop();
+                      ))}
+                    </select>
+                    <Button
+                      onClick={() => {
+                        void openCrop();
+                      }}
+                      title="Crop recording"
+                    >
+                      <Crop size={13} />
+                      Crop
+                    </Button>
+                    <Button onClick={addMask}>
+                      <Scan size={13} />
+                      Mask
+                    </Button>
+                  </>
+                ) : null}
+              </div>
+              <div {...sx.props(s.canvasHolder)}>
+                {project ? (
+                  <canvas
+                    ref={canvas}
+                    {...sx.props(s.canvas)}
+                    aria-label="Video composition preview"
+                    tabIndex={mask ? 0 : undefined}
+                    style={{
+                      cursor: mask ? "move" : z ? "crosshair" : "default",
                     }}
-                    title="Crop recording"
-                  >
-                    <Crop size={13} />
-                    Crop
-                  </Button>
-                  <Button onClick={addMask}>
-                    <Scan size={13} />
-                    Mask
-                  </Button>
-                </>
-              ) : null}
-            </div>
-            <div {...sx.props(s.canvasHolder)}>
-              {project ? (
-                <canvas
-                  ref={canvas}
-                  {...sx.props(s.canvas)}
-                  aria-label="Video composition preview"
-                  tabIndex={mask ? 0 : undefined}
-                  style={{
-                    cursor: mask ? "move" : z ? "crosshair" : "default",
-                  }}
-                  onLostPointerCapture={cancelMaskDrag}
-                  onPointerDown={(e) => {
-                    if (!mask || e.button !== 0) return;
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const point = sourcePointAt(
-                      project,
-                      time,
-                      rect.width,
-                      rect.height,
-                      e.clientX - rect.left,
-                      e.clientY - rect.top,
-                    );
-                    const source = sourceAt(project, time)?.time ?? 0;
-                    const handle = maskHandleAt(
-                      project,
-                      mask,
-                      time,
-                      rect.width,
-                      rect.height,
-                      e.clientX - rect.left,
-                      e.clientY - rect.top,
-                    );
-                    if (
-                      source < mask.start ||
-                      source >= mask.end ||
-                      (!handle &&
-                        (!point ||
-                          point.x < mask.x ||
-                          point.x > mask.x + mask.width ||
-                          point.y < mask.y ||
-                          point.y > mask.y + mask.height))
-                    )
-                      return;
-                    pausePreview();
-                    e.currentTarget.focus({ preventScroll: true });
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                    maskDrag.current = {
-                      project,
-                      mask,
-                      time,
-                      x: e.clientX,
-                      y: e.clientY,
-                      width: rect.width,
-                      height: rect.height,
-                      draft: mask,
-                      handle: handle ?? "move",
-                    };
-                  }}
-                  onPointerMove={(e) => {
-                    const drag = maskDrag.current;
-                    if (drag) {
-                      drag.draft = dragMask(
-                        drag.project,
+                    onLostPointerCapture={cancelMaskDrag}
+                    onPointerDown={(e) => {
+                      if (!mask || e.button !== 0) return;
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const point = sourcePointAt(
+                        project,
+                        time,
+                        rect.width,
+                        rect.height,
+                        e.clientX - rect.left,
+                        e.clientY - rect.top,
+                      );
+                      const source = sourceAt(project, time)?.time ?? 0;
+                      const handle = maskHandleAt(
+                        project,
+                        mask,
+                        time,
+                        rect.width,
+                        rect.height,
+                        e.clientX - rect.left,
+                        e.clientY - rect.top,
+                      );
+                      if (
+                        source < mask.start ||
+                        source >= mask.end ||
+                        (!handle &&
+                          (!point ||
+                            point.x < mask.x ||
+                            point.x > mask.x + mask.width ||
+                            point.y < mask.y ||
+                            point.y > mask.y + mask.height))
+                      )
+                        return;
+                      pausePreview();
+                      e.currentTarget.focus({ preventScroll: true });
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      maskDrag.current = {
+                        project,
+                        mask,
+                        time,
+                        x: e.clientX,
+                        y: e.clientY,
+                        width: rect.width,
+                        height: rect.height,
+                        draft: mask,
+                        handle: handle ?? "move",
+                      };
+                    }}
+                    onPointerMove={(e) => {
+                      const drag = maskDrag.current;
+                      if (drag) {
+                        drag.draft = dragMask(
+                          drag.project,
+                          drag.mask,
+                          drag.time,
+                          drag.width,
+                          drag.height,
+                          e.clientX - drag.x,
+                          e.clientY - drag.y,
+                          drag.handle,
+                        );
+                        requestPreview.current();
+                      }
+                    }}
+                    onPointerUp={(e) => {
+                      const drag = maskDrag.current;
+                      cancelMaskDrag();
+                      if (!drag || project !== drag.project) return;
+                      const moved = dragMask(
+                        project,
                         drag.mask,
                         drag.time,
                         drag.width,
@@ -1815,226 +1862,251 @@ export default function App() {
                         e.clientY - drag.y,
                         drag.handle,
                       );
-                      requestPreview.current();
-                    }
-                  }}
-                  onPointerUp={(e) => {
-                    const drag = maskDrag.current;
-                    cancelMaskDrag();
-                    if (!drag || project !== drag.project) return;
-                    const moved = dragMask(
-                      project,
-                      drag.mask,
-                      drag.time,
-                      drag.width,
-                      drag.height,
-                      e.clientX - drag.x,
-                      e.clientY - drag.y,
-                      drag.handle,
-                    );
-                    if (
-                      moved.x !== drag.mask.x ||
-                      moved.y !== drag.mask.y ||
-                      moved.width !== drag.mask.width ||
-                      moved.height !== drag.mask.height
-                    )
-                      edit({
-                        ...project,
-                        masks: project.masks.map((m) =>
-                          m.id === moved.id ? moved : m,
-                        ),
-                      });
-                  }}
-                  onPointerCancel={cancelMaskDrag}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape" && maskDrag.current) {
-                      cancelMaskDrag();
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
-                  onClick={(e) => {
-                    if (z) {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const point = sourcePointAt(
-                        project,
-                        time,
-                        e.currentTarget.width,
-                        e.currentTarget.height,
-                        ((e.clientX - rect.left) / rect.width) *
+                      if (
+                        moved.x !== drag.mask.x ||
+                        moved.y !== drag.mask.y ||
+                        moved.width !== drag.mask.width ||
+                        moved.height !== drag.mask.height
+                      )
+                        edit({
+                          ...project,
+                          masks: project.masks.map((m) =>
+                            m.id === moved.id ? moved : m,
+                          ),
+                        });
+                    }}
+                    onPointerCancel={cancelMaskDrag}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape" && maskDrag.current) {
+                        cancelMaskDrag();
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    }}
+                    onClick={(e) => {
+                      if (z) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const point = sourcePointAt(
+                          project,
+                          time,
                           e.currentTarget.width,
-                        ((e.clientY - rect.top) / rect.height) *
                           e.currentTarget.height,
-                      );
-                      if (point) zoomEdit({ ...point, mode: "manual" });
-                    }
-                  }}
-                />
-              ) : (
-                <div {...sx.props(s.empty)}>
-                  <div {...sx.props(s.emptyIcon)}>
-                    <Film size={31} strokeWidth={1.3} />
+                          ((e.clientX - rect.left) / rect.width) *
+                            e.currentTarget.width,
+                          ((e.clientY - rect.top) / rect.height) *
+                            e.currentTarget.height,
+                        );
+                        if (point) zoomEdit({ ...point, mode: "manual" });
+                      }
+                    }}
+                  />
+                ) : (
+                  <div {...sx.props(s.empty)}>
+                    <div {...sx.props(s.emptyIcon)}>
+                      <Film size={31} strokeWidth={1.3} />
+                    </div>
+                    <h1 {...sx.props(s.emptyTitle)}>
+                      Make your next recording.
+                    </h1>
+                    <p {...sx.props(s.emptyText)}>
+                      Record your screen, or open a video to shape its framing,
+                      timing, and focus.
+                    </p>
+                    <Button
+                      primary
+                      onClick={() =>
+                        window.refract
+                          ? window.refract.showRecorder()
+                          : importVideo()
+                      }
+                    >
+                      <Plus size={14} />
+                      {window.refract ? "New recording" : "Open a video"}
+                    </Button>
+                    <Button onClick={open}>
+                      <FolderOpen size={13} />
+                      Open project
+                    </Button>
                   </div>
-                  <h1 {...sx.props(s.emptyTitle)}>Make your next recording.</h1>
-                  <p {...sx.props(s.emptyText)}>
-                    Record your screen, or open a video to shape its framing,
-                    timing, and focus.
-                  </p>
-                  <Button
-                    primary
-                    onClick={() =>
-                      window.refract
-                        ? window.refract.showRecorder()
-                        : importVideo()
-                    }
-                  >
-                    <Plus size={14} />
-                    {window.refract ? "New recording" : "Open a video"}
-                  </Button>
-                  <Button onClick={open}>
-                    <FolderOpen size={13} />
-                    Open project
-                  </Button>
-                </div>
-              )}
-            </div>
-            {status ? (
-              <div role="status" {...sx.props(s.status)}>
-                {status}
+                )}
               </div>
-            ) : null}
-          </section>
-          <nav aria-label="Recording tools" {...sx.props(s.tools)}>
-            {tabs.map((t) => {
-              const active = tab === t.id && !selection;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  title={t.title}
-                  aria-label={t.title}
-                  aria-pressed={active}
-                  data-motion="static"
-                  {...sx.props(s.tool, active && s.toolActive)}
-                  onClick={() => {
-                    setTab(t.id);
-                    setSelection(null);
-                  }}
-                >
-                  <t.icon size={16} strokeWidth={1.5} />
-                  {active && <span aria-hidden="true" {...sx.props(s.toolIndicator)} />}
-                </button>
-              );
-            })}
-          </nav>
+              {status ? (
+                <div role="status" {...sx.props(s.status)}>
+                  {status}
+                </div>
+              ) : null}
+            </section>
+            <nav aria-label="Recording tools" {...sx.props(s.tools)}>
+              {tabs.map((t) => {
+                const active = tab === t.id && !selection;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    title={t.title}
+                    aria-label={t.title}
+                    aria-pressed={active}
+                    data-motion="static"
+                    {...sx.props(s.tool, active && s.toolActive)}
+                    onClick={() => {
+                      setTab(t.id);
+                      setSelection(null);
+                    }}
+                  >
+                    <t.icon size={16} strokeWidth={1.5} />
+                    {active && (
+                      <span aria-hidden="true" {...sx.props(s.toolIndicator)} />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
           <div {...sx.props(s.transport)}>
             <div {...sx.props(s.transportLeft)}>
-            {project && (
-              <TimelineVisibility
-                tracks={timelineTracks}
-                hasCamera={!!project.source.camera}
-                hasShortcuts={!!project.shortcuts?.length}
-                onChange={setTimelineTracks}
-              />
-            )}
-            <span
-              role="timer"
-              aria-label="Playback position"
-              {...sx.props(s.time)}
-            >
-              {formatTime(time, true)}{" "}
-              <span {...sx.props(s.muted)}>
-                / {formatTime(project ? duration(project) : 0, true)}
-              </span>
-            </span>
+              {project && (
+                <TimelineVisibility
+                  tracks={timelineTracks}
+                  hasCamera={!!project.source.camera}
+                  hasShortcuts={!!project.shortcuts?.length}
+                  onChange={setTimelineTracks}
+                />
+              )}
             </div>
             <div {...sx.props(s.transportCenter)}>
-            <Button
-              icon
-              title="Start"
-              disabled={!project}
-              onClick={() => seek(0)}
-            >
-              <SkipBack size={14} />
-            </Button>
-            <Button
-              icon
-              title={playing ? "Pause" : "Play"}
-              disabled={!project}
-              onClick={togglePlayback}
-            >
-              <StateIcon
-                active={playing}
-                size={17}
-                on={<Pause size={17} />}
-                off={<Play size={17} />}
-              />
-            </Button>
-            <Button
-              icon
-              title="End"
-              disabled={!project}
-              onClick={() => seek(project ? duration(project) : 0)}
-            >
-              <SkipForward size={14} />
-            </Button>
+              <span
+                className="playback-timer"
+                role="timer"
+                aria-label="Playback position"
+              >
+                {formatTime(time, true)} /{" "}
+                {formatTime(project ? duration(project) : 0, true)}
+              </span>
+              <button
+                type="button"
+                data-playback-time
+                title="Copy playback position"
+                {...sx.props(s.time)}
+                onClick={() => {
+                  void navigator.clipboard
+                    .writeText(formatTime(time, true))
+                    .then(
+                      () => setStatus("Copied to clipboard"),
+                      () => setStatus("Could not copy timestamp"),
+                    );
+                }}
+              >
+                {formatTime(time, !playing)}
+              </button>
+              <div {...sx.props(s.playButtons)}>
+                <Button
+                  icon
+                  size="toolbar"
+                  title="Start"
+                  disabled={!project}
+                  onClick={() => seek(0)}
+                >
+                  <SkipBack size={16} />
+                </Button>
+                <Button
+                  icon
+                  size="toolbarWide"
+                  title={playing ? "Pause" : "Play"}
+                  disabled={!project}
+                  onClick={togglePlayback}
+                >
+                  <StateIcon
+                    active={playing}
+                    size={24}
+                    on={<Pause size={24} />}
+                    off={<Play size={24} />}
+                  />
+                </Button>
+                <Button
+                  icon
+                  size="toolbar"
+                  title="End"
+                  disabled={!project}
+                  onClick={() => seek(project ? duration(project) : 0)}
+                >
+                  <SkipForward size={16} />
+                </Button>
+              </div>
+              <button
+                type="button"
+                data-playback-time
+                title="Copy video duration"
+                {...sx.props(s.time)}
+                onClick={() => {
+                  void navigator.clipboard
+                    .writeText(
+                      formatTime(project ? duration(project) : 0, true),
+                    )
+                    .then(
+                      () => setStatus("Copied to clipboard"),
+                      () => setStatus("Could not copy timestamp"),
+                    );
+                }}
+              >
+                {formatTime(project ? duration(project) : 0, !playing)}
+              </button>
             </div>
             <div {...sx.props(s.transportRight)}>
-            <Button
-              active={loop}
-              aria-pressed={loop}
-              icon
-              title="Loop playback"
-              onClick={() => setLoop((v) => !v)}
-            >
-              <Repeat2 size={14} />
-            </Button>
-            <Button
-              icon
-              title={
-                project?.appearance.muted
-                  ? "Unmute source audio"
-                  : "Mute source audio"
-              }
-              aria-pressed={project?.appearance.muted ?? false}
-              disabled={!project?.source.hasAudio}
-              onClick={() => appearance({ muted: !project?.appearance.muted })}
-            >
-              <StateIcon
-                active={project?.appearance.muted ?? false}
-                size={14}
-                on={<VolumeX size={14} />}
-                off={<Volume2 size={14} />}
-              />
-            </Button>
-            <select
-              aria-label="Preview quality"
-              title="Performance preview skips motion blur. Export keeps all enabled effects."
-              value={previewQuality}
-              onChange={(e) =>
-                setPreviewQuality(e.target.value as "quality" | "performance")
-              }
-            >
-              <option value="quality">Quality</option>
-              <option value="performance">Performance</option>
-            </select>
-            <select
-              aria-label="Preview speed"
-              value={previewSpeed}
-              onChange={(e) => setPreviewSpeed(Number(e.target.value))}
-            >
-              {[0.5, 1, 1.5, 2].map((v) => (
-                <option key={v} value={v}>
-                  {v}×
-                </option>
-              ))}
-            </select>
+              <Button
+                active={loop}
+                aria-pressed={loop}
+                icon
+                title="Loop playback"
+                onClick={() => setLoop((v) => !v)}
+              >
+                <Repeat2 size={14} />
+              </Button>
+              <Button
+                icon
+                title={
+                  project?.appearance.muted
+                    ? "Unmute source audio"
+                    : "Mute source audio"
+                }
+                aria-pressed={project?.appearance.muted ?? false}
+                disabled={!project?.source.hasAudio}
+                onClick={() =>
+                  appearance({ muted: !project?.appearance.muted })
+                }
+              >
+                <StateIcon
+                  active={project?.appearance.muted ?? false}
+                  size={14}
+                  on={<VolumeX size={14} />}
+                  off={<Volume2 size={14} />}
+                />
+              </Button>
+              <select
+                aria-label="Preview quality"
+                title="Performance preview skips motion blur. Export keeps all enabled effects."
+                value={previewQuality}
+                onChange={(e) =>
+                  setPreviewQuality(e.target.value as "quality" | "performance")
+                }
+              >
+                <option value="quality">Quality</option>
+                <option value="performance">Performance</option>
+              </select>
+              <select
+                aria-label="Preview speed"
+                value={previewSpeed}
+                onChange={(e) => setPreviewSpeed(Number(e.target.value))}
+              >
+                {[0.5, 1, 1.5, 2].map((v) => (
+                  <option key={v} value={v}>
+                    {v}×
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
         <aside {...sx.props(s.sidebar)}>
-
           <div {...sx.props(s.panel)}>
             {!project ? (
               <>

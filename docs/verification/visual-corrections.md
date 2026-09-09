@@ -261,3 +261,18 @@ with the widths of the left and right groups; removed the extra top divider and
 17px horizontal inset absent from that reference holder. Existing controls and
 keyboard behavior remain available. Production build and the isolated editor
 interaction verifier pass, with both system-theme captures generated.
+
+## Playback group — 2026-09-09
+
+Installed `PlayButtons` observations: skip targets are 46×38px; play is 56×38px
+with a 24px icon; the button gap is 1px and surrounding readout gap is 2px.
+Position and duration flank the buttons, and both disappear when the center
+container is narrower than 400px. Clicking either copies its timestamp.
+
+Added shared toolbar button sizes, moved the time readouts, and implemented the
+400px container query plus timestamp copying. A separate visually hidden timer
+keeps playback position exposed to assistive technology at compact widths.
+The existing editor verifier now exercises narrow and wide views and a real
+pointer click to copy the paused timestamp. Reference frame-based time formatting
+is still distinct from Refract's hundredths formatting; this pass does not claim
+complete time-display or transport parity.

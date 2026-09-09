@@ -327,3 +327,21 @@ input[data-setting-slider]:active::-webkit-slider-thumb {
     transition: none;
   }
 }
+
+/* The reference hides flanking timestamps below a 400px playback group. */
+[data-playback-time] {
+  display: none;
+}
+@container playback (min-width: 400px) {
+  [data-playback-time] {
+    display: block;
+  }
+}
+.playback-timer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

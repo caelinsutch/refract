@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { app, BrowserWindow, nativeTheme } from "electron";
+import { app, BrowserWindow, nativeTheme, clipboard } from "electron";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -34,6 +34,9 @@ app.whenReady().then(async () => {
         backgroundThrottling: false,
         autoplayPolicy: "no-user-gesture-required",
       },
+    });
+    window.webContents.on("console-message", (_event, level, message) => {
+      if (level >= 3) console.error(message);
     });
     await window.loadFile(path.resolve("dist/index.html"));
     const result = await window.webContents.executeJavaScript(`(async () => {
@@ -554,6 +557,57 @@ app.whenReady().then(async () => {
       await new Promise(resolve=>setTimeout(resolve,40));
       if (!reset.disabled || Number(slider.value)!==10) throw Error('Reset did not restore default');
     })()`);
+    const smallBounds = window.getBounds();
+    assert.equal(
+      await window.webContents.executeJavaScript(
+        `getComputedStyle(document.querySelector('[data-playback-time]')).display`,
+      ),
+      "none",
+    );
+    window.setSize(1700, 880);
+    window.show();
+    window.focus();
+    await window.webContents.executeJavaScript(
+      `new Promise(resolve => setTimeout(resolve, 100))`,
+    );
+    assert.equal(
+      await window.webContents.executeJavaScript(
+        `getComputedStyle(document.querySelector('[data-playback-time]')).display`,
+      ),
+      "block",
+    );
+    const timestamp = await window.webContents.executeJavaScript(`(() => {
+      const button=document.querySelector('button[title="Copy playback position"]');
+      const rect=button.getBoundingClientRect();
+      return {x:Math.round(rect.x+rect.width/2),y:Math.round(rect.y+rect.height/2),text:button.textContent};
+    })()`);
+    window.webContents.sendInputEvent({
+      type: "mouseDown",
+      button: "left",
+      clickCount: 1,
+      x: timestamp.x,
+      y: timestamp.y,
+    });
+    window.webContents.sendInputEvent({
+      type: "mouseUp",
+      button: "left",
+      clickCount: 1,
+      x: timestamp.x,
+      y: timestamp.y,
+    });
+    await window.webContents.executeJavaScript(
+      `new Promise(resolve => setTimeout(resolve, 100))`,
+    );
+    assert.equal(
+      await clipboard.readText(),
+      timestamp.text,
+      "Timestamp click did not copy the paused position",
+    );
+    await fs.writeFile(
+      path.join(directory, "wide-playback.png"),
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    window.setBounds(smallBounds);
     for (const theme of ["dark", "light"] as const) {
       nativeTheme.themeSource = theme;
       await window.webContents.executeJavaScript(`(async () => {
@@ -584,6 +638,7 @@ app.whenReady().then(async () => {
         existingRangeGestures: "passed",
         sidebarClose: "passed",
         settingsReset: "passed",
+        responsivePlaybackAndCopy: "passed",
       }),
     );
   } catch (error) {

@@ -35,6 +35,8 @@ const s = sx.create({
     paddingInline: 14,
   },
   icon: { width: 28, padding: 0 },
+  toolbar: { width: 46, height: 38, paddingInline: 12, flexShrink: 0 },
+  toolbarWide: { width: 56, height: 38, paddingInline: 12, flexShrink: 0 },
   row: {
     display: "flex",
     alignItems: "center",
@@ -122,6 +124,7 @@ export function Button({
   defaultAction = false,
   disabled = false,
   icon = false,
+  size = "small",
   "aria-expanded": expanded,
   "aria-pressed": pressed,
 }: {
@@ -133,6 +136,7 @@ export function Button({
   defaultAction?: boolean;
   disabled?: boolean;
   icon?: boolean;
+  size?: "small" | "toolbar" | "toolbarWide";
   "aria-expanded"?: boolean;
   "aria-pressed"?: boolean;
 }) {
@@ -145,6 +149,8 @@ export function Button({
         active && s.active,
         primary && s.primary,
         icon && s.icon,
+        size === "toolbar" && s.toolbar,
+        size === "toolbarWide" && s.toolbarWide,
       )}
       onClick={onClick}
       aria-label={title}
