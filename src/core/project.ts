@@ -55,6 +55,7 @@ export type Appearance = {
   background: "wallpaper" | "gradient" | "color" | "image";
   color: string;
   color2: string;
+  gradientStops?: string[];
   wallpaper: number;
   image?: string;
   padding: number;
@@ -524,6 +525,16 @@ export function validateProject(value: unknown): Project {
       p.appearance.cursorLoopMs > 4000)
   )
     throw new Error("The project has an invalid cursor loop duration.");
+  if (
+    p.appearance.gradientStops !== undefined &&
+    (!Array.isArray(p.appearance.gradientStops) ||
+      p.appearance.gradientStops.length < 2 ||
+      p.appearance.gradientStops.length > 32 ||
+      p.appearance.gradientStops.some(
+        (color) => typeof color !== "string" || !/^#[0-9a-f]{6}$/i.test(color),
+      ))
+  )
+    throw new Error("The project has invalid gradient stops.");
   if (
     p.appearance.insetOpacity !== undefined &&
     (!valid(p.appearance.insetOpacity) ||

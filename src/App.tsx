@@ -1,3 +1,4 @@
+import { GradientPresets } from "./components/GradientPresets";
 import { InsetBalance } from "./components/InsetBalance";
 import { InsetColors } from "./components/InsetColors";
 import { insetAppearance, screenCorners } from "./core/screen-corners";
@@ -2524,7 +2525,10 @@ export default function App() {
                           type="color"
                           value={project.appearance.color}
                           onChange={(e) =>
-                            appearance({ color: e.target.value })
+                            appearance({
+                              color: e.target.value,
+                              gradientStops: undefined,
+                            })
                           }
                         />
                         {project.appearance.background === "gradient" ? (
@@ -2533,12 +2537,29 @@ export default function App() {
                             type="color"
                             value={project.appearance.color2}
                             onChange={(e) =>
-                              appearance({ color2: e.target.value })
+                              appearance({
+                                color2: e.target.value,
+                                gradientStops: undefined,
+                              })
                             }
                           />
                         ) : null}
                       </div>
                     </div>
+                    {project.appearance.background === "gradient" && (
+                      <Disclosure label="Gradient presets" defaultOpen>
+                        <GradientPresets
+                          appearance={project.appearance}
+                          onChange={(colors) =>
+                            appearance({
+                              color: colors[0],
+                              color2: colors[colors.length - 1],
+                              gradientStops: [...colors],
+                            })
+                          }
+                        />
+                      </Disclosure>
+                    )}
                     <Divider />
                   </>
                 )}

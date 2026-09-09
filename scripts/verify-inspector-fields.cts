@@ -313,6 +313,56 @@ app.whenReady().then(async () => {
       "rgba(0, 0, 0, 0)",
     );
     c.debugger.detach();
+    await read(
+      `Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Gradient').click()`,
+    );
+    await wait(150);
+    assert.equal(
+      await read(
+        `document.querySelectorAll('[aria-label="Gradient presets"] button').length`,
+      ),
+      69,
+    );
+    await read(
+      `document.querySelector('button[aria-label="Gradient preset 21"]').click()`,
+    );
+    await wait(100);
+    assert.equal(
+      await read(
+        `document.querySelector('input[aria-label="Background color"]').value`,
+      ),
+      "#ffcdb2",
+    );
+    assert.equal(
+      await read(
+        `document.querySelector('input[aria-label="Gradient second color"]').value`,
+      ),
+      "#6d6875",
+    );
+    assert.equal(
+      await read(
+        `document.querySelector('button[aria-label="Gradient preset 21"]').getAttribute('aria-pressed')`,
+      ),
+      "true",
+    );
+    await read(
+      `(()=>{const input=document.querySelector('input[aria-label="Background color"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'#123456');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));})()`,
+    );
+    await wait(100);
+    assert.equal(
+      await read(
+        `document.querySelector('button[aria-label="Gradient preset 21"]').getAttribute('aria-pressed')`,
+      ),
+      "false",
+    );
+    await read(`document.querySelector('button[aria-label="Undo"]').click()`);
+    await wait(100);
+    assert.equal(
+      await read(
+        `document.querySelector('button[aria-label="Gradient preset 21"]').getAttribute('aria-pressed')`,
+      ),
+      "true",
+    );
     console.log(
       JSON.stringify({
         rest: "hidden",

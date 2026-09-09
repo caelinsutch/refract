@@ -520,3 +520,35 @@ test("custom gradients interpolate from top-left to bottom-right without repeati
     assert.ok(Math.abs(middle[2] - 255 * fraction) <= 1);
   }
 });
+
+test("gradient presets render intermediate color stops", () => {
+  const source = createCanvas(1280, 720),
+    output = createCanvas(1280, 720),
+    c = output.getContext("2d");
+  const p = createProject({
+    file: "test",
+    width: 1280,
+    height: 720,
+    duration: 2000,
+    hasAudio: false,
+  });
+  Object.assign(p.appearance, {
+    background: "gradient",
+    gradientStops: ["#ff0000", "#00ff00", "#0000ff"],
+    padding: 35,
+    shadow: 0,
+  });
+  drawFrame(
+    c as unknown as CanvasRenderingContext2D,
+    source as unknown as CanvasImageSource,
+    p,
+    0,
+    1280,
+    720,
+  );
+  const pixel = c.getImageData(1279, 0, 1, 1).data;
+  const t = ((1279.5 * 1280 + 0.5 * 720) / (1280 * 1280 + 720 * 720) - 0.5) * 2;
+  assert.equal(pixel[0], 0);
+  assert.ok(Math.abs(pixel[1] - 255 * (1 - t)) <= 1);
+  assert.ok(Math.abs(pixel[2] - 255 * t) <= 1);
+});

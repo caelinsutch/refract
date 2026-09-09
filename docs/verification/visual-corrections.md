@@ -839,3 +839,11 @@ continues to require the system permission; window-source listing still does too
 - Corrected Refract's custom gradient, which previously used three stops and repeated the starting color at the far end, on the opposite diagonal. Preview/export now interpolate between the two chosen colors along the reference diagonal. Wallpaper rendering retains its separate artwork treatment.
 - Color inputs now sit below Background Color/Background Gradient labels with an 8px gap. Existing custom-gradient projects receive the corrected appearance; their saved colors remain unchanged.
 - Production build and all 10 compositor tests passed, including endpoint and intermediate-pixel assertions in landscape and portrait output. The reference gradient preset gallery remains missing.
+
+### Gradient preset gallery — 2026-09-09
+
+- Added the 69 gradient color configurations identified in installed preset data. The first twenty pair a base color with an HSL-lightness increase of twenty points; the remainder contain explicit multi-color palettes. Only functional color values are included, with independently implemented UI and rendering.
+- Added an initially open Gradient presets section with six columns of 32px swatches, 8px gaps, a 180px scroll region, selected outlines, and shared hover feedback. Selecting a preset updates both endpoint inputs and retains all intermediate colors. Editing either endpoint returns to a two-stop custom gradient, matching the inspected reference handler.
+- Optional gradientStops appearance data persists the full palette. Preview/export place stops at evenly spaced positions along the existing top-left/bottom-right axis. Validation rejects malformed palettes.
+- Build and thirteen focused compositor/preset tests passed all preset round trips, malformed input, two-color fallback, and multi-stop pixel interpolation. The editor fixture passed 69 visible DOM entries, selection, endpoint values, manual customization, and Undo restoring preset selection.
+- Live reference color/pixel comparison, especially rounding of generated lightened colors, remains unverified.

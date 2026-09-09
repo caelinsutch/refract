@@ -1,3 +1,4 @@
+import { gradientColors } from "./gradient-presets";
 import { insetEdges } from "./inset-balance";
 import { screenCorners } from "./screen-corners";
 import { screenExposure, drawScreenExposure } from "./screen-blur";
@@ -206,8 +207,10 @@ export function drawFrame(
         ? c.createLinearGradient(0, 0, width, height)
         : c.createLinearGradient(0, height, width, 0);
     if (a.background === "gradient") {
-      grad.addColorStop(0, a.color);
-      grad.addColorStop(1, a.color2);
+      const stops = gradientColors(a);
+      stops.forEach((color, index) =>
+        grad.addColorStop(index / (stops.length - 1), color),
+      );
     } else {
       grad.addColorStop(0, colors[0]);
       grad.addColorStop(0.6, colors[1]);
