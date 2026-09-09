@@ -448,10 +448,12 @@ export function setupRecorder(
     }
   });
   register("recorder-area", async (displayId: number) => {
+    const display = screen.getAllDisplays().find((d) => d.id === displayId);
+    if (!display)
+      throw Error(
+        "The selected display is no longer available. Choose a display again.",
+      );
     areaDisplayId = displayId;
-    const display =
-      screen.getAllDisplays().find((d) => d.id === displayId) ??
-      screen.getPrimaryDisplay();
     bar?.hide();
     areaWindow = new BrowserWindow({
       x: display.bounds.x,

@@ -67,7 +67,13 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
             guard let window = content.windows.first(where: { $0.windowID == config.windowId }) else { throw NSError(domain: "Refract", code: 1, userInfo: [NSLocalizedDescriptionKey: "The selected window is no longer available."]) }
             filter = SCContentFilter(desktopIndependentWindow: window); bounds = window.frame
         } else {
-            guard let display = content.displays.first(where: { $0.displayID == config.displayId }) ?? content.displays.first else { throw NSError(domain: "Refract", code: 2, userInfo: [NSLocalizedDescriptionKey: "No display is available."]) }
+            guard let display = content.displays.first(where: { $0.displayID == config.displayId }) else { throw NSError(domain: "Refract", code: 2, userInfo: [NSLocalizedDescriptionKey: "The selected display is no longer available. Choose a display again."]) }
+            if config.mode == "area" {
+                guard let area = config.area,
+                      validCaptureArea(CGRect(x: area.x, y: area.y, width: area.width, height: area.height), displaySize: display.frame.size) else {
+                    throw NSError(domain: "Refract", code: 3, userInfo: [NSLocalizedDescriptionKey: "The recording area no longer fits this display. Choose an area again."])
+                }
+            }
             let excluded = content.applications.filter { $0.bundleIdentifier == "com.github.Electron" || $0.bundleIdentifier == "com.caelinsutch.refract" }
             filter = SCContentFilter(display: display, excludingApplications: excluded, exceptingWindows: [])
             bounds = display.frame

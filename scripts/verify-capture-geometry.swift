@@ -15,6 +15,12 @@ import CoreGraphics
         precondition(!validCaptureRect(.zero))
         precondition(!validCaptureRect(.infinite))
         precondition(normalizedCursorPosition(CGPoint(x: CGFloat.nan, y: 10), mainDisplayHeight: 1000, bounds: initial) == nil)
+        let size = CGSize(width: 800, height: 600)
+        precondition(validCaptureArea(CGRect(x: 0, y: 0, width: 800, height: 600), displaySize: size))
+        precondition(validCaptureArea(CGRect(x: 768, y: 568, width: 32, height: 32), displaySize: size))
+        for area in [CGRect(x: -1, y: 0, width: 32, height: 32), CGRect(x: 769, y: 568, width: 32, height: 32), CGRect(x: 0, y: 0, width: 31, height: 32), CGRect.infinite] {
+            precondition(!validCaptureArea(area, displaySize: size))
+        }
         let decoded = CGRect(dictionaryRepresentation: moved.dictionaryRepresentation)!
         precondition(decoded == moved && validCaptureRect(decoded))
         print("Capture geometry: moving windows, secondary displays, bounds and invalid coordinates passed")

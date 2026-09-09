@@ -402,6 +402,14 @@ export default function Recorder() {
     setPanel(next);
     void api?.recorderExpand(Boolean(next));
   };
+  const chooseArea = async (displayId: number) => {
+    try {
+      await api?.recorderArea(displayId);
+    } catch (error) {
+      setError(String(error));
+      expand("error");
+    }
+  };
   const start = async (
     choice: Omit<CaptureChoice, "systemAudio" | "microphoneId">,
   ) => {
@@ -588,7 +596,7 @@ export default function Recorder() {
                   {...sx.props(s.item)}
                   onClick={() =>
                     panel === "area"
-                      ? api?.recorderArea(d.id)
+                      ? chooseArea(d.id)
                       : start({ mode: "display", displayId: d.id })
                   }
                 >
@@ -666,7 +674,7 @@ export default function Recorder() {
               </button>
               <button
                 {...sx.props(s.item)}
-                onClick={() => api?.recorderArea(area.displayId)}
+                onClick={() => chooseArea(area.displayId)}
               >
                 <Scan size={15} />
                 Choose another area

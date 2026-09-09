@@ -9,3 +9,9 @@ Two core tests cover both drag directions, negative/overflow coordinates, exact 
 ## Selected-area keyboard entry
 
 When an area result opens the recorder's confirmation panel, its Start recording button now receives focus without scrolling. Enter and Space use native button activation; Tab can reach Choose another area, and the existing Escape handler closes the panel. Selecting another area triggers focus again through the updated area state. This uses the shared recorder button styling and existing focus rules. Production compilation passes; live area selection and keyboard start have not yet been exercised together.
+
+## Display changes before capture
+
+The area picker and native display capture no longer fall back to the primary/first display when the selected display ID is absent. The picker reports the missing display through the recorder's error panel; the native helper rejects the capture before creating its media writer. Area mode also requires a region of at least 32×32 logical pixels contained within the selected display's current dimensions, checking again after the countdown rather than relying only on overlay geometry.
+
+The native geometry verifier covers the full display, the minimum-size rectangle at the bottom-right edge, negative origins, overflow, undersized regions, and infinite bounds. Native and desktop/renderer builds pass. Actual display disconnection during a countdown and the live error-panel route remain unverified.
