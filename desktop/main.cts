@@ -547,6 +547,12 @@ handle("save-project", async (project: Project, saveAs = false) => {
   if (projectDir === originalDirectory) projectDir = destination;
   return destination;
 });
+handle("show-clipboard-exports", async () => {
+  const directory = path.join(app.getPath("userData"), "Clipboard Exports");
+  await fs.mkdir(directory, { recursive: true });
+  const error = await shell.openPath(directory);
+  if (error) throw Error(error);
+});
 handle(
   "export-start",
   async ({

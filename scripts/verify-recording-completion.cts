@@ -35,11 +35,16 @@ app.whenReady().then(async () => {
       preload,
       `const {contextBridge,ipcRenderer}=require('electron');
     contextBridge.exposeInMainWorld('refract',{
-      onMenu:()=>()=>{},onProjectGuard:()=>()=>{},
+      onMenu:callback=>{const listener=(_,a)=>callback(a);ipcRenderer.on('menu-action',listener);return()=>ipcRenderer.removeListener('menu-action',listener);},onProjectGuard:()=>()=>{},
+      showClipboardExports:()=>ipcRenderer.invoke('verify-clipboard-folder'),
       onRecordingFinished:callback=>{const listener=(_,r)=>callback(r);ipcRenderer.on('recording-finished',listener);return()=>ipcRenderer.removeListener('recording-finished',listener);},
       exportStart:settings=>ipcRenderer.invoke('verify-export',settings),exportCancel:async()=>{},exportFrame:(id,data)=>ipcRenderer.invoke("verify-frame",data),exportFinish:()=>ipcRenderer.invoke("verify-finish"),
     });`,
     );
+    let folderRequests = 0;
+    ipcMain.handle("verify-clipboard-folder", () => {
+      folderRequests++;
+    });
     const requests: any[] = [];
     let encode = false;
     const frames: Buffer[] = [];
@@ -83,7 +88,13 @@ app.whenReady().then(async () => {
       if (!encode) return null;
       const current = spawn(
         "/opt/homebrew/bin/ffmpeg",
-        exportArgs(settings.project, source, output, settings.fps, "mp4"),
+        exportArgs(
+          settings.project,
+          source,
+          output,
+          settings.fps,
+          settings.format,
+        ),
       );
       encoder = current;
       let errors = "";
@@ -153,8 +164,12 @@ app.whenReady().then(async () => {
     );
     assert.equal(requests.length, 1, "Create-project action exported");
     encode = true;
-    for (const resolution of [720, 1080, 1920, 2560, 3840]) {
-      for (const fps of [24, 30, 60]) {
+    for (const resolution of process.env.REFRACT_EXPORT_DIALOG_ONLY
+      ? [720]
+      : [720, 1080, 1920, 2560, 3840]) {
+      for (const fps of process.env.REFRACT_EXPORT_DIALOG_ONLY
+        ? [24]
+        : [24, 30, 60]) {
         frames.length = 0;
         output = path.join(directory, `completed-${resolution}-${fps}.mp4`);
         const basename = path.basename(output);
@@ -230,7 +245,76 @@ app.whenReady().then(async () => {
         console.log(`Verified ${resolution}px / ${fps} fps`);
       }
     }
+    output = path.join(directory, "manual-clipboard.gif");
+    frames.length = 0;
+    await window.webContents.executeJavaScript(`(async()=>{
+      const wait=()=>new Promise(resolve=>setTimeout(resolve,100));
+      [...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Export').click();
+      await wait();
+      const change=(label,value)=>{
+        const node=document.querySelector('select[aria-label="'+label+'"]');
+        if(!node) throw Error('Missing export field '+label);
+        node.value=value;node.dispatchEvent(new Event('change',{bubbles:true}));
+      };
+      change('Export destination','clipboard');await wait();
+      change('Export format','gif');await wait();
+      change('Output size','1280');await wait();
+      change('Frame rate','24');await wait();
+      const button=document.querySelector('[data-dialog-default]');
+      if(button.textContent.trim()!=='Export to clipboard') throw Error('Wrong default export action');
+      button.focus();
+    })()`);
+    await fs.writeFile(
+      path.join(directory, "clipboard-dialog.png"),
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    window.webContents.focus();
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    window.webContents.sendInputEvent({ type: "char", keyCode: "\r" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await window.webContents.executeJavaScript(`(async()=>{
+      const deadline=performance.now()+30000;
+      while(document.querySelector('dialog[open]') || !document.querySelector('[role="status"]')?.textContent.includes('Video copied to clipboard.')) {
+        if(performance.now()>deadline) throw Error('Manual clipboard export did not finish: '+document.body.textContent.slice(-1800));
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+      if(document.querySelector('dialog[open]')) throw Error('Export dialog stayed open');
+    })()`);
+    assert.equal(requests.at(-1).destination, "clipboard");
+    assert.equal(requests.at(-1).format, "gif");
+    const manualProbe = JSON.parse(
+      execFileSync(
+        "/opt/homebrew/bin/ffprobe",
+        [
+          "-v",
+          "error",
+          "-count_frames",
+          "-show_entries",
+          "stream=codec_name,width,height,nb_read_frames",
+          "-of",
+          "json",
+          output,
+        ],
+        { encoding: "utf8" },
+      ),
+    );
+    assert.equal(manualProbe.streams[0].codec_name, "gif");
+    assert.equal(manualProbe.streams[0].width, 1280);
+    assert.equal(Number(manualProbe.streams[0].nb_read_frames), 6);
+    window.webContents.send("menu-action", "commands");
+    await window.webContents.executeJavaScript(`(async()=>{
+      const deadline=performance.now()+5000;
+      while(!document.querySelector('#command-previous-clipboard-exports')) {
+        if(performance.now()>deadline) throw Error('Previous exports command missing');
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+      document.querySelector('#command-previous-clipboard-exports').click();
+    })()`);
+    await until(() => folderRequests === 1);
     const report = {
+      previousClipboardExportsCommand: true,
+      manualClipboardGIF: true,
+      enterDefaultAction: true,
       matrix,
       productionEncoderArguments: true,
       duplicateSuppressed: true,

@@ -134,6 +134,7 @@ declare global {
         cameraUrl?: string;
       } | null>;
       saveProject(p: Project, saveAs?: boolean): Promise<string | null>;
+      showClipboardExports(): Promise<void>;
       exportStart(options: {
         project: Project;
         width: number;

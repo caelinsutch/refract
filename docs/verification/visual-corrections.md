@@ -934,3 +934,9 @@ Enabled the installed reference's “Export and copy to clipboard” action in t
 Validation: build and 181 core tests passed. The synthetic recording-completion fixture passed all 15 resolution/FPS combinations, including clipboard dispatch, actual MP4 encoding, frame counts, durations, duplicate suppression, create-project behavior, and save cancellation. The production clipboard helper passed payload and failure-propagation checks. AppKit read the resulting URL from a separate named test pasteboard, including spaces, Unicode, and a hash in the path; the general clipboard was untouched. This does not yet prove a real recording followed by a paste into a third-party app.
 
 API reference: https://www.electronjs.org/docs/latest/api/clipboard (Electron raw platform format payloads).
+
+## Editor clipboard export and previous copies — September 9
+
+Added File/Clipboard destination selection to the editor export dialog, plus “Export to clipboard” and “Show previous clipboard exports” commands. The reference's installed command definitions expose both actions; the latter opens the retained copies folder. Edited MP4 and GIF exports use the selected destination, and recording completion continues to use its own saved action.
+
+Validation: production build passed. All 15 synthetic quick-export combinations passed during this change. A focused Electron fixture then verified manual GIF export through the actual dialog using a complete Enter key sequence (key-down, character, key-up), six decoded frames at 1280×960, clipboard destination dispatch, dialog closure, and previous-copies command dispatch. The dialog screenshot was inspected in light theme. The test does not write the general clipboard or open Finder. Actual paste into another application and visual comparison against the reference export picker remain unverified.

@@ -521,6 +521,9 @@ export default function App() {
     [fps, setFps] = useState(30),
     [resolution, setResolution] = useState(1920),
     [format, setFormat] = useState<"mp4" | "gif">("mp4"),
+    [exportDestination, setExportDestination] = useState<"file" | "clipboard">(
+      "file",
+    ),
     [previewSpeed, setPreviewSpeed] = useState(1),
     [presetName, setPresetName] = useState(""),
     [presets, setPresets] = useState<
@@ -1256,12 +1259,15 @@ export default function App() {
   }
   const completedRecordings = useRef(new RecordingCompletions());
   const exportBusy = useRef(false);
-  async function exportVideo(recording?: {
-    project: Project;
-    url: string;
-    cameraUrl?: string;
-    completion: RecordingCompletion;
-  }) {
+  async function exportVideo(
+    recording?: {
+      project: Project;
+      url: string;
+      cameraUrl?: string;
+      completion: RecordingCompletion;
+    },
+    destination = exportDestination,
+  ) {
     if (exportBusy.current) return;
     const exportProject = recording?.project ?? project;
     const exportUrl = recording?.url ?? url;
@@ -1269,6 +1275,11 @@ export default function App() {
     const exportResolution = recording?.completion.resolution ?? resolution;
     const exportFps = recording?.completion.fps ?? fps;
     const exportFormat = recording ? "mp4" : format;
+    const targetDestination = recording
+      ? recording.completion.action === "export-clipboard"
+        ? "clipboard"
+        : "file"
+      : destination;
     if (!exportProject || !window.refract) {
       tell("Video export is available in the desktop app.");
       return;
@@ -1287,10 +1298,7 @@ export default function App() {
         ...size,
         fps: exportFps,
         format: exportFormat,
-        destination:
-          recording?.completion.action === "export-clipboard"
-            ? "clipboard"
-            : "file",
+        destination: targetDestination,
       });
       if (!id) {
         if (recording) setModal(null);
@@ -1348,7 +1356,7 @@ export default function App() {
       const dest = await api.exportFinish(id);
       setProgress(100);
       tell(
-        recording?.completion.action === "export-clipboard"
+        targetDestination === "clipboard"
           ? "Video copied to clipboard."
           : `Exported ${dest.split("/").pop()}`,
       );
@@ -1584,6 +1592,30 @@ export default function App() {
       keywords: "mp4 gif",
       disabled: !project,
       run: () => setModal("export"),
+    },
+    {
+      id: "export-clipboard",
+      label: "Export to clipboard",
+      group: "Export",
+      keywords: "copy video current settings",
+      disabled: !project || exporting || !window.refract,
+      run: () => {
+        setExportDestination("clipboard");
+        setModal("export");
+        void exportVideo(undefined, "clipboard");
+      },
+    },
+    {
+      id: "previous-clipboard-exports",
+      label: "Show previous clipboard exports",
+      group: "Export",
+      keywords: "folder copies videos",
+      disabled: !window.refract,
+      run: () => {
+        void window.refract
+          ?.showClipboardExports()
+          .catch((error) => tell(String(error)));
+      },
     },
     {
       id: "cut",
@@ -3360,6 +3392,22 @@ export default function App() {
                 <>
                   {exportError && <p role="alert">{exportError}</p>}
                   <Row>
+                    <span>Export to</span>
+                    <select
+                      aria-label="Export destination"
+                      value={exportDestination}
+                      onChange={(e) =>
+                        setExportDestination(
+                          e.target.value as "file" | "clipboard",
+                        )
+                      }
+                    >
+                      <option value="file">File</option>
+                      <option value="clipboard">Clipboard</option>
+                    </select>
+                  </Row>
+                  <Divider />
+                  <Row>
                     <span>Export as</span>
                     <select
                       aria-label="Export format"
@@ -3428,7 +3476,9 @@ export default function App() {
                       onClick={() => void exportVideo()}
                     >
                       <Upload size={14} />
-                      Export to file
+                      {exportDestination === "clipboard"
+                        ? "Export to clipboard"
+                        : "Export to file"}
                     </Button>
                   </Row>
                 </>
