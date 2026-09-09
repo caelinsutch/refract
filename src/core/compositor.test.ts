@@ -110,7 +110,7 @@ test("background blur leaves the recording itself sharp", () => {
   );
 });
 
-test("directional shadow follows angle without shifting the recording", () => {
+test("shadow distance and angle work in both modes without shifting the recording", () => {
   const source = createCanvas(100, 100),
     sc = source.getContext("2d");
   sc.fillStyle = "#ffffff";
@@ -146,10 +146,19 @@ test("directional shadow follows angle without shifting the recording", () => {
     );
     return c.getImageData(x, 200, 1, 1).data[0];
   }
-  assert.ok(redAt(0, 295) < redAt(0, 105) - 50);
-  assert.ok(redAt(180, 105) < redAt(180, 295) - 50);
-  assert.equal(redAt(0, 200), 255);
-  assert.equal(redAt(180, 200), 255);
+  for (const directional of [false, true]) {
+    p.appearance.shadowDirectional = directional;
+    assert.ok(redAt(0, 295) < redAt(0, 105) - 50);
+    assert.ok(redAt(180, 105) < redAt(180, 295) - 50);
+    assert.equal(redAt(0, 200), 255);
+    assert.equal(redAt(180, 200), 255);
+  }
+  p.appearance.shadowDistance = 0;
+  assert.equal(
+    redAt(0, 295),
+    redAt(180, 295),
+    "Zero distance must remove the angle-dependent offset",
+  );
 });
 
 test("crop removes source pixels in the shared compositor, including during zoom", () => {

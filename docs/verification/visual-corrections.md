@@ -897,3 +897,10 @@ continues to require the system permission; window-source listing still does too
 - Refract now exposes the stored 0–1 intensity directly, permits fractional entry, and displays the reference-scale value. Existing project data and compositor intensity are unchanged.
 - Production build and Electron inspector fixture passed initial 0.75, Enter commit at 0.375, arrow adjustment to 0.385, reset to 0.75, and Undo after the normal 350ms appearance edit group closes. Existing inspector tests also passed.
 - Shadow rendering remains a separate comparison: the reference creates/caches a shadow texture (`px`/`ZG`) and applies intensity to that sprite, while Refract uses Canvas shadow properties. No rendering-equivalence claim is made here.
+
+### Ordinary shadow offset — 2026-09-09
+
+- Reference renderer inspection (`PG`/`LG`) establishes that distance × cosine/sine(angle) is always passed to its drop-shadow filter. `shadowIsDirectional` controls a separate texture/mask path, not whether distance and angle apply.
+- Removed Refract's conditional zeroing of distance when Directional shadow is off. Existing distance and angle settings now affect ordinary shadows too; the recording geometry remains unchanged.
+- Production build and all 173 core tests passed. The compositor test checks both switch states at opposite angles, the stationary recording center, and zero-distance angle independence.
+- Further reference findings: shadow texture padding uses distance + 9 × blur; directional geometry doubles both dimensions and applies a diamond mask. Texture dimensions are capped through a 5000px downscale path; directional mode is disallowed when recording dimensions exceed 5000px. Intensity is applied to the final cached sprite. Refract's Canvas softness, attenuation, and directional shape are still approximations. These findings do not prove a full rendering match.

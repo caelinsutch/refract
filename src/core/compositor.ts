@@ -300,9 +300,9 @@ export function drawFrame(
       c.save();
       c.shadowColor = `rgba(0,0,0,${a.shadow * 0.6})`;
       c.shadowBlur = a.shadowBlur * 2 * scale * transform.scale;
-      const distance = a.shadowDirectional
-        ? a.shadowDistance * scale * transform.scale
-        : 0;
+      // Distance and angle apply to ordinary shadows too. Directional mode
+      // controls the shadow shape in the reference, not whether it has an offset.
+      const distance = a.shadowDistance * scale * transform.scale;
       const angle = (a.shadowAngle * Math.PI) / 180;
       c.shadowOffsetX = Math.cos(angle) * distance;
       c.shadowOffsetY = Math.sin(angle) * distance;
