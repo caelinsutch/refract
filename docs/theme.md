@@ -15,3 +15,9 @@ Interaction timings and easings are also tokens. `src/motion.css` applies them t
 ## System appearance
 
 The interface now follows macOS Light/Dark/Auto through `prefers-color-scheme`. Light overrides cover surfaces, controls, text, borders, track colors and native task-window tint. Native window background updates follow Electron `nativeTheme`. Recorded composition colors are independent of application appearance. See [native window verification](verification/native-windows.md) for checked behavior and remaining visual QA.
+
+## Semantic foreground consistency
+
+Shared active buttons now use `--text-primary` directly. The motion stylesheet already applied that foreground to active buttons in the running editor, so the light-theme screenshot showed a readable selected Background icon; this removes the conflicting literal-white component default rather than claiming a newly observed visual defect in that screenshot.
+
+The `prefers-contrast: more` body foreground also uses `--text-primary`, preserving dark text on light surfaces instead of forcing white. White switch thumbs and white-on-red stop controls remain intentional. Production compilation passes. A live macOS increased-contrast toggle has not been verified for this change. The running editor contains unsaved edits and was not reloaded during this check.

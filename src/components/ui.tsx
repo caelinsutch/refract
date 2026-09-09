@@ -16,7 +16,7 @@ const s = sx.create({
     paddingInline: 8,
     whiteSpace: "nowrap",
   },
-  active: { backgroundColor: "var(--white-a24)", color: "var(--white)" },
+  active: { backgroundColor: "var(--white-a24)", color: "var(--text-primary)" },
   primary: {
     backgroundColor: {
       default: "var(--primary)",
