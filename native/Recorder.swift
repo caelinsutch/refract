@@ -158,10 +158,10 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                 guard time >= 0 else { return }
                 var sample = event; sample["time"] = time; self.keyboard.append(sample)
             }
-        }, receiveClick: { [weak self] location, timestamp in
+        }, receiveClick: { [weak self] location, timestamp, button, pressed in
             guard let self else { return }
             self.queue.async {
-                self.recordClick(location, timestamp: timestamp)
+                self.recordClick(location, timestamp: timestamp, button: button, pressed: pressed)
             }
         })
         self.keyboardCapture = keyboardCapture
@@ -173,12 +173,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         cursorTimer = timer; timer.resume()
     }
     // Called only on the capture queue, like the periodic pointer samples.
-    func recordClick(_ location: CGPoint, timestamp: Double) {
+    func recordClick(_ location: CGPoint, timestamp: Double, button: Int = 0, pressed: Bool = true) {
         guard let origin, pausedAt == nil, !stopped, timestamp >= keyboardAfter,
               let point = normalizedQuartzCursorPosition(location, bounds: bounds) else { return }
         let time = (timestamp - CMTimeGetSeconds(origin) - CMTimeGetSeconds(pauseOffset)) * 1000
         guard time >= 0 else { return }
-        cursor.append(["time": time, "x": point.x, "y": point.y, "click": true, "visible": true])
+        cursor.append(["time": time, "x": point.x, "y": point.y, "click": pressed, "visible": true, "button": button, "pressed": pressed])
         cursorInside = true
     }
     func sampleCursor() {

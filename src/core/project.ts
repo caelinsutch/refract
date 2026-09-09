@@ -35,6 +35,8 @@ export type Mask = {
   strength: number;
 };
 export type CursorEvent = {
+  button?: number;
+  pressed?: boolean;
   time: number;
   x: number;
   y: number;
@@ -304,7 +306,12 @@ export function validateProject(value: unknown): Project {
       event.x > 1 ||
       event.y < 0 ||
       event.y > 1 ||
-      (event.visible !== undefined && typeof event.visible !== "boolean")
+      (event.visible !== undefined && typeof event.visible !== "boolean") ||
+      (event.button !== undefined &&
+        (!Number.isInteger(event.button) ||
+          event.button < 0 ||
+          event.button > 31)) ||
+      (event.pressed !== undefined && typeof event.pressed !== "boolean")
     )
       throw new Error("The project has invalid cursor data.");
   p.cursor = [...p.cursor].sort((a, b) => a.time - b.time);

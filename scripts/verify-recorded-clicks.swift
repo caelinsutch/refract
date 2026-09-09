@@ -25,6 +25,16 @@ import CoreMedia
         r.stopped = true
         r.recordClick(point, timestamp: 12.020)
         precondition(r.cursor.count == 4)
+        let buttons = Recorder()
+        buttons.origin = r.origin
+        buttons.bounds = r.bounds
+        buttons.recordClick(point, timestamp: 10.1, button: 1, pressed: true)
+        buttons.recordClick(point, timestamp: 10.2, button: 1, pressed: false)
+        precondition(buttons.cursor.count == 3)
+        precondition(buttons.cursor[1]["button"] as? Int == 1)
+        precondition(buttons.cursor[1]["click"] as? Bool == true)
+        precondition(buttons.cursor[2]["pressed"] as? Bool == false)
+        precondition(buttons.cursor[2]["click"] as? Bool == false)
         print("Recorded clicks: fast presses, Quartz geometry, pause/resume and stop passed")
     }
 }

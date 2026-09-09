@@ -5,18 +5,18 @@ import Foundation
 /// A passive event tap, alive only for the current recording session.
 final class KeyboardCapture: @unchecked Sendable {
     private let receive: @Sendable ([String: Any], Double) -> Void
-    private let receiveClick: @Sendable (CGPoint, Double) -> Void
+    private let receiveClick: @Sendable (CGPoint, Double, Int, Bool) -> Void
     private let lock = NSLock()
     private var loop: CFRunLoop?
     private var stopped = false
     private var tap: CFMachPort?
-    init(receive: @escaping @Sendable ([String: Any], Double) -> Void, receiveClick: @escaping @Sendable (CGPoint, Double) -> Void) { self.receive = receive; self.receiveClick = receiveClick }
+    init(receive: @escaping @Sendable ([String: Any], Double) -> Void, receiveClick: @escaping @Sendable (CGPoint, Double, Int, Bool) -> Void) { self.receive = receive; self.receiveClick = receiveClick }
 
     func start() -> String {
         guard CGPreflightListenEventAccess() else { return "permission-required" }
         let context = Unmanaged.passUnretained(self).toOpaque()
         guard let port = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .tailAppendEventTap, options: .listenOnly,
-            eventsOfInterest: [CGEventType.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown].reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) },
+            eventsOfInterest: [CGEventType.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown, .leftMouseUp, .rightMouseUp, .otherMouseUp].reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) },
             callback: { _, type, event, context in
                 guard let context else { return Unmanaged.passUnretained(event) }
                 let owner = Unmanaged<KeyboardCapture>.fromOpaque(context).takeUnretainedValue()
@@ -25,7 +25,9 @@ final class KeyboardCapture: @unchecked Sendable {
                     if !owner.stopped, let tap = owner.tap { CGEvent.tapEnable(tap: tap, enable: true) }
                     owner.lock.unlock()
                 } else if type == .keyDown { owner.keyDown(event) }
-                else if type == .leftMouseDown || type == .rightMouseDown || type == .otherMouseDown { owner.receiveClick(event.location, Double(event.timestamp) / 1_000_000_000) }
+                else if [.leftMouseDown, .rightMouseDown, .otherMouseDown, .leftMouseUp, .rightMouseUp, .otherMouseUp].contains(type) {
+                    owner.receiveClick(event.location, Double(event.timestamp) / 1_000_000_000, Int(event.getIntegerValueField(.mouseEventButtonNumber)), [.leftMouseDown, .rightMouseDown, .otherMouseDown].contains(type))
+                }
                 return Unmanaged.passUnretained(event)
             }, userInfo: context) else { return "unavailable" }
         tap = port
