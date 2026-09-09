@@ -330,14 +330,38 @@ export default function Recorder() {
         return true;
       }
     }),
+    [cameraResolution, setCameraResolution] = useState<720 | 1080 | 2160>(
+      () => {
+        try {
+          const saved = Number(
+            localStorage.getItem("refract.recorder.cameraResolution"),
+          );
+          return saved === 1080 || saved === 2160 ? saved : 720;
+        } catch {
+          return 720;
+        }
+      },
+    ),
     [microphone, setMicrophone] = useState<string | undefined>(),
     [camera, setCamera] = useState<string | undefined>(),
     [area, setArea] = useState<{
       area: CaptureChoice["area"];
       displayId: number;
     } | null>(null);
-  const options = useRef({ systemAudio, microphone, camera, automaticZooms });
-  options.current = { systemAudio, microphone, camera, automaticZooms };
+  const options = useRef({
+    systemAudio,
+    microphone,
+    camera,
+    automaticZooms,
+    cameraResolution,
+  });
+  options.current = {
+    systemAudio,
+    microphone,
+    camera,
+    automaticZooms,
+    cameraResolution,
+  };
   const expand = (next: string | null) => {
     setPanel(next);
     void api?.recorderExpand(Boolean(next));
@@ -354,6 +378,7 @@ export default function Recorder() {
         automaticZooms: options.current.automaticZooms,
         microphoneId: options.current.microphone,
         cameraId: options.current.camera,
+        cameraResolution: options.current.cameraResolution,
       });
     } catch (e) {
       setError(String(e));
@@ -684,6 +709,31 @@ export default function Recorder() {
             </p>
           ) : panel === "settings" ? (
             <>
+              <label {...sx.props(s.item)}>
+                <Video size={17} />
+                Maximum camera resolution
+                <select
+                  aria-label="Maximum camera resolution"
+                  value={cameraResolution}
+                  onChange={(event) => {
+                    const value = Number(event.target.value) as
+                      720 | 1080 | 2160;
+                    setCameraResolution(value);
+                    try {
+                      localStorage.setItem(
+                        "refract.recorder.cameraResolution",
+                        String(value),
+                      );
+                    } catch {
+                      /* Use this selection for the current session. */
+                    }
+                  }}
+                >
+                  <option value={720}>720p</option>
+                  <option value={1080}>1080p</option>
+                  <option value={2160}>4K</option>
+                </select>
+              </label>
               <button
                 {...sx.props(s.item)}
                 aria-pressed={automaticZooms}

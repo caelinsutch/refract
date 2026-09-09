@@ -22,6 +22,7 @@ export type CaptureChoice = {
   automaticZooms?: boolean;
   microphoneId?: string;
   cameraId?: string;
+  cameraResolution?: 720 | 1080 | 2160;
 };
 export type RecorderState = {
   keyboardStatus?: "available" | "permission-required" | "unavailable";

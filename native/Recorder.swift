@@ -16,6 +16,7 @@ struct CaptureConfig: Decodable {
     let area: Rect?
     let systemAudio: Bool
     let cameraId: String?
+    let cameraResolution: Int?
     let microphoneId: String?
     let output: String
     struct Rect: Decodable { let x: Double; let y: Double; let width: Double; let height: Double }
@@ -102,15 +103,37 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         if let cameraId = config.cameraId {
             let devices = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified).devices
             guard let device = devices.first(where: { $0.uniqueID == cameraId }) else { throw NSError(domain: "Refract", code: 4, userInfo: [NSLocalizedDescriptionKey: "The selected camera is no longer available."]) }
-            let session = AVCaptureSession(); session.sessionPreset = .hd1280x720
+            let session = AVCaptureSession(); session.beginConfiguration()
             let input = try AVCaptureDeviceInput(device: device)
             guard session.canAddInput(input) else { throw NSError(domain: "Refract", code: 5, userInfo: [NSLocalizedDescriptionKey: "The camera could not be connected."]) }
             session.addInput(input)
+            let candidates = device.formats.flatMap { format in
+                format.videoSupportedFrameRateRanges.map { range in (format, range) }
+            }
+            let choices = candidates.map { format, range in
+                let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+                return CameraFormatChoice(width: dimensions.width, height: dimensions.height, minFPS: range.minFrameRate, maxFPS: range.maxFrameRate)
+            }
+            guard let selectedIndex = cameraFormatIndex(choices, limit: config.cameraResolution ?? 720) else {
+                throw NSError(domain: "Refract", code: 6, userInfo: [NSLocalizedDescriptionKey: "This camera has no supported format within the selected resolution. Choose a higher camera resolution or another camera."])
+            }
+            let selected = candidates[selectedIndex]
+            let dimensions = choices[selectedIndex]
             let videoOutput = AVCaptureVideoDataOutput(); videoOutput.alwaysDiscardsLateVideoFrames = true
+            videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
             videoOutput.setSampleBufferDelegate(self, queue: queue)
+            guard session.canAddOutput(videoOutput) else { throw NSError(domain: "Refract", code: 7, userInfo: [NSLocalizedDescriptionKey: "The camera video output could not be connected."]) }
             session.addOutput(videoOutput)
+            try device.lockForConfiguration()
+            device.activeFormat = selected.0
+            let frameDuration = selected.1.maxFrameRate >= 30 ? CMTime(value: 1, timescale: 30) : selected.1.minFrameDuration
+            device.activeVideoMinFrameDuration = frameDuration
+            device.activeVideoMaxFrameDuration = frameDuration
+            device.unlockForConfiguration()
+            session.commitConfiguration()
             let camera = try AVAssetWriter(outputURL: URL(fileURLWithPath: output).appendingPathComponent("camera.mp4"), fileType: .mp4)
-            let cameraVideo = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: 1280, AVVideoHeightKey: 720, AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 6000000]])
+            let cameraVideo = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: Int(dimensions.width), AVVideoHeightKey: Int(dimensions.height), AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: max(2000000, Int(dimensions.width) * Int(dimensions.height) * 6)]])
+            guard camera.canAdd(cameraVideo) else { throw NSError(domain: "Refract", code: 8, userInfo: [NSLocalizedDescriptionKey: "The selected camera format could not be encoded."]) }
             cameraVideo.expectsMediaDataInRealTime = true; camera.add(cameraVideo)
             cameraWriter = camera; cameraInput = cameraVideo; cameraSession = session
             session.startRunning()
