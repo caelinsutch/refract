@@ -1,3 +1,4 @@
+import { WindowPicker } from "./components/WindowPicker";
 import { Countdown } from "./components/Countdown";
 import { DisplayPicker } from "./components/DisplayPicker";
 import { installButtonHover } from "./ui/button-hover";
@@ -32,6 +33,7 @@ document.addEventListener(
 if (
   location.hash === "#recorder" ||
   location.hash === "#area" ||
+  location.hash === "#window-picker" ||
   location.hash === "#countdown" ||
   location.hash === "#display-picker"
 )
@@ -45,7 +47,9 @@ if (location.hash === "#crop")
   document.documentElement.classList.add("native-window");
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {location.hash === "#countdown" ? (
+    {location.hash === "#window-picker" ? (
+      <WindowPicker />
+    ) : location.hash === "#countdown" ? (
       <Countdown />
     ) : location.hash === "#display-picker" ? (
       <DisplayPicker />

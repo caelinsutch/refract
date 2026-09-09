@@ -32,6 +32,18 @@ declare global {
         locale: string,
       ): Promise<{ captions: Project["captions"]; locale: string }>;
       cancelCaptions(): Promise<void>;
+      recorderWindowPicker?(): Promise<
+        import("./core/recorder").WindowPickerResult
+      >;
+      recorderWindowPickerCancel?(): Promise<void>;
+      windowPickerState(): Promise<import("./core/recorder").WindowPickerState>;
+      windowPickerSelect(id: number | null): Promise<void>;
+      windowPickerFinish(
+        action: "record" | "display" | "cancel",
+      ): Promise<void>;
+      onWindowPickerState(
+        cb: (state: import("./core/recorder").WindowPickerState) => void,
+      ): () => void;
       showRecorder(): Promise<void>;
       displayPickerOptions(request: {
         automaticZooms: boolean;

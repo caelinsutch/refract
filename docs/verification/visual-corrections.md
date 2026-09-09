@@ -756,3 +756,13 @@ continues to require the system permission; window-source listing still does too
 - Window capture now revalidates the target before countdown. Missing permission and vanished windows produce actionable errors; an available window supplies the correct display for the fullscreen countdown instead of using the pointer's screen.
 - Swift and TypeScript builds passed; 155 core tests passed. The native helper returned seven live windows with valid geometry and ordered indices. Recorder state-machine checks passed window validation, permission rejection, display selection, and existing stale-countdown protection; actual capture remained stubbed.
 - The visible window highlighting picker remains unfinished. Native metadata is ready for its integration; this change does not claim window-picker visual parity.
+
+### Desktop window selection overlay — 2026-09-09
+
+- Replaced the primary Window button's list with a full-display desktop picker. Native source context menus remain available through secondary click and keyboard menu commands.
+- Read-only inspection of the reference SystemWindowPicker component confirmed separate selection and start callbacks, an 11-point highlight radius, and a 3-point selected outline. Refract now follows that two-step structure: hover identifies the frontmost window; click selects; Start recording confirms.
+- One transparent overlay opens per display. Source geometry refreshes every 1.5 seconds with no overlapping scans; vanished selected windows are deselected. Tab/Shift-Tab select windows, Enter activates the focused Start button, and Escape cancels. Empty source lists offer Record entire display.
+- Only known picker renderers can select or complete. Completion resolves after all overlays close; mode switches and stale initial scans cancel cleanly. The existing recording pipeline revalidates a chosen window before capture.
+- Production build and native window-picker verifier passed full-display bounds, frontmost hover, two-step selection, source refresh, keyboard selection, cancellation, missing permission, overlay cleanup, and production recorder mode-switch/result handoff. Capture was stubbed in these tests.
+- Packaged app opened the live picker and displayed the real ChatGPT window's bounds. It was subsequently dismissed; no successful live recording is claimed from this check.
+- Remaining reference gaps: application icons, split-button completion menu inside the window highlight, window resize presets, crop suggestions, ignored-window controls, display context menu, and exact motion/material comparison. Geometry polling may need refinement for rapidly moving windows.

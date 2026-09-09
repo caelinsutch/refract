@@ -18,6 +18,19 @@ contextBridge.exposeInMainWorld("refract", {
   generateCaptions: (project: Project, locale: string) =>
     ipcRenderer.invoke("captions-generate", project, locale),
   cancelCaptions: () => ipcRenderer.invoke("captions-cancel"),
+  recorderWindowPicker: () => ipcRenderer.invoke("recorder-window-picker"),
+  recorderWindowPickerCancel: () =>
+    ipcRenderer.invoke("recorder-window-picker-cancel"),
+  windowPickerState: () => ipcRenderer.invoke("window-picker-state"),
+  windowPickerSelect: (id: number | null) =>
+    ipcRenderer.invoke("window-picker-select", id),
+  windowPickerFinish: (action: string) =>
+    ipcRenderer.invoke("window-picker-finish", action),
+  onWindowPickerState: (callback: (value: unknown) => void) => {
+    const listener = (_event: unknown, value: unknown) => callback(value);
+    ipcRenderer.on("window-picker-state", listener);
+    return () => ipcRenderer.removeListener("window-picker-state", listener);
+  },
   showRecorder: () => ipcRenderer.invoke("recorder-show"),
   displayPickerOptions: (request: unknown) =>
     ipcRenderer.invoke("display-picker-options", request),

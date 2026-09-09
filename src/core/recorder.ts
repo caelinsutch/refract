@@ -75,3 +75,11 @@ export type RecorderState = {
   elapsed: number;
   error?: string;
 };
+
+export type WindowPickerResult =
+  { windowId: number } | { displayId: number } | null;
+export type WindowPickerState = {
+  bounds: { x: number; y: number; width: number; height: number };
+  windows: CaptureSource[];
+  selected: number | null;
+};

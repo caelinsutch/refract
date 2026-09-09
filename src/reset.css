@@ -198,3 +198,66 @@
   border-color: transparent !important;
   box-shadow: none !important;
 }
+.window-picker {
+  width: 100vw;
+  height: 100vh;
+  background: #0006;
+  color: white;
+  overflow: hidden;
+}
+.window-picker-highlight {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--display-picker-cover);
+  outline: 3px solid transparent;
+  overflow: hidden;
+  transition: outline-color 140ms ease;
+}
+.window-picker-highlight.selected {
+  outline-color: color-mix(in srgb, var(--primary) 50%, transparent);
+}
+.window-picker-info {
+  max-width: 320px;
+  text-align: center;
+  text-shadow: 1px 1px 2px #000b;
+  padding: 16px;
+}
+.window-picker-info h1,
+.window-picker-empty h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.window-picker-info p {
+  font-size: 13px;
+  margin: 4px 0 16px;
+  overflow-wrap: anywhere;
+}
+.window-picker button {
+  pointer-events: auto;
+  background: var(--primary);
+  color: var(--primary-text);
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.window-picker-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .window-picker-highlight {
+    transition: none;
+  }
+}

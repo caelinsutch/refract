@@ -1,3 +1,4 @@
+import { createWindowPicker } from "./window-picker.cjs";
 import { createCountdownWindow } from "./countdown-window.cjs";
 import { createDisplayPicker } from "./display-picker.cjs";
 import { recorderSourceItems } from "./recorder-source-menu.cjs";
@@ -155,6 +156,7 @@ export function setupRecorder(
       });
   }
   const displayPicker = createDisplayPicker();
+  const windowPicker = createWindowPicker(list);
   function show() {
     if (!bar) {
       expanded = false;
@@ -207,6 +209,7 @@ export function setupRecorder(
       bar.on("closed", () => {
         if (state.phase === "countdown") stop();
         displayPicker.cancel();
+        windowPicker.cancel();
         bar = null;
       });
       loadWindow(bar, "recorder", installRecorderGlass(bar));
@@ -412,13 +415,22 @@ export function setupRecorder(
   register("recorder-panel-glass", (rect: unknown) =>
     bar ? updateRecorderPanelGlass(bar, rect) : false,
   );
+  register("recorder-window-picker", () => {
+    if (!bar || !["idle", "error"].includes(state.phase)) return null;
+    displayPicker.cancel();
+    resize(false);
+    return windowPicker.open();
+  });
+  register("recorder-window-picker-cancel", () => windowPicker.cancel());
   register("recorder-display-picker", (id?: number) => {
     if (!bar || !["idle", "error"].includes(state.phase)) return null;
     resize(false);
+    windowPicker.cancel();
     return displayPicker.open(id);
   });
   register("recorder-display-picker-cancel", () => {
     displayPicker.cancel();
+    windowPicker.cancel();
   });
   register("recorder-show", () => show());
   register("recorder-state", () => state);
@@ -679,6 +691,7 @@ export function setupRecorder(
   });
   register("recorder-start", async (selected: CaptureChoice) => {
     displayPicker.cancel();
+    windowPicker.cancel();
     if (
       choosingDirectory ||
       checkingStart ||
@@ -751,6 +764,7 @@ export function setupRecorder(
   register("recorder-stop", stop);
   register("recorder-close", () => {
     displayPicker.cancel();
+    windowPicker.cancel();
     startGeneration++;
     if (state.phase === "countdown") stop();
     if (["idle", "error"].includes(state.phase)) {
@@ -760,6 +774,7 @@ export function setupRecorder(
   });
   register("recorder-import", () => {
     displayPicker.cancel();
+    windowPicker.cancel();
     bar?.hide();
     editor.show();
     onImport();

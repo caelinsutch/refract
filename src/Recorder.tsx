@@ -471,7 +471,7 @@ export default function Recorder() {
     },
   );
   const sourceRequest = useRef<Promise<CaptureSources | null> | null>(null);
-  const displayRequest = useRef(0);
+  const pickerRequest = useRef(0);
   const inputMenuBusy = useRef(false);
   const [sourceMenu, setSourceMenu] = useState<"display" | "window" | null>(
     null,
@@ -536,9 +536,13 @@ export default function Recorder() {
     cameraResolution,
   };
   const expand = (next: string | null) => {
-    if (panel === "display-picker" && next !== "display-picker") {
-      displayRequest.current++;
+    if (
+      ["display-picker", "window-picker"].includes(panel ?? "") &&
+      next !== panel
+    ) {
+      pickerRequest.current++;
       void api?.recorderDisplayPickerCancel?.();
+      void api?.recorderWindowPickerCancel?.();
     }
     setPanel(next);
     void api?.recorderExpand(Boolean(next));
@@ -653,7 +657,32 @@ export default function Recorder() {
     if (panel === "permission" && sources?.permission === "granted" && !loading)
       expand(null);
   }, [panel, sources?.permission, loading]);
+  const pickWindow = async () => {
+    if (panel === "window-picker") {
+      expand(null);
+      return;
+    }
+    const generation = ++pickerRequest.current;
+    setPanel("window-picker");
+    try {
+      const result = await api?.recorderWindowPicker?.();
+      if (generation !== pickerRequest.current) return;
+      setPanel(null);
+      if (result && "windowId" in result)
+        await start({ mode: "window", windowId: result.windowId });
+      else if (result)
+        await start({ mode: "display", displayId: result.displayId });
+    } catch (error) {
+      if (generation !== pickerRequest.current) return;
+      setError(String(error));
+      expand("error");
+    }
+  };
   const pick = async (mode: string) => {
+    if (mode === "window" && api?.recorderWindowPicker) {
+      await pickWindow();
+      return;
+    }
     if (mode === "display" && api?.recorderDisplayPicker) {
       await pickDisplay();
       return;
@@ -680,11 +709,11 @@ export default function Recorder() {
       expand(null);
       return;
     }
-    const generation = ++displayRequest.current;
+    const generation = ++pickerRequest.current;
     setPanel("display-picker");
     try {
       const id = await api?.recorderDisplayPicker?.(selectedId);
-      if (generation !== displayRequest.current) return;
+      if (generation !== pickerRequest.current) return;
       setPanel(null);
       if (typeof id === "object" && id?.settings === "quick-export") {
         setPanel("quick-export");
@@ -692,7 +721,7 @@ export default function Recorder() {
       } else if (typeof id === "number")
         await start({ mode: "display", displayId: id });
     } catch (error) {
-      if (generation !== displayRequest.current) return;
+      if (generation !== pickerRequest.current) return;
       setError(String(error));
       expand("error");
     }
@@ -710,9 +739,10 @@ export default function Recorder() {
     setInputMenu(kind);
     try {
       if (panel) {
-        if (panel === "display-picker") {
-          displayRequest.current++;
+        if (["display-picker", "window-picker"].includes(panel ?? "")) {
+          pickerRequest.current++;
           await api?.recorderDisplayPickerCancel?.();
+          await api?.recorderWindowPickerCancel?.();
         }
         setPanel(null);
         await api.recorderExpand(false);
@@ -936,7 +966,9 @@ export default function Recorder() {
   return (
     <RecorderSymbols.Provider value={symbols}>
       <div {...sx.props(s.root)}>
-        {panel && panel !== "display-picker" && !busy ? (
+        {panel &&
+        !["display-picker", "window-picker"].includes(panel) &&
+        !busy ? (
           <section
             ref={panelElement}
             {...sx.props(s.panel)}
@@ -1504,6 +1536,7 @@ export default function Recorder() {
                     aria-pressed={
                       panel === m.id ||
                       (m.id === "display" && panel === "display-picker") ||
+                      (m.id === "window" && panel === "window-picker") ||
                       (panel === "source-ready" &&
                         selectedSource?.kind === m.id)
                     }
@@ -1517,7 +1550,8 @@ export default function Recorder() {
                     {...sx.props(
                       s.mode,
                       (panel === m.id ||
-                        (m.id === "display" && panel === "display-picker")) &&
+                        (m.id === "display" && panel === "display-picker") ||
+                        (m.id === "window" && panel === "window-picker")) &&
                         s.active,
                     )}
                     onClick={() => pick(m.id)}
