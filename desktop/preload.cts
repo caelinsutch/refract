@@ -34,6 +34,8 @@ contextBridge.exposeInMainWorld("refract", {
     return () => ipcRenderer.removeListener("window-picker-state", listener);
   },
   showRecorder: () => ipcRenderer.invoke("recorder-show"),
+  windowPickerOptions: (request: unknown) =>
+    ipcRenderer.invoke("window-picker-options", request),
   displayPickerOptions: (request: unknown) =>
     ipcRenderer.invoke("display-picker-options", request),
   countdownCancel: () => ipcRenderer.invoke("countdown-cancel"),

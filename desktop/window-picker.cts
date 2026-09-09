@@ -1,3 +1,4 @@
+import { createPickerOptions } from "./picker-options.cjs";
 import { recorderApplicationIcon } from "./recorder-glass.cjs";
 import { BrowserWindow, ipcMain, screen } from "electron";
 import path from "node:path";
@@ -8,12 +9,16 @@ import type {
 } from "../src/core/recorder.js" with { "resolution-mode": "import" };
 export function createWindowPicker(list: () => Promise<CaptureSources>) {
   const windows = new Map<BrowserWindow, Electron.Display>();
+  const options = createPickerOptions(() =>
+    cancel({ settings: "quick-export" }),
+  );
   let generation = 0,
     sources: CaptureSources["windows"] = [],
     selected: number | null = null;
   let finish: ((result: WindowPickerResult) => void) | undefined;
   let refreshTimer: ReturnType<typeof setTimeout> | undefined;
   function cancel(result: WindowPickerResult = null) {
+    options.cancel();
     generation++;
     if (refreshTimer) clearTimeout(refreshTimer);
     refreshTimer = undefined;
@@ -45,6 +50,9 @@ export function createWindowPicker(list: () => Promise<CaptureSources>) {
     if (!window) throw Error("Unknown window picker sender.");
     return window;
   }
+  ipcMain.handle("window-picker-options", (event, request) =>
+    options.open(owner(event.sender), request),
+  );
   ipcMain.handle("window-picker-icon", (event, id: number) => {
     owner(event.sender);
     const source = sources.find((source) => source.id === id);

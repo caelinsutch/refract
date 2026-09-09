@@ -780,3 +780,10 @@ continues to require the system permission; window-source listing still does too
 - Initialized motion properties on every surface so nested trim handles do not inherit their clip's hover. Labels, icons, and control bounds remain stationary.
 - Production build passed. A synthetic-video Electron fixture verified spring entrance and settling on playback, wallpaper, timeline clip, playback menu, and preview switch controls, plus stable geometry and nested-control isolation. The toolbar regression passed pointer following, held-press release, reduced-motion behavior, and disabled controls.
 - Native text inputs, selects, and slider thumbs retain their specialized interaction feedback. No recording was made during these checks.
+
+### Shared window-picker completion menu — 2026-09-09
+
+- Window selection now shows the same split Start recording button as display selection. Its native options menu supports Create project, Export and save to file, automatic zooms, and Quick export settings. Unsupported clipboard/share-link choices remain disabled.
+- Extracted shared renderer actions and native menu lifecycle so both pickers use identical controls, saved preferences, keyboard entry, checked states, and popup positioning. Window selection is preserved when changing options. Tab can reach the options half of the split button.
+- Quick export settings closes all window overlays before returning to the recorder settings panel; it never starts capture. IPC ownership checks remain scoped to each picker.
+- Production build and both native picker verifiers passed. Window coverage includes persisted completion/zoom settings, selected-window preservation, settings cleanup and recorder handoff, existing icon/geometry checks, and stubbed recording handoff. Display coverage confirms its existing native menu and settings flow remains intact. No live recording was made.

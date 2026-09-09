@@ -1,3 +1,4 @@
+import { PickerRecordingActions } from "./PickerRecordingActions";
 import { useEffect, useRef, useState } from "react";
 import type { WindowPickerState } from "../core/recorder";
 import { windowAtPoint } from "../core/window-picker";
@@ -21,6 +22,11 @@ export function WindowPicker() {
         void window.refract?.windowPickerFinish("cancel");
       }
       if (event.key === "Tab" && state?.windows.length) {
+        if (
+          event.target instanceof Element &&
+          event.target.closest("[data-picker-actions]")
+        )
+          return;
         event.preventDefault();
         const index = state.windows.findIndex(
           (source) => source.id === state.selected,
@@ -102,15 +108,13 @@ export function WindowPicker() {
                 : ""}
             </p>
             {state.selected === target.id && (
-              <button
-                ref={start}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void window.refract?.windowPickerFinish("record");
-                }}
-              >
-                Start recording
-              </button>
+              <PickerRecordingActions
+                buttonRef={start}
+                kind="window"
+                onRecord={() =>
+                  void window.refract?.windowPickerFinish("record")
+                }
+              />
             )}
           </div>
         </section>

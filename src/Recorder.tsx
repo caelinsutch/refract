@@ -670,6 +670,7 @@ export default function Recorder() {
       setPanel(null);
       if (result && "windowId" in result)
         await start({ mode: "window", windowId: result.windowId });
+      else if (result && "settings" in result) setPanel("quick-export");
       else if (result)
         await start({ mode: "display", displayId: result.displayId });
     } catch (error) {

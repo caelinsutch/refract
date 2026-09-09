@@ -77,7 +77,10 @@ export type RecorderState = {
 };
 
 export type WindowPickerResult =
-  { windowId: number } | { displayId: number } | null;
+  | { windowId: number }
+  | { displayId: number }
+  | { settings: "quick-export" }
+  | null;
 export type WindowPickerState = {
   bounds: { x: number; y: number; width: number; height: number };
   windows: CaptureSource[];

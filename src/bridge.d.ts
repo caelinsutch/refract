@@ -46,6 +46,15 @@ declare global {
         cb: (state: import("./core/recorder").WindowPickerState) => void,
       ): () => void;
       showRecorder(): Promise<void>;
+      windowPickerOptions(request: {
+        automaticZooms: boolean;
+        completionAction: "create-project" | "export-file";
+        x: number;
+        y: number;
+      }): Promise<{
+        automaticZooms?: boolean;
+        completionAction?: "create-project" | "export-file";
+      } | null>;
       displayPickerOptions(request: {
         automaticZooms: boolean;
         completionAction: "create-project" | "export-file";

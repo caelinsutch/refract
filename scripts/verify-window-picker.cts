@@ -1,4 +1,4 @@
-import { app, BrowserWindow, screen, ipcMain } from "electron";
+import { app, BrowserWindow, screen, ipcMain, Menu } from "electron";
 import assert from "node:assert/strict";
 import path from "node:path";
 import fs from "node:fs/promises";
@@ -17,6 +17,12 @@ async function until(check: () => boolean | Promise<boolean>, message: string) {
 }
 void app.whenReady().then(async () => {
   try {
+    let openedMenu: Menu | undefined;
+    const originalBuild = Menu.buildFromTemplate;
+    Menu.buildFromTemplate = (template) => {
+      openedMenu = originalBuild.call(Menu, template);
+      return openedMenu;
+    };
     const display = screen.getPrimaryDisplay(),
       { x, y } = display.bounds;
     const back = {
@@ -76,7 +82,10 @@ void app.whenReady().then(async () => {
       return !!overlay;
     }, "Missing window picker");
     const evaluate = (code: string) =>
-      overlay!.webContents.executeJavaScript(code);
+      overlay!.webContents.executeJavaScript(code).catch((error) => {
+        console.error("Evaluation failed:", code);
+        throw error;
+      });
     await until(
       () => evaluate("!!document.querySelector('.window-picker')"),
       "Picker did not mount",
@@ -134,6 +143,36 @@ void app.whenReady().then(async () => {
       null,
       "Unknown source could request icon",
     );
+    for (const [label, check] of [
+      [
+        "Export and save to file",
+        "JSON.parse(localStorage.getItem('refract.recorder.completion') || '{}').action === 'export-file'",
+      ],
+      [
+        "Automatically create zooms",
+        "localStorage.getItem('refract.recorder.automaticZooms') === 'false'",
+      ],
+    ]) {
+      openedMenu = undefined;
+      await evaluate(
+        `document.querySelector('[aria-label="Recording options"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));void 0;`,
+      );
+      await until(() => !!openedMenu, "Window options did not open");
+      const menu = openedMenu!;
+      menu.items
+        .find((item) => item.label === label)!
+        .click(undefined as any, overlay!, {} as any);
+      menu.closePopup();
+      await until(() => evaluate(check), "Window choice did not persist");
+      assert.equal(
+        await evaluate(
+          "document.querySelector('.window-picker-highlight.selected').getAttribute('aria-label')",
+        ),
+        "Front",
+        "Options changed selected window",
+      );
+      await wait(1200);
+    }
     sources = { ...sources, windows: [back] };
     await until(
       () =>
@@ -160,6 +199,40 @@ void app.whenReady().then(async () => {
       BrowserWindow.getAllWindows().length,
       0,
       "Capture handoff left overlay open",
+    );
+    const settingsResult = picker.open();
+    await until(
+      () => BrowserWindow.getAllWindows().length > 0,
+      "Settings picker missing",
+    );
+    overlay = BrowserWindow.getAllWindows()[0];
+    await until(
+      () => evaluate("!!document.querySelector('main')"),
+      "Settings picker not mounted",
+    );
+    await evaluate("window.refract.windowPickerSelect(101)");
+    await until(
+      () =>
+        evaluate(
+          "!!document.querySelector('[aria-label=\"Recording options\"]')",
+        ),
+      "Settings action missing",
+    );
+    openedMenu = undefined;
+    await evaluate(
+      "document.querySelector('[aria-label=\"Recording options\"]').click();void 0;",
+    );
+    await until(() => !!openedMenu, "Settings menu missing");
+    const settingsMenu = openedMenu! as Menu;
+    settingsMenu.items
+      .find((item) => item.label === "Quick export settings…")!
+      .click(undefined as any, overlay!, {} as any);
+    settingsMenu.closePopup();
+    assert.deepEqual(await settingsResult, { settings: "quick-export" });
+    assert.equal(
+      BrowserWindow.getAllWindows().length,
+      0,
+      "Settings left overlay open",
     );
     const cancelled = picker.open();
     await until(
@@ -235,6 +308,15 @@ void app.whenReady().then(async () => {
     );
     await run("window.pick('Window');void 0;");
     await until(() => !!resolvePicker, "Window did not reopen");
+    resolvePicker!({ settings: "quick-export" });
+    resolvePicker = undefined;
+    await until(
+      () => run("document.body.textContent.includes('Quick export settings')"),
+      "Window settings result did not open recorder settings",
+    );
+    assert.equal(Boolean(captured), false, "Settings started capture");
+    await run("window.pick('Window');void 0;");
+    await until(() => !!resolvePicker, "Window did not reopen after settings");
     resolvePicker!({ windowId: 101 });
     await until(() => !!captured, "Window result did not reach recorder");
     assert.equal(captured.windowId, 101);
@@ -242,6 +324,8 @@ void app.whenReady().then(async () => {
     recorder.destroy();
     console.log(
       JSON.stringify({
+        nativeCompletionMenu: true,
+        quickExportSettingsHandoff: true,
         nativeApplicationIcon: "96pt / 288px",
         rendererModeSwitchAndHandoff: true,
         fullDisplay: true,
