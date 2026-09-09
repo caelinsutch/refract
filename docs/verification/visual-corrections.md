@@ -327,3 +327,21 @@ editor's explicit preview configuration. Clip editing and the assistive playback
 timer retain millisecond-based values. Tests cover 24/30/60fps, the second boundary,
 duration-dependent padding, playback formatting, and invalid inputs. The unusual
 strictly-greater-than-one-hour branch follows the observed formatter.
+
+## Named output aspect ratios — 2026-09-09
+
+Installed `AspectRatioPicker` uses a transparent toolbar trigger, shape previews,
+named options, and numeric ratio descriptions. The option order is Auto, Wide
+(16:9), Square (1:1), Classic (4:3), Vertical (9:16), Tall (3:4), Portrait (4:5).
+Selection keeps the picker open. Refract previously exposed a bordered native
+select with numeric labels and omitted Tall.
+
+Implemented those names, order, proportional shape previews, persistent selection,
+keyboard navigation/activation, and Escape focus restoration. A legacy ratio
+outside the reference list remains visible as Custom when opening an existing
+project. The verifier selects Tall with Enter, checks the real composition ratio,
+checks that the picker remains open, and restores Auto with one Undo.
+
+The reference's conditional “Always keep zoomed in” option for vertical outputs
+remains missing; this pass does not claim complete aspect-ratio feature parity.
+Popup material and exact option-row dimensions have not been visually matched.

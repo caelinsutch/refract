@@ -1,3 +1,4 @@
+import { AspectRatioPicker } from "./components/AspectRatioPicker";
 import { playbackTime } from "./core/playback-time";
 import { PreviewSettings } from "./components/PreviewSettings";
 import { PlaybackSpeed } from "./components/PlaybackSpeed";
@@ -1763,23 +1764,10 @@ export default function App() {
               >
                 {project ? (
                   <>
-                    <select
-                      aria-label="Aspect ratio"
+                    <AspectRatioPicker
                       value={project.appearance.ratio}
-                      onChange={(e) => appearance({ ratio: e.target.value })}
-                    >
-                      {[
-                        "Auto",
-                        "16:9",
-                        "9:16",
-                        "1:1",
-                        "4:3",
-                        "4:5",
-                        "21:9",
-                      ].map((x) => (
-                        <option key={x}>{x}</option>
-                      ))}
-                    </select>
+                      onChange={(ratio) => appearance({ ratio })}
+                    />
                     <Button
                       onClick={() => {
                         void openCrop();

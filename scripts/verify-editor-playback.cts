@@ -624,6 +624,31 @@ app.whenReady().then(async () => {
       if(document.querySelector('[data-preview-reduced]')) throw Error('Reduced-preview indicator remained after reset');
       panel.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
     })()`);
+    await window.webContents.executeJavaScript(`(async () => {
+      document.querySelector('button[aria-label="Aspect ratio"]').click();
+      await new Promise(resolve=>setTimeout(resolve,30));
+      const menu=document.querySelector('[role="menu"][aria-label="Output aspect ratio"]');
+      if(!menu.matches(':popover-open')) throw Error('Aspect ratio picker did not open');
+      menu.querySelector('button[aria-label="Tall"]').focus();
+    })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await window.webContents.executeJavaScript(`(async () => {
+      await new Promise(resolve=>setTimeout(resolve,100));
+      const menu=document.querySelector('[role="menu"][aria-label="Output aspect ratio"]');
+      if(!menu.matches(':popover-open')) throw Error('Ratio selection closed picker');
+      if(menu.querySelector('[aria-label="Tall"]').getAttribute('aria-checked')!=='true') throw Error('Tall ratio not selected');
+      const canvas=document.querySelector('canvas[aria-label="Video composition preview"]');
+      if(Math.abs(canvas.width/canvas.height-0.75)>0.005) throw Error('Tall ratio did not reach composition');
+    })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    await window.webContents.executeJavaScript(`(async () => {
+      if(document.activeElement.getAttribute('aria-label')!=='Aspect ratio') throw Error('Ratio Escape did not restore focus');
+      document.querySelector('button[aria-label="Undo"]').click();
+      await new Promise(resolve=>setTimeout(resolve,100));
+      if(document.querySelector('button[aria-label="Aspect ratio"]').textContent!=='Auto') throw Error('Ratio was not restored by one Undo');
+    })()`);
     const smallBounds = window.getBounds();
     assert.equal(
       await window.webContents.executeJavaScript(
@@ -717,6 +742,7 @@ app.whenReady().then(async () => {
         responsivePlaybackAndCopy: "passed",
         speedMenuAndMediaRate: "passed",
         previewSettingsAndPowerCap: "passed",
+        aspectRatioCompositionAndUndo: "passed",
       }),
     );
   } catch (error) {
