@@ -195,15 +195,14 @@ const s = sx.create({
   },
   transport: {
     height: 45,
-    display: "flex",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     alignItems: "center",
-    paddingInline: 17,
-    gap: 7,
-    borderTopWidth: 1,
-    borderTopStyle: "solid",
-    borderTopColor: "var(--white-a06)",
     flexShrink: 0,
   },
+  transportLeft: { display: "flex", alignItems: "center", minWidth: 0, gap: 1 },
+  transportCenter: { display: "flex", alignItems: "center", justifyContent: "center", minWidth: 0, gap: 0 },
+  transportRight: { display: "flex", alignItems: "center", justifyContent: "flex-end", minWidth: 0, gap: 1 },
   time: {
     fontSize: 11,
     fontVariantNumeric: "tabular-nums",
@@ -226,15 +225,37 @@ const s = sx.create({
     display: "flex",
     flexDirection: "column",
   },
-  tabs: {
+  previewRow: { display: "flex", flex: 1, minHeight: 0, gap: 1 },
+  tools: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    flexShrink: 0,
+    width: 40,
+    paddingBottom: 40,
+  },
+  tool: {
+    position: "relative",
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-around",
-    height: 47,
-    borderBottomWidth: 1,
-    borderBottomStyle: "solid",
-    borderBottomColor: "var(--white-a0d)",
-    paddingInline: 9,
+    justifyContent: "center",
+    width: 40,
+    height: 40,
+    padding: 12,
+    flexShrink: 0,
+    borderWidth: 0,
+    borderRadius: "var(--radius-control)",
+    backgroundColor: { default: "transparent", ":hover": "var(--white-a0a)" },
+    color: "var(--text-primary)",
+  },
+  toolActive: { color: "var(--accent)" },
+  toolIndicator: {
+    position: "absolute",
+    right: 5,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "var(--accent)",
   },
   panel: {
     padding: "32px 24px",
@@ -1688,6 +1709,7 @@ export default function App() {
       </header>
       <main {...sx.props(s.body)}>
         <div {...sx.props(s.workspace)}>
+          <div {...sx.props(s.previewRow)}>
           <section {...sx.props(s.stage)}>
             <div
               {...sx.props(s.stageTools)}
@@ -1882,7 +1904,32 @@ export default function App() {
               </div>
             ) : null}
           </section>
+          <nav aria-label="Recording tools" {...sx.props(s.tools)}>
+            {tabs.map((t) => {
+              const active = tab === t.id && !selection;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  title={t.title}
+                  aria-label={t.title}
+                  aria-pressed={active}
+                  data-motion="static"
+                  {...sx.props(s.tool, active && s.toolActive)}
+                  onClick={() => {
+                    setTab(t.id);
+                    setSelection(null);
+                  }}
+                >
+                  <t.icon size={16} strokeWidth={1.5} />
+                  {active && <span aria-hidden="true" {...sx.props(s.toolIndicator)} />}
+                </button>
+              );
+            })}
+          </nav>
+          </div>
           <div {...sx.props(s.transport)}>
+            <div {...sx.props(s.transportLeft)}>
             {project && (
               <TimelineVisibility
                 tracks={timelineTracks}
@@ -1901,7 +1948,8 @@ export default function App() {
                 / {formatTime(project ? duration(project) : 0, true)}
               </span>
             </span>
-            <div {...sx.props(s.spacer)} />
+            </div>
+            <div {...sx.props(s.transportCenter)}>
             <Button
               icon
               title="Start"
@@ -1931,7 +1979,8 @@ export default function App() {
             >
               <SkipForward size={14} />
             </Button>
-            <div {...sx.props(s.spacer)} />
+            </div>
+            <div {...sx.props(s.transportRight)}>
             <Button
               active={loop}
               aria-pressed={loop}
@@ -1981,25 +2030,11 @@ export default function App() {
                 </option>
               ))}
             </select>
+            </div>
           </div>
         </div>
         <aside {...sx.props(s.sidebar)}>
-          <nav {...sx.props(s.tabs)}>
-            {tabs.map((t) => (
-              <Button
-                key={t.id}
-                icon
-                title={t.title}
-                active={tab === t.id && !selection}
-                onClick={() => {
-                  setTab(t.id);
-                  setSelection(null);
-                }}
-              >
-                <t.icon size={16} strokeWidth={1.5} />
-              </Button>
-            ))}
-          </nav>
+
           <div {...sx.props(s.panel)}>
             {!project ? (
               <>

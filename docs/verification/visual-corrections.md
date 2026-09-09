@@ -235,3 +235,29 @@ Production build and the isolated editor checks pass, including exact numeric tr
 The inspected `SliderPicker` renders its reset button in the slider's horizontal form, using toolbar size and disabling it when value equals resetValue. Shared Refract Range controls now place Reset beside the track rather than beside the label, with a 38px control height and explicit disabled-at-default behavior. Numeric entry stays available above the track; exact reference value-preview placement remains open.
 
 Production build and isolated editor checks pass. The verifier changes Padding from 10 to 18 through real numeric entry, confirms Reset becomes enabled and is horizontally adjacent/vertically centered on the slider, then verifies it restores 10 and disables again. The resulting light-theme screenshot was inspected. This is a shared row-layout correction, not full-panel visual parity.
+
+## Editor tool rail — 2026-09-09
+
+Read-only inspection of the installed 3.7.5 editor's `RecordingTools` and
+`RecordingEditor` declarations confirms that the tools are a vertical rail
+between the preview and the 340px settings panel, inside the preview/playback
+column. The earlier horizontal settings-panel header was incorrect.
+
+Moved the seven existing tool actions into that rail, with 16px icons, 12px
+padding (40px targets), 6px corner radii and a 4px active dot at right:5px.
+The playback controls remain below the preview and rail; settings now start at
+the panel's existing 32px top padding. Semantic theme colors preserve system
+appearance and the explicitly requested teal accent. This is an independent
+implementation of observed geometry; no reference assets or code are shipped.
+
+This does not establish whole-window pixel parity. Reference SF Symbols,
+capability-dependent tool availability, preview toolbar/transport geometry and
+the wallpaper library still require matching. The decoded component declaration
+was already available; an earlier search stopped at the string-table occurrence.
+
+The same inspection confirms `ControlsBar` uses three equal grid columns. Applied
+that structure to Refract's playback row so its central controls no longer shift
+with the widths of the left and right groups; removed the extra top divider and
+17px horizontal inset absent from that reference holder. Existing controls and
+keyboard behavior remain available. Production build and the isolated editor
+interaction verifier pass, with both system-theme captures generated.
