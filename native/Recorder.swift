@@ -44,6 +44,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     var cursorTimer: DispatchSourceTimer?
     var cursorButtons = CursorButtons()
     var bounds: CGRect = .zero
+    var capturesWindow = false
     var output = ""
     var cameraSession: AVCaptureSession?
     var cameraWriter: AVAssetWriter?
@@ -60,6 +61,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         let filter: SCContentFilter
         if config.mode == "window" {
+            capturesWindow = true
             guard let window = content.windows.first(where: { $0.windowID == config.windowId }) else { throw NSError(domain: "Refract", code: 1, userInfo: [NSLocalizedDescriptionKey: "The selected window is no longer available."]) }
             filter = SCContentFilter(desktopIndependentWindow: window); bounds = window.frame
         } else {
@@ -141,9 +143,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         guard recording else { return }
         let location = NSEvent.mouseLocation
         let mainHeight = CGDisplayBounds(CGMainDisplayID()).height
-        let x = (location.x - bounds.minX) / bounds.width, y = (mainHeight - location.y - bounds.minY) / bounds.height
-        if x >= 0 && x <= 1 && y >= 0 && y <= 1 {
-            cursor.append(["time": max(0, normalizedTime()), "x": x, "y": y, "click": click])
+        if let point = normalizedCursorPosition(location, mainDisplayHeight: mainHeight, bounds: bounds) {
+            cursor.append(["time": max(0, normalizedTime()), "x": point.x, "y": point.y, "click": click])
         }
     }
     func retime(_ sample: CMSampleBuffer, to time: CMTime? = nil) -> CMSampleBuffer? {
@@ -158,6 +159,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         guard sampleBuffer.isValid, !stopped, pausedAt == nil else { return }
         if type == .screen {
             guard let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]], let status = attachments.first?[.status] as? Int, status == SCFrameStatus.complete.rawValue else { return }
+            if capturesWindow,
+               let rectangle = attachments.first?[.screenRect] as? [String: Any],
+               let currentBounds = CGRect(dictionaryRepresentation: rectangle as CFDictionary),
+               validCaptureRect(currentBounds) {
+                bounds = currentBounds
+            }
             if origin == nil { origin = CMSampleBufferGetPresentationTimeStamp(sampleBuffer); writer?.startWriting(); writer?.startSession(atSourceTime: .zero); micWriter?.startWriting(); micWriter?.startSession(atSourceTime: .zero); cameraWriter?.startWriting(); cameraWriter?.startSession(atSourceTime: .zero) }
             if let sample = retime(sampleBuffer), let input = videoInput, input.isReadyForMoreMediaData {
                 if input.append(sample) { lastVideo = sampleBuffer; lastVideoTime = CMSampleBufferGetPresentationTimeStamp(sample) }
