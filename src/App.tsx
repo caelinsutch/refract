@@ -2195,6 +2195,23 @@ export default function App() {
               </button>
             </div>
             <div {...sx.props(s.transportRight)}>
+              {project && (
+                <>
+                  <Button title="Cut at playhead (C)" onClick={cut} icon>
+                    <Scissors size={14} />
+                  </Button>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 1,
+                      height: 24,
+                      marginInline: 3,
+                      flexShrink: 0,
+                      background: "var(--white-a12)",
+                    }}
+                  />
+                </>
+              )}
               <Button
                 active={loop}
                 aria-pressed={loop}
@@ -2231,6 +2248,18 @@ export default function App() {
                 onPowerSaving={setPreviewPowerSaving}
               />
               <PlaybackSpeed value={previewSpeed} onChange={setPreviewSpeed} />
+              {project && (
+                <input
+                  aria-label="Timeline zoom"
+                  type="range"
+                  min={1}
+                  max={8}
+                  step={0.1}
+                  value={timelineZoom}
+                  onChange={(e) => setTimelineZoom(Number(e.target.value))}
+                  style={{ width: 72, minWidth: 72, marginLeft: 6 }}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -3381,8 +3410,6 @@ export default function App() {
             if (next?.type === "camera") setTab("camera");
           }}
           zoom={timelineZoom}
-          setZoom={setTimelineZoom}
-          cut={cut}
         />
       ) : (
         <div

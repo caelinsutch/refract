@@ -6,8 +6,8 @@ const speeds = [0.25, 0.5, 1, 2, 4, 8] as const;
 const cycle = [1, 2, 4, 8];
 const styles = sx.create({
   trigger: {
-    width: 46,
-    height: 38,
+    width: 32,
+    height: 32,
     flexShrink: 0,
     padding: 0,
     borderWidth: 0,

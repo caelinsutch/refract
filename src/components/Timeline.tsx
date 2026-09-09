@@ -3,7 +3,7 @@ import { ClipContextMenu } from "./ClipContextMenu";
 import { CameraTimeline } from "./CameraTimeline";
 import * as sx from "@stylexjs/stylex";
 import { useEffect, useRef, useState } from "react";
-import { Scissors, Plus, ZoomIn, EyeOff, VolumeX } from "lucide-react";
+import { Plus, EyeOff, VolumeX } from "lucide-react";
 import {
   type Project,
   type Zoom,
@@ -14,7 +14,6 @@ import {
   uid,
 } from "../core/project";
 import type { TimelineTracks } from "./TimelineVisibility";
-import { Button } from "./ui";
 import {
   visibleRange,
   dragZoomRange,
@@ -28,29 +27,16 @@ export type Selection = {
 const s = sx.create({
   root: {
     backgroundColor: "var(--surface-app)",
-    borderTopWidth: 1,
-    borderTopStyle: "solid",
-    borderTopColor: "var(--white-a0d)",
-    minHeight: 149,
+    paddingTop: 4,
+    minHeight: 92,
     flexShrink: 0,
     display: "flex",
     flexDirection: "column",
   },
-  tools: {
-    display: "flex",
-    height: 35,
-    alignItems: "center",
-    gap: 6,
-    paddingInline: 14,
-    borderBottomWidth: 1,
-    borderBottomStyle: "solid",
-    borderBottomColor: "var(--white-a08)",
-    color: "var(--text-subtle)",
-  },
   scroll: {
     overflowX: "auto",
     overflowY: "auto",
-    paddingInline: 24,
+    paddingInline: 20,
     flexGrow: 1,
   },
   inner: (width: number) => ({
@@ -60,7 +46,7 @@ const s = sx.create({
     height: "100%",
   }),
   ruler: {
-    height: 31,
+    height: 25,
     position: "relative",
     cursor: "pointer",
     borderBottomWidth: 1,
@@ -85,7 +71,7 @@ const s = sx.create({
     left,
     width,
     height: 48,
-    top: 40,
+    top: 25,
     borderRadius: "var(--radius-item)",
     backgroundColor: "var(--track-clip)",
     borderWidth: 1,
@@ -106,7 +92,7 @@ const s = sx.create({
     left: 0,
     right: 0,
     height: 48,
-    top: 100,
+    top: 85,
     borderRadius: "var(--radius-item)",
     backgroundColor: "var(--primary-subtle)",
     borderWidth: 1,
@@ -193,8 +179,6 @@ export default function Timeline({
   selection,
   select,
   zoom,
-  setZoom,
-  cut,
 }: {
   project: Project;
   tracks: TimelineTracks;
@@ -204,8 +188,6 @@ export default function Timeline({
   selection: Selection;
   select: (s: Selection) => void;
   zoom: number;
-  setZoom: (n: number) => void;
-  cut: () => void;
 }) {
   const [editDraft, setEditDraft] = useState<{
     original: Project;
@@ -481,7 +463,7 @@ export default function Timeline({
       data-timeline
       style={{
         height:
-          145 +
+          92 +
           60 *
             (Number(tracks.zoom) +
               Number(tracks.mask) +
@@ -523,26 +505,6 @@ export default function Timeline({
           }
         />
       )}
-      <div {...sx.props(s.tools)}>
-        <Button title="Cut at playhead (C)" onClick={cut} icon>
-          <Scissors size={14} />
-        </Button>
-        <input
-          aria-label="Timeline zoom"
-          type="range"
-          min={1}
-          max={8}
-          step={0.1}
-          value={zoom}
-          onChange={(e) => setZoom(Number(e.target.value))}
-          style={{ width: 100 }}
-        />
-        <ZoomIn size={12} />
-        <span style={{ flex: 1 }} />
-        <span>Timeline</span>
-        <span style={{ width: 12 }} />
-        <span>{formatTime(total, true)}</span>
-      </div>
       <div ref={viewport} {...sx.props(s.scroll)}>
         <div
           ref={el}
@@ -751,7 +713,7 @@ export default function Timeline({
             <CameraTimeline
               project={project}
               px={px}
-              top={100 + 60 * Number(tracks.zoom)}
+              top={85 + 60 * Number(tracks.zoom)}
               selection={selection}
               select={select}
               edit={edit}
@@ -762,7 +724,7 @@ export default function Timeline({
             <ShortcutTimeline
               project={project}
               px={px}
-              top={100 + 60 * (Number(tracks.zoom) + Number(tracks.camera))}
+              top={85 + 60 * (Number(tracks.zoom) + Number(tracks.camera))}
               edit={edit}
               seek={seek}
             />
@@ -773,7 +735,7 @@ export default function Timeline({
               aria-label="Mask timeline"
               style={{
                 top:
-                  100 +
+                  85 +
                   60 *
                     (Number(tracks.zoom) +
                       Number(tracks.camera) +

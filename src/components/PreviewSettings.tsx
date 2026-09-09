@@ -5,8 +5,8 @@ import { Toggle } from "./ui";
 const s = sx.create({
   trigger: {
     position: "relative",
-    width: 46,
-    height: 38,
+    width: 32,
+    height: 32,
     flexShrink: 0,
     display: "flex",
     alignItems: "center",
