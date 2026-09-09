@@ -17,3 +17,11 @@ New recordings retain the screen source and attach the separately probed microph
 The integration passes the production TypeScript build and all 93 tests. Physical microphone recording, audible preview synchronization, and native recording timestamp/offset verification still need end-to-end checks.
 
 During saved-project verification, the native picker disabled Open for a `.refract` package. Open Project now treats packages as directories. Open and Import also bring the editor forward before showing their native sheet. After rebuilding and restarting, the picker exposed an enabled Open action, navigated into the package, and loaded the microphone fixture successfully. The Audio panel showed microphone gain 40%, source gain 100%, and music gain 5%. Muting the microphone hid its gain while both other tracks remained unmuted. Automated attempts to invoke Undo did not produce an observed state change, so live undo/shortcut verification remains open.
+
+## Short-track export timing
+
+`node --import tsx scripts/verify-short-audio.ts` creates a 0.4-second tone and exports a two-second edit: one normal-speed second, followed by a two-second source interval at 2× speed. Before the fix, the source-only output decoded to just 0.39925 seconds of audio. Both source and microphone segment filters now pad with silence and trim to the exact edited segment duration after speed processing. The verifier confirms two seconds of decoded audio, an audible initial tone, and silence at 0.6, 1.2, and 1.8 seconds for each independent track. This also covers a retained segment entirely beyond the audio asset's end.
+
+The existing four-case background/source/microphone verifier still passes after the change, including frequency amplitudes across the 2× clip. Production build and all 93 core tests pass. This does not yet establish handling of delayed first microphone timestamps or physical capture alignment.
+
+A subsequent live check in the active editor confirmed the Undo button restores microphone mute to off and its gain to 40%, disabling Undo and enabling Redo. The earlier failed automated attempts were not sufficient evidence of a history bug; keyboard shortcut delivery remains separately unverified.

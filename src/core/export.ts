@@ -56,7 +56,7 @@ export function exportArgs(
           speed /= 0.5;
         }
         tempo.push("atempo=" + speed);
-        return `[1:a]atrim=start=${s.start / 1000}:end=${s.end / 1000},asetpts=PTS-STARTPTS,${tempo.join(",")},volume=${clipAudioGain(project, s)}[a${i}]`;
+        return `[1:a]atrim=start=${s.start / 1000}:end=${s.end / 1000},asetpts=PTS-STARTPTS,${tempo.join(",")},volume=${clipAudioGain(project, s)},apad=whole_dur=${(s.end - s.start) / s.speed / 1000},atrim=duration=${(s.end - s.start) / s.speed / 1000}[a${i}]`;
       }),
     );
     filters.push(
@@ -84,7 +84,7 @@ export function exportArgs(
         const gain = segment.muted
           ? 0
           : microphone.volume * (segment.volume ?? 1);
-        return `[${input}:a]atrim=start=${segment.start / 1000}:end=${segment.end / 1000},asetpts=PTS-STARTPTS,${tempo.join(",")},volume=${gain}[mic${index}]`;
+        return `[${input}:a]atrim=start=${segment.start / 1000}:end=${segment.end / 1000},asetpts=PTS-STARTPTS,${tempo.join(",")},volume=${gain},apad=whole_dur=${(segment.end - segment.start) / segment.speed / 1000},atrim=duration=${(segment.end - segment.start) / segment.speed / 1000}[mic${index}]`;
       }),
     );
     filters.push(
