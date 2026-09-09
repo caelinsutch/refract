@@ -1,5 +1,12 @@
 import * as sx from "@stylexjs/stylex";
-import { useId, useRef, useState, useCallback, type ReactNode } from "react";
+import {
+  useId,
+  useRef,
+  useState,
+  useCallback,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 const s = sx.create({
   button: {
     minWidth: 0,
@@ -253,6 +260,15 @@ export function Range({
         </span>
       </span>
       <input
+        data-setting-slider
+        style={
+          {
+            "--slider-fraction":
+              max > min
+                ? Math.max(0, Math.min(1, (value - min) / (max - min)))
+                : 0,
+          } as CSSProperties
+        }
         aria-label={label}
         type="range"
         value={value}

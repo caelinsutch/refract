@@ -280,3 +280,50 @@ dialog[data-native-window="true"]::backdrop {
 [data-wallpaper-swatch][aria-pressed="true"] {
   outline-color: var(--sample-selected);
 }
+
+/* Settings use the reference slider geometry; timeline zoom keeps its own size. */
+input[data-setting-slider] {
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: default;
+  touch-action: none;
+}
+input[data-setting-slider]::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 100px;
+  background: linear-gradient(
+    to right,
+    var(--primary) 0 calc(10px + (100% - 20px) * var(--slider-fraction)),
+    var(--slider-track) calc(10px + (100% - 20px) * var(--slider-fraction)) 100%
+  );
+  transition: height 200ms var(--ease-responsive);
+}
+input[data-setting-slider]::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: -8.5px;
+  background: var(--accent);
+  box-shadow: none;
+  transition:
+    margin-top 200ms var(--ease-responsive),
+    background-color 200ms var(--ease-responsive);
+}
+input[data-setting-slider]:hover::-webkit-slider-runnable-track {
+  height: 5px;
+}
+input[data-setting-slider]:hover::-webkit-slider-thumb {
+  margin-top: -7.5px;
+  background: var(--primary-edge);
+  box-shadow: none;
+}
+input[data-setting-slider]:active::-webkit-slider-thumb {
+  background: var(--primary);
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  input[data-setting-slider]::-webkit-slider-runnable-track,
+  input[data-setting-slider]::-webkit-slider-thumb {
+    transition: none;
+  }
+}
