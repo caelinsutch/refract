@@ -379,6 +379,11 @@ export default function Recorder() {
       area: CaptureChoice["area"];
       displayId: number;
     } | null>(null);
+  const areaStartButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (panel === "area-ready")
+      areaStartButton.current?.focus({ preventScroll: true });
+  }, [panel, area]);
   const options = useRef({
     systemAudio,
     microphone,
@@ -647,6 +652,7 @@ export default function Recorder() {
                 pixels selected
               </p>
               <button
+                ref={areaStartButton}
                 {...sx.props(s.primary)}
                 onClick={() =>
                   start({
