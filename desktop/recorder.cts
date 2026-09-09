@@ -31,7 +31,7 @@ import type {
 const run = promisify(execFile);
 export function setupRecorder(
   editor: BrowserWindow,
-  onFinished: (dir: string) => Promise<void | boolean>,
+  onFinished: (dir: string, choice: CaptureChoice) => Promise<void | boolean>,
   onImport: () => void,
   beforeStart: () => Promise<boolean>,
 ) {
@@ -57,6 +57,8 @@ export function setupRecorder(
   let position: RecorderPosition | undefined;
   let positionTimer: ReturnType<typeof setTimeout> | undefined;
   let expanded = false;
+  let positioning = false;
+  let lastBounds: Electron.Rectangle | undefined;
   try {
     position = readRecorderPosition(
       JSON.parse(readFileSync(positionFile, "utf8")),
@@ -85,6 +87,7 @@ export function setupRecorder(
   function resize(nextExpanded: boolean) {
     expanded = nextExpanded;
     if (!bar) return;
+    positioning = true;
     bar.setBounds(
       recorderBounds(
         position,
@@ -93,6 +96,8 @@ export function setupRecorder(
         expanded,
       ),
     );
+    lastBounds = bar.getBounds();
+    positioning = false;
   }
   function loadWindow(window: BrowserWindow, hash: string) {
     if (process.env.REFRACT_DEV_URL)
@@ -127,7 +132,19 @@ export function setupRecorder(
         },
       });
       bar.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-      bar.on("will-move", (_event, bounds) => {
+      lastBounds = bar.getBounds();
+      bar.on("moved", () => {
+        if (!bar || positioning) return;
+        const bounds = bar.getBounds();
+        if (
+          lastBounds &&
+          bounds.x === lastBounds.x &&
+          bounds.y === lastBounds.y &&
+          bounds.width === lastBounds.width &&
+          bounds.height === lastBounds.height
+        )
+          return;
+        lastBounds = bounds;
         position = rememberRecorderPosition(
           bounds,
           screen.getDisplayMatching(bounds),
@@ -257,7 +274,7 @@ export function setupRecorder(
               if (timer) clearInterval(timer);
               timer = null;
               child = null;
-              void onFinished(root)
+              void onFinished(root, selected)
                 .then((opened) => {
                   state = { phase: "idle", countdown: 3, elapsed: 0 };
                   send();

@@ -321,14 +321,23 @@ export default function Recorder() {
     [loading, setLoading] = useState(false),
     [error, setError] = useState(""),
     [systemAudio, setSystemAudio] = useState(false),
+    [automaticZooms, setAutomaticZooms] = useState(() => {
+      try {
+        return (
+          localStorage.getItem("refract.recorder.automaticZooms") !== "false"
+        );
+      } catch {
+        return true;
+      }
+    }),
     [microphone, setMicrophone] = useState<string | undefined>(),
     [camera, setCamera] = useState<string | undefined>(),
     [area, setArea] = useState<{
       area: CaptureChoice["area"];
       displayId: number;
     } | null>(null);
-  const options = useRef({ systemAudio, microphone, camera });
-  options.current = { systemAudio, microphone, camera };
+  const options = useRef({ systemAudio, microphone, camera, automaticZooms });
+  options.current = { systemAudio, microphone, camera, automaticZooms };
   const expand = (next: string | null) => {
     setPanel(next);
     void api?.recorderExpand(Boolean(next));
@@ -342,6 +351,7 @@ export default function Recorder() {
       await api?.recorderStart({
         ...choice,
         systemAudio: options.current.systemAudio,
+        automaticZooms: options.current.automaticZooms,
         microphoneId: options.current.microphone,
         cameraId: options.current.camera,
       });
@@ -654,6 +664,27 @@ export default function Recorder() {
             </p>
           ) : panel === "settings" ? (
             <>
+              <button
+                {...sx.props(s.item)}
+                aria-pressed={automaticZooms}
+                onClick={() => {
+                  const next = !automaticZooms;
+                  setAutomaticZooms(next);
+                  try {
+                    localStorage.setItem(
+                      "refract.recorder.automaticZooms",
+                      String(next),
+                    );
+                  } catch {
+                    /* The current recording still uses the selection. */
+                  }
+                }}
+              >
+                <span style={{ width: 17, display: "flex" }}>
+                  {automaticZooms ? <Check size={17} /> : null}
+                </span>
+                Automatically create zooms
+              </button>
               <button
                 {...sx.props(s.item)}
                 onClick={async () => {

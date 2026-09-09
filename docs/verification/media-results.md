@@ -99,3 +99,13 @@ Repeating the same window recording through the floating controller succeeded, i
 The controller now persists the display ID, distance from the work area's left edge, and bottom offset after a manual move, using a debounced atomic preference-file replacement. Launch and display changes restore and clamp that position; an unavailable display falls back to the primary display. Menu expansion does not overwrite the saved anchor, so a temporary top-edge clamp no longer shifts the collapsed controller. Electron documents that [`will-move`](https://www.electronjs.org/docs/latest/api/browser-window/#event-will-move-macos-windows) is emitted for manual movement and excludes programmatic bounds changes.
 
 The production build and 78 core tests pass, including negative-coordinate displays, disconnected displays, invalid preferences, and expansion/collapse near the top edge. Automated drag attempts on the packaged handle and background did not produce a position file, so live native dragging and relaunch persistence remain unverified; the tests only establish restoration geometry.
+
+### macOS completed-move correction
+
+Reviewing Electron 44.3.0's [native window delegate](https://github.com/electron/electron/blob/v44.3.0/shell/browser/ui/cocoa/electron_ns_window_delegate.mm) found that `windowWillMove` constructs its bounds from the current window frame. Persistence now observes `moved` and reads actual bounds, ignoring programmatic menu/display repositioning and duplicate notifications. Automated drag still produced no saved position, so the native drag test remains unresolved.
+
+## Optional automatic zoom creation
+
+Recording options now exposes Automatically create zooms, matching the reference Record menu capability. It defaults to enabled and persists locally across renderer reloads. Each capture snapshots the selection and passes it to project finalization; disabling it skips generated zoom intervals while retaining the original cursor/click and shortcut tracks. Existing callers keep the enabled default.
+
+The production build and 79 core tests passed. A new round-trip test confirms a capture with cursor clicks and a shortcut saves both tracks with no generated zooms when disabled. In the packaged recorder, the toggle changed from enabled to disabled and remained disabled after native View → Reload. It was restored to enabled afterward. A fresh native recording with the option disabled is still needed to verify the full path; the current evidence is UI persistence plus project finalization tests.

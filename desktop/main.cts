@@ -156,7 +156,7 @@ app.whenReady().then(() => {
   const guardProject = setupProjectGuard(win);
   const recorder = setupRecorder(
     win,
-    async (dir) => {
+    async (dir, choice) => {
       const raw = path.join(dir, "media/screen.mp4");
       const mic = path.join(dir, "media/microphone.m4a");
       let file = raw;
@@ -216,6 +216,7 @@ app.whenReady().then(() => {
         cursor,
         "Recording " + new Date().toLocaleString(),
         keys,
+        { automaticZooms: choice.automaticZooms },
       );
       const { writeProjectManifest } =
         await import("../src/core/project-storage.js");

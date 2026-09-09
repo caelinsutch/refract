@@ -28,3 +28,23 @@ test("completed capture has a serializable project with cursor-driven zooms", ()
   assert.equal(restored.cursor[2].x, 1);
   assert.equal(restored.cursor[2].y, 0);
 });
+test("disabling automatic zooms retains recorded cursor and shortcuts", () => {
+  const p = recordedProject(
+    {
+      file: "media/screen.mp4",
+      width: 1280,
+      height: 720,
+      duration: 5000,
+      hasAudio: false,
+    },
+    [{ time: 1000, x: 0.5, y: 0.5, click: true }],
+    "Without automatic zooms",
+    [{ time: 1500, key: "C", modifiers: ["command"] }],
+    { automaticZooms: false },
+  );
+  const restored = validateProject(JSON.parse(JSON.stringify(p)));
+  assert.equal(restored.zooms.length, 0);
+  assert.equal(restored.cursor.length, 1);
+  assert.equal(restored.cursor[0].click, true);
+  assert.equal(restored.shortcuts?.length, 1);
+});

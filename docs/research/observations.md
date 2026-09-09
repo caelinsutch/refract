@@ -69,3 +69,7 @@ The editor screenshot was white while its accessibility controls remained availa
 4. Verify capture controls, pause/resume, quick-share, save/reopen, and crash recovery.
 5. Reference export needs an activated installation before output-frame parity can be measured.
 6. Device capture needs actual supported hardware and a connection test.
+
+## Recording menu follow-up
+
+The installed reference's native Record menu exposes New recording, Record display/window/area, Automatically create zooms, and after-recording actions for Create project, Export and copy to clipboard, Export and create shareable link, and Export and save to file. These labels were read from live accessibility state. After-recording export actions remain absent in Refract.

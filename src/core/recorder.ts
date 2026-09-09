@@ -19,6 +19,7 @@ export type CaptureChoice = {
   windowId?: number;
   area?: { x: number; y: number; width: number; height: number };
   systemAudio: boolean;
+  automaticZooms?: boolean;
   microphoneId?: string;
   cameraId?: string;
 };

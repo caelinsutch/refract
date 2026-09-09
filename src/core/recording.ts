@@ -11,6 +11,7 @@ export function recordedProject(
   events: CursorEvent[],
   title: string,
   keys: RecordedKey[] = [],
+  options: { automaticZooms?: boolean } = {},
 ): Project {
   const p = createProject(source, title);
   p.shortcuts = recordedShortcuts(keys, source.duration);
@@ -27,6 +28,7 @@ export function recordedProject(
       y: Math.max(0, Math.min(1, e.y)),
     }))
     .sort((a, b) => a.time - b.time);
+  if (options.automaticZooms === false) return p;
   let lastEnd = 0;
   for (const click of p.cursor.filter((e) => e.click)) {
     if (click.time < lastEnd) continue;
