@@ -401,6 +401,7 @@ export default function Recorder() {
       displayId: number;
     } | null>(null);
   const areaStartButton = useRef<HTMLButtonElement>(null);
+  const sourceRequest = useRef<Promise<void> | null>(null);
   const inputMenuBusy = useRef(false);
   const [inputNames, setInputNames] = useState({ camera: "", microphone: "" });
   const [inputMenu, setInputMenu] = useState<RecorderInputMenu["kind"] | null>(
@@ -481,16 +482,24 @@ export default function Recorder() {
       offArea?.();
     };
   }, []);
-  async function refresh() {
-    setLoading(true);
+  function refresh(): Promise<void> {
+    if (sourceRequest.current) return sourceRequest.current;
+    if (!api) return Promise.resolve();
+    // Keep the existing controls visible while checking for device changes.
+    setLoading(!sources);
     setError("");
-    try {
-      if (api) setSources(await api.recorderSources());
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setLoading(false);
-    }
+    const request = (async () => {
+      try {
+        setSources(await api.recorderSources());
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setLoading(false);
+        sourceRequest.current = null;
+      }
+    })();
+    sourceRequest.current = request;
+    return request;
   }
   useEffect(() => {
     const onFocus = () => {

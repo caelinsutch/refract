@@ -416,3 +416,18 @@ The reference's per-application system audio, microphone normalization, and gain
 controls remain missing. Camera/microphone device choices use the capture helper;
 the automated native-menu test exercises system audio only. API behavior follows
 [Electron's native menu documentation](https://www.electronjs.org/docs/latest/api/menu).
+
+## Recorder source-refresh stability — 2026-09-09
+
+Display, Window, Area, and Settings used to replace cached panel controls with a
+loading message on every source scan. Rapid switching could launch duplicate
+scans whose results arrived in a different order. Recorder refresh now shares an
+in-flight request and keeps cached controls mounted until updated devices arrive.
+The initial scan still shows loading when no source information exists.
+
+`verify-recorder-refresh.cts` drives the production renderer with a deliberately
+delayed source-provider fixture. It checks overlapping requests are coalesced,
+cached display/settings controls stay visible, changed display dimensions appear,
+and both toolbar buttons and the settings field retain DOM identity. This verifies
+renderer behavior, not native window compositing or physical device enumeration.
+The live packaged-app click check remains pending while the Mac is locked.
