@@ -1020,7 +1020,7 @@ export default function App() {
     };
     const off = window.refract?.onMenu(action);
     const key = (e: KeyboardEvent) => {
-      if (cropping || e.defaultPrevented) return;
+      if (cropping || e.defaultPrevented || e.isComposing) return;
       if (!["Shift", "Control", "Alt", "Meta"].includes(e.key))
         cancelMaskDrag();
       if (
@@ -1034,15 +1034,26 @@ export default function App() {
         setCommandOpen((v) => !v);
         return;
       }
+      if (modal || commandOpen) return;
       if (
+        (e.target instanceof HTMLElement && e.target.isContentEditable) ||
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
         e.target instanceof HTMLSelectElement
       )
         return;
       if (e.code === "Space") {
+        if (
+          e.metaKey ||
+          e.ctrlKey ||
+          e.altKey ||
+          (e.target instanceof Element &&
+            e.target.closest("button,[role='button'],a[href]"))
+        )
+          return;
         e.preventDefault();
-        togglePlayback();
+        if (!e.repeat) togglePlayback();
+        return;
       }
       if (
         !modal &&

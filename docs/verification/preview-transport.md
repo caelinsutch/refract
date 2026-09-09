@@ -35,3 +35,9 @@ The corrected full-editor run passed (paused source 359.892 ms, restarted source
 npx tsc scripts/verify-editor-playback.cts --target ES2022 --module Node16 --moduleResolution Node16 --esModuleInterop --skipLibCheck --strict --outDir work/editor-playback-runner
 ./node_modules/.bin/electron work/editor-playback-runner/verify-editor-playback.cjs
 ```
+
+## Native focused-button Space behavior
+
+The full-editor verifier now focuses the End button and sends real Electron keyDown/keyUp Space events. Before the fix, the global playback shortcut prevented native button activation and started playback; the verifier failed with `Focused button Space also started playback`. Space now preserves activation for buttons and links, and ignores modified/repeated playback shortcuts. The global handler also ignores IME composition, editable content, and active dialogs/command menus.
+
+The corrected full-editor check passes: focused End seeks to the end and remains paused. Additional dispatched repeated, composing, and Command-Space events do not start playback. These latter events validate renderer routing rather than OS shortcut interception. All 121 tests and production build pass. Full Enter/Escape testing across every modal remains outstanding.

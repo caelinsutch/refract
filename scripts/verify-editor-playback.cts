@@ -74,7 +74,36 @@ app.whenReady().then(async () => {
       button('Pause').click();
       return { pausedAt:paused, restartedAt:video().currentTime, canvasCount:document.querySelectorAll('canvas').length };
     })()`);
-    console.log(JSON.stringify(result));
+    await window.webContents.executeJavaScript(
+      `document.querySelector('button[aria-label="End"]').focus()`,
+    );
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Space" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Space" });
+    await window.webContents.executeJavaScript(`(async () => {
+      const video = Array.from(document.querySelectorAll('video')).find(v => v.src.startsWith('blob:'));
+      const deadline = performance.now() + 3000;
+      while (video.currentTime < 1.9 || video.seeking) {
+        if (performance.now() > deadline) throw Error('Space did not activate the focused End button');
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      if (!video.paused) throw Error('Focused button Space also started playback');
+    })()`);
+    await window.webContents.executeJavaScript(`(async () => {
+      document.activeElement.blur();
+      for (const extra of [{repeat:true}, {isComposing:true}, {metaKey:true}]) {
+        document.dispatchEvent(new KeyboardEvent('keydown', {key:' ',code:'Space',bubbles:true,...extra}));
+        await new Promise(resolve => setTimeout(resolve, 30));
+        const video = Array.from(document.querySelectorAll('video')).find(v => v.src.startsWith('blob:'));
+        if (!video.paused) throw Error('Reserved or repeated Space toggled playback');
+      }
+    })()`);
+    console.log(
+      JSON.stringify({
+        ...result,
+        focusedButtonSpace: "passed",
+        reservedSpace: "passed",
+      }),
+    );
   } catch (error) {
     console.error(error);
     process.exitCode = 1;
