@@ -325,6 +325,7 @@ const s = sx.create({
   },
   modalTitle: { fontSize: 17, fontWeight: 600, margin: "0 0 23px" },
   status: {
+    pointerEvents: "none",
     position: "fixed",
     bottom: 20,
     left: 20,

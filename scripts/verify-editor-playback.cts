@@ -350,6 +350,67 @@ app.whenReady().then(async () => {
       initialEnd,
       "One undo did not restore the trim",
     );
+    const zoomTrack = await window.webContents.executeJavaScript(`(() => {
+      const rect=document.querySelector('[aria-label="Zoom timeline"]').getBoundingClientRect();
+      return {x:Math.round(rect.left+20), y:Math.round(rect.top+rect.height/2)};
+    })()`);
+    const countZooms = async () =>
+      window!.webContents.executeJavaScript(
+        `document.querySelectorAll('[aria-label="Zoom timeline"] [role="button"]').length`,
+      );
+    const originalZooms = await countZooms();
+
+    window.webContents.sendInputEvent({
+      type: "mouseDown",
+      ...zoomTrack,
+      button: "left",
+      clickCount: 1,
+    });
+    window.webContents.sendInputEvent({
+      type: "mouseMove",
+      x: zoomTrack.x + 160,
+      y: zoomTrack.y,
+      button: "left",
+    });
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    window.webContents.sendInputEvent({
+      type: "mouseUp",
+      x: zoomTrack.x + 160,
+      y: zoomTrack.y,
+      button: "left",
+      clickCount: 1,
+    });
+    await window.webContents.executeJavaScript(
+      `new Promise(resolve=>setTimeout(resolve,40))`,
+    );
+    assert.equal(
+      await countZooms(),
+      originalZooms,
+      "Cancelled drag created a zoom",
+    );
+    window.webContents.sendInputEvent({
+      type: "mouseDown",
+      ...zoomTrack,
+      button: "left",
+      clickCount: 1,
+    });
+    window.webContents.sendInputEvent({
+      type: "mouseUp",
+      x: zoomTrack.x + 160,
+      y: zoomTrack.y,
+      button: "left",
+      clickCount: 1,
+    });
+    await window.webContents.executeJavaScript(`(async () => {
+      const deadline=performance.now()+3000;
+      while(document.querySelectorAll('[aria-label="Zoom timeline"] [role="button"]').length!==${originalZooms + 1}) {
+        if(performance.now()>deadline) throw Error('Release did not create zoom');
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+      const width=document.querySelector('[aria-label="Zoom timeline"] [role="button"]').getBoundingClientRect().width;
+      if (Math.abs(width-158)>3) throw Error('Zoom used click duration instead of release distance: '+width);
+    })()`);
     console.log(
       JSON.stringify({
         ...result,
@@ -360,6 +421,7 @@ app.whenReady().then(async () => {
         cropKeyboard: "passed",
         exactTrimEntry: "passed",
         trimGesture: "passed",
+        rangeCreation: "passed",
       }),
     );
   } catch (error) {

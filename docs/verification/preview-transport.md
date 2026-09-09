@@ -69,3 +69,11 @@ A follow-up full-editor regression exposed that opening an exact value of 0.755 
 Timeline clip trimming now renders a temporary timeline project while dragging and commits one edit at release using the release event's coordinates. Escape, pointer cancellation, or lost capture discard the temporary trim. Cleanup releases pointer capture and removes listeners; a concurrent project change prevents a stale gesture from overwriting newer edits. Non-primary pointer presses do not start trimming. Previously each pointer move edited project history and the release position was ignored.
 
 The full-editor verifier uses real Electron mouse events to move a clip edge, confirms that saved trim remains unchanged during the drag, cancels with Escape, and verifies unchanged saved length. A second gesture releases at a different coordinate without an intermediate move event; the resulting trim is applied, and one Undo restores the original value. The complete editor verifier, production build, and 123 core tests pass. The temporary draft currently updates timeline geometry; inspector values intentionally reflect the committed clip until release. Exact reference drag motion and all other timeline range gestures remain separate work.
+
+## Zoom/mask creation cancellation and release coordinates
+
+New timeline ranges now use the pointer-up position rather than the last pointer-move sample. Escape discards the creation draft, cleanup releases capture, and project replacement cancels the pending gesture so it cannot overwrite newer edits. Zooms and masks share this creation path.
+
+The full-editor test uncovered an unrelated hit-testing obstruction: the informational `Preset saved` status message intercepted the pointer over the zoom track. Informational status messages now ignore pointer input while retaining their status semantics. With that corrected, real mouse input verifies cancellation produces no zoom, then releases 160 pixels from the anchor without an intermediate move and obtains the expected 158-pixel range (including the existing 2-pixel visual gap), rather than the default click duration.
+
+The complete editor verifier and production build pass. Core tests remain at 123 passing. Zoom creation was exercised live; mask creation uses the shared handler but has not been independently exercised in this sequence.

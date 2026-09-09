@@ -214,6 +214,8 @@ export default function Timeline({
   const currentProject = useRef(savedProject);
   currentProject.current = savedProject;
   const cancelTrim = useRef<(() => void) | null>(null);
+  const cancelRangeCreation = useRef<(() => void) | null>(null);
+  useEffect(() => () => cancelRangeCreation.current?.(), [savedProject]);
   useEffect(() => () => cancelTrim.current?.(), []);
   const project =
     trimDraft?.original === savedProject ? trimDraft.project : savedProject;
@@ -356,12 +358,19 @@ export default function Timeline({
   function addRange(e: React.PointerEvent, kind: "zoom" | "mask") {
     if (e.button !== 0) return;
     e.preventDefault();
+    cancelTrim.current?.();
+    cancelRangeCreation.current?.();
+    const original = savedProject;
     const target = e.currentTarget as HTMLElement,
       anchor = toTime(e.clientX);
     let latest = anchor;
     target.setPointerCapture(e.pointerId);
     seek(anchor);
     const move = (ev: PointerEvent) => {
+      if (currentProject.current !== original) {
+        cancel();
+        return;
+      }
       latest = toTime(ev.clientX);
       setDraft({
         kind,
@@ -374,14 +383,26 @@ export default function Timeline({
       target.removeEventListener("pointerup", end);
       target.removeEventListener("pointercancel", cancel);
       target.removeEventListener("lostpointercapture", cancel);
+      window.removeEventListener("keydown", key, true);
+      cancelRangeCreation.current = null;
+      if (target.hasPointerCapture(e.pointerId))
+        target.releasePointerCapture(e.pointerId);
       setDraft(null);
     };
     const cancel = () => cleanup();
-    const end = () => {
+    const key = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      cancel();
+    };
+    const end = (ev: PointerEvent) => {
+      latest = toTime(ev.clientX);
       cleanup();
+      if (currentProject.current !== original) return;
       const clicked = Math.abs(latest - anchor) * px < 4;
       const range = createTimelineRange(
-        project,
+        original,
         anchor,
         clicked ? Math.min(total, anchor + 2500) : latest,
       );
@@ -394,10 +415,10 @@ export default function Timeline({
           scale: 2,
           x: 0.5,
           y: 0.5,
-          mode: project.cursor.length ? "auto" : "manual",
+          mode: original.cursor.length ? "auto" : "manual",
           disabled: false,
         };
-        edit({ ...project, zooms: [...project.zooms, z] });
+        edit({ ...original, zooms: [...original.zooms, z] });
       } else {
         const mask: Mask = {
           id,
@@ -409,10 +430,12 @@ export default function Timeline({
           type: "blur",
           strength: 20,
         };
-        edit({ ...project, masks: [...project.masks, mask] });
+        edit({ ...original, masks: [...original.masks, mask] });
       }
       select({ type: kind, id });
     };
+    cancelRangeCreation.current = cancel;
+    window.addEventListener("keydown", key, true);
     target.addEventListener("pointermove", move);
     target.addEventListener("pointerup", end);
     target.addEventListener("pointercancel", cancel);
