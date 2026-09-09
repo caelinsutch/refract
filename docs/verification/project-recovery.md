@@ -53,3 +53,11 @@ A pending confirmation now refuses a competing action instead of sharing its app
 Recorder Close and Quit now invalidate a pending start generation. The start handler checks both that generation and recorder visibility after the project decision and after media permissions. Hiding the recorder during a delayed permission prompt therefore prevents a subsequent start, even though the BrowserWindow still exists.
 
 68 tests and production compilation pass. The new guard test injects an IPC host and event-emitter window to verify competing-action rejection, sender checks, stale replies, and lifecycle cancellation against the actual guard implementation. Native delayed-permission interaction remains unverified.
+
+## Live updated-build checks
+
+After the Mac became accessible, the verification app's renderer, desktop code and capture helper were updated. The loaded editor exposes the current Preview quality control and all three motion-blur controls.
+
+On the saved Shortcut verification fixture, changing padding from 10 to 19 created an unsaved indicator. Cmd-Q opened the native Save / Don't Save / Cancel sheet. Escape cancelled quitting, returned to the editor, retained padding 19 and retained the unsaved indicator. Cmd-O opened the same replacement sheet; Return selected Save and proceeded to the project picker. A filesystem check confirmed `project.json` padding 19 and `project.backup.json` padding 10. Cancelling the picker left the current project open with a saved indicator. Padding was reset to 10 and saved to restore the fixture.
+
+These are live native Quit-cancel and Open-save/default-Enter checks. Quit confirmation through actual process termination, Close, recording-start/completion guards, recovery of a damaged manifest, and native keyboard capture remain unverified.
