@@ -73,3 +73,32 @@ coordinate mappings differently from the reference.
 This investigation is not completion of the vertical framing feature. It changes
 the implementation plan because the current renderer model is insufficient for
 one-to-one parity.
+
+## First renderer correction — 2026-09-09
+
+The compositor now preserves the complete source crop and transforms its
+screen-body destination. It positions the scaled body between its legal edges
+inside the padded content frame, centering an axis when the body is smaller than
+the frame. Cursor coordinates, masks, and hit-testing share this mapping.
+
+Each temporal screen-exposure sample now paints its own transformed shadow,
+inset, rounded screen, and masks. The former fixed current-frame clipping region
+was removed; cursor clipping uses the current transformed screen. Full-frame
+exposure buffers are used because moving bodies and shadows can extend outside
+the previous fixed bounds. This may increase blur rendering cost; bounded buffer
+optimization requires the union of all transformed extents and shadow support.
+
+Validation: 130 core tests pass. The previous cropped-source landmark test now
+uses the new destination-body mapping and still checks a rendered pixel against
+the inverse pointer mapping. A separate pixel test distinguishes body enlargement
+from source recropping. `scripts/verify-screen-body.ts` encodes a fixture to H.264,
+decodes it, and checks the landmark, expanded screen extent and background.
+This is an encoder/compositor fixture, not a full recording-to-export UI run.
+The full isolated Electron editor interaction verifier also passes.
+
+Recovered size resolver evidence: content area is output minus twice background
+padding; scale-to-fill is componentwise content/screen-with-inset; initial zoom
+uses the maximum fill scale for vertical output, or for no-padding output, and
+otherwise 1. The neutral-to-zoom transition and exact size normalization remain
+to integrate. This first correction does not implement the vertical toggle,
+mouse clustering, edge-snap behavior, or the initial-fill factor.

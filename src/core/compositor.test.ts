@@ -223,18 +223,18 @@ test("preview targeting resolves the visible source through padding, crop, and z
     },
   ];
   assert.deepEqual(sourcePointAt(p, 1000, 1000, 1000, 300, 400), {
-    x: 0.45,
+    x: 0.4,
     y: 0.35,
   });
-  assert.equal(sourcePointAt(p, 1000, 1000, 1000, 50, 500), null);
-  assert.equal(sourcePointAt(p, 1000, 1000, 1000, 500, 100), null);
+  assert.equal(sourcePointAt(p, 1000, 1000, 1000, -1, 500), null);
+  assert.equal(sourcePointAt(p, 1000, 1000, 1000, 500, 50), null);
   // Independently render a known source landmark at the queried preview position.
   const source = createCanvas(1000, 500),
     sc = source.getContext("2d");
   sc.fillStyle = "red";
   sc.fillRect(0, 0, 1000, 500);
   sc.fillStyle = "lime";
-  sc.fillRect(449, 174, 3, 3);
+  sc.fillRect(399, 174, 3, 3);
   const output = createCanvas(1000, 1000),
     c = output.getContext("2d");
   drawFrame(
@@ -304,4 +304,57 @@ test("long captions render inside portrait video margins on multiple lines", () 
   assert.ok(minX >= 720 * 0.08 - 1 && maxX < 720 * 0.92 + 1);
   assert.ok(maxY - minY > 30, "caption should occupy multiple lines");
   assert.ok(maxY < 1280 - 10);
+});
+
+test("zoom expands the screen body into letterbox space rather than recropping a fixed rectangle", () => {
+  const p = createProject({
+    file: "test",
+    width: 200,
+    height: 100,
+    duration: 2000,
+    hasAudio: false,
+  });
+  Object.assign(p.appearance, {
+    padding: 10,
+    radius: 0,
+    inset: 0,
+    shadow: 0,
+    hideCursor: true,
+    background: "color",
+    color: "#0000ff",
+    animation: "instant",
+    screenMoveBlur: 0,
+    screenZoomBlur: 0,
+  });
+  const source = createCanvas(200, 100);
+  source.getContext("2d").fillStyle = "red";
+  source.getContext("2d").fillRect(0, 0, 200, 100);
+  const out = createCanvas(400, 400),
+    ctx = out.getContext("2d");
+  const render = () =>
+    drawFrame(
+      ctx as unknown as CanvasRenderingContext2D,
+      source as unknown as CanvasImageSource,
+      p,
+      500,
+      400,
+      400,
+    );
+  render();
+  assert.deepEqual([...ctx.getImageData(200, 60, 1, 1).data], [0, 0, 255, 255]);
+  p.zooms = [
+    {
+      id: "zoom",
+      start: 0,
+      end: 2000,
+      scale: 2,
+      x: 0.5,
+      y: 0.5,
+      mode: "manual",
+      disabled: false,
+    },
+  ];
+  render();
+  assert.deepEqual([...ctx.getImageData(200, 60, 1, 1).data], [255, 0, 0, 255]);
+  assert.deepEqual([...ctx.getImageData(200, 20, 1, 1).data], [0, 0, 255, 255]);
 });

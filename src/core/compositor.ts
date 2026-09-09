@@ -92,22 +92,28 @@ export function videoGeometry(
     (width - padding * 2) / crop.width,
     (height - padding * 2) / crop.height,
   );
-  const w = crop.width * fit,
-    h = crop.height * fit,
-    x = (width - w) / 2,
-    y = (height - h) / 2;
   const source = sourceAt(p, t)?.time ?? 0;
   const z = transform ?? zoomAt(p, source);
-  const cw = crop.width / z.scale,
-    ch = crop.height / z.scale,
-    sx = Math.max(
-      crop.x,
-      Math.min(crop.x + crop.width - cw, z.x * sw - cw / 2),
-    ),
-    sy = Math.max(
-      crop.y,
-      Math.min(crop.y + crop.height - ch, z.y * sh - ch / 2),
-    );
+  const w = crop.width * fit * z.scale,
+    h = crop.height * fit * z.scale;
+  const innerWidth = width - padding * 2,
+    innerHeight = height - padding * 2;
+  const targetX = Math.max(0, Math.min(1, (z.x * sw - crop.x) / crop.width)),
+    targetY = Math.max(0, Math.min(1, (z.y * sh - crop.y) / crop.height));
+  // Move the scaled body between its legal edges inside the content frame.
+  // Keep the source crop intact so screen edges, masks, and pointers transform together.
+  const x =
+      padding +
+      Math.max(0, innerWidth - w) / 2 -
+      Math.max(0, w - innerWidth) * targetX,
+    y =
+      padding +
+      Math.max(0, innerHeight - h) / 2 -
+      Math.max(0, h - innerHeight) * targetY;
+  const sx = crop.x,
+    sy = crop.y,
+    cw = crop.width,
+    ch = crop.height;
   return { x, y, w, h, sx, sy, cw, ch, z, source };
 }
 
@@ -121,7 +127,17 @@ export function sourcePointAt(
   py: number,
 ) {
   const g = videoGeometry(p, t, width, height);
-  if (px < g.x || py < g.y || px > g.x + g.w || py > g.y + g.h) return null;
+  if (
+    px < 0 ||
+    py < 0 ||
+    px > width ||
+    py > height ||
+    px < g.x ||
+    py < g.y ||
+    px > g.x + g.w ||
+    py > g.y + g.h
+  )
+    return null;
   return {
     x: (g.sx + ((px - g.x) / g.w) * g.cw) / p.source.width,
     y: (g.sy + ((py - g.y) / g.h) * g.ch) / p.source.height,
@@ -210,31 +226,38 @@ export function drawFrame(
     width,
     height,
   );
-  const r = a.radius * scale;
-  const inset = a.inset * scale;
-  c.shadowColor = `rgba(0,0,0,${a.shadow * 0.6})`;
-  c.shadowBlur = a.shadowBlur * 2 * scale;
-  const shadowDistance = a.shadowDirectional ? a.shadowDistance * scale : 0;
-  const shadowAngle = (a.shadowAngle * Math.PI) / 180;
-  c.shadowOffsetX = Math.cos(shadowAngle) * shadowDistance;
-  c.shadowOffsetY = Math.sin(shadowAngle) * shadowDistance;
-  rounded(c, x - inset, y - inset, w + inset * 2, h + inset * 2, r + inset);
-  c.fillStyle = a.insetColor;
-  c.fill();
-  c.shadowColor = "transparent";
-  c.shadowBlur = 0;
-  c.shadowOffsetX = 0;
-  c.shadowOffsetY = 0;
-  c.save();
-  rounded(c, x, y, w, h, r);
-  c.clip();
   drawScreenExposure(
     c,
     width,
     height,
     previewQuality === "performance" ? [z] : screenExposure(p, t),
     (c, transform) => {
-      const { sx, sy, cw, ch } = videoGeometry(p, t, width, height, transform);
+      const { x, y, w, h, sx, sy, cw, ch } = videoGeometry(
+        p,
+        t,
+        width,
+        height,
+        transform,
+      );
+      const r = a.radius * scale * transform.scale;
+      const inset = a.inset * scale * transform.scale;
+      c.save();
+      c.shadowColor = `rgba(0,0,0,${a.shadow * 0.6})`;
+      c.shadowBlur = a.shadowBlur * 2 * scale * transform.scale;
+      const distance = a.shadowDirectional
+        ? a.shadowDistance * scale * transform.scale
+        : 0;
+      const angle = (a.shadowAngle * Math.PI) / 180;
+      c.shadowOffsetX = Math.cos(angle) * distance;
+      c.shadowOffsetY = Math.sin(angle) * distance;
+      rounded(c, x - inset, y - inset, w + inset * 2, h + inset * 2, r + inset);
+      c.fillStyle = a.insetColor;
+      c.fill();
+      c.shadowColor = "transparent";
+      c.shadowBlur = 0;
+      c.shadowOffsetX = c.shadowOffsetY = 0;
+      rounded(c, x, y, w, h, r);
+      c.clip();
       c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
       for (const m of p.masks.filter(
         (m) => source >= m.start && source < m.end,
@@ -256,9 +279,12 @@ export function drawFrame(
           c.fillRect(mx, my, mw, mh);
         }
       }
+      c.restore();
     },
-    { x, y, width: w, height: h },
   );
+  c.save();
+  rounded(c, x, y, w, h, a.radius * scale * z.scale);
+  c.clip();
   const cursorStyle = a.cursorSmooth ? a.cursorAnimation : "none";
   const firstSource = p.segments[0].start;
   const lastSource = p.segments[p.segments.length - 1].end;
