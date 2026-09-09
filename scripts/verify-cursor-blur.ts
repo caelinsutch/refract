@@ -10,8 +10,9 @@ import { createProject } from "../src/core/project";
 import { drawFrame } from "../src/core/compositor";
 import { exportArgs } from "../src/core/export";
 import { writeEncoderFrame } from "../src/core/export-process";
+const screenMode = process.argv.includes("--screen");
 const run = promisify(execFile),
-  dir = path.resolve("work/cursor-blur");
+  dir = path.resolve(screenMode ? "work/screen-blur" : "work/cursor-blur");
 await fs.mkdir(dir, { recursive: true });
 const canvas = createCanvas(3840, 2160),
   c = canvas.getContext("2d");
@@ -55,7 +56,43 @@ sc.fillStyle = "#58729c";
 sc.fillRect(0, 0, 320, 180);
 sc.fillStyle = "#ced6e3";
 sc.fillRect(40, 30, 240, 120);
-const file = path.join(dir, "cursor-blur.mp4");
+if (screenMode) {
+  Object.assign(p.appearance, {
+    hideCursor: true,
+    screenMoveBlur: 1,
+    screenZoomBlur: 1,
+  });
+  p.zooms = [
+    {
+      id: "zoom",
+      start: 400,
+      end: 800,
+      scale: 2,
+      x: 0.3,
+      y: 0.4,
+      mode: "manual",
+      disabled: false,
+    },
+  ];
+  for (let x = 0; x < 320; x += 12) {
+    sc.fillStyle = "#223344";
+    sc.fillRect(x, 0, 3, 180);
+  }
+  p.masks = [
+    {
+      id: "mask",
+      start: 0,
+      end: 1000,
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.2,
+      type: "blur",
+      strength: 20,
+    },
+  ];
+}
+const file = path.join(dir, screenMode ? "screen-blur.mp4" : "cursor-blur.mp4");
 const child = spawn(
   "/opt/homebrew/bin/ffmpeg",
   exportArgs(p, "unused", file, 30, "mp4"),
@@ -69,8 +106,10 @@ const done = new Promise<void>((resolve, reject) => {
 });
 done.catch(() => {});
 let reference!: Buffer;
+let renderMilliseconds = 0;
 try {
   for (let i = 0; i < 30; i++) {
+    const renderStart = performance.now();
     drawFrame(
       ctx as unknown as CanvasRenderingContext2D,
       source as unknown as CanvasImageSource,
@@ -79,6 +118,7 @@ try {
       1280,
       720,
     );
+    renderMilliseconds += performance.now() - renderStart;
     if (i === 15)
       reference = Buffer.from(ctx.getImageData(0, 0, 1280, 720).data);
     await writeEncoderFrame(child, output.toBuffer("image/png"));
@@ -109,6 +149,8 @@ for (let i = 0; i < actual.length; i++)
 const mean = error / (1280 * 720 * 3);
 assert.ok(mean < 4, `Decoded frame differs: ${mean}`);
 p.appearance.cursorMotionBlur = 0;
+p.appearance.screenMoveBlur = 0;
+p.appearance.screenZoomBlur = 0;
 drawFrame(
   ctx as unknown as CanvasRenderingContext2D,
   source as unknown as CanvasImageSource,
@@ -120,8 +162,11 @@ drawFrame(
 const sharp = ctx.getImageData(0, 0, 1280, 720).data;
 let blurRegionError = 0,
   sharpRegionError = 0;
-for (let y = 350; y < 410; y++)
-  for (let x = 600; x < 680; x++)
+const region = screenMode
+  ? { x: 100, y: 100, width: 1080, height: 520 }
+  : { x: 600, y: 350, width: 80, height: 60 };
+for (let y = region.y; y < region.y + region.height; y++)
+  for (let x = region.x; x < region.x + region.width; x++)
     for (let channel = 0; channel < 3; channel++) {
       const i = (y * 1280 + x) * 4 + channel;
       blurRegionError += Math.abs(actual[i] - reference[i]);
@@ -129,12 +174,12 @@ for (let y = 350; y < 410; y++)
     }
 assert.ok(
   blurRegionError < sharpRegionError,
-  "Decoded cursor must match the blurred reference more closely than the sharp alternative",
+  "Decoded exposure must match the blurred reference more closely than the sharp alternative",
 );
 console.log(
   JSON.stringify({
-    blurRegionMeanError: blurRegionError / (80 * 60 * 3),
-    sharpRegionMeanError: sharpRegionError / (80 * 60 * 3),
+    blurRegionMeanError: blurRegionError / (region.width * region.height * 3),
+    sharpRegionMeanError: sharpRegionError / (region.width * region.height * 3),
   }),
 );
 const { stdout } = await run("/opt/homebrew/bin/ffprobe", [
@@ -150,4 +195,39 @@ const stream = JSON.parse(stdout).streams[0];
 assert.equal(stream.nb_read_frames, "30");
 assert.equal(stream.width, 1280);
 assert.equal(stream.height, 720);
-console.log(JSON.stringify({ frames: 30, meanRgbError: mean, output: file }));
+console.log(
+  JSON.stringify({
+    frames: 30,
+    meanRgbError: mean,
+    meanNativeRenderMilliseconds: renderMilliseconds / 30,
+    output: file,
+  }),
+);
+
+if (screenMode) {
+  p.appearance.screenMoveBlur = 1;
+  p.appearance.screenZoomBlur = 1;
+  const retina = createCanvas(3840, 2160),
+    rc = retina.getContext("2d");
+  for (const quality of ["quality", "performance"] as const) {
+    const started = performance.now();
+    for (let i = 0; i < 3; i++)
+      drawFrame(
+        rc as unknown as CanvasRenderingContext2D,
+        source as unknown as CanvasImageSource,
+        p,
+        500,
+        3840,
+        2160,
+        undefined,
+        undefined,
+        quality,
+      );
+    console.log(
+      JSON.stringify({
+        native4kPreviewMode: quality,
+        millisecondsPerFrame: (performance.now() - started) / 3,
+      }),
+    );
+  }
+}

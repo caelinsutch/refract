@@ -366,6 +366,9 @@ const tabs = [
 export default function App() {
   const [cropping, setCropping] = useState(false);
   const [captionBusy, setCaptionBusy] = useState(false);
+  const [previewQuality, setPreviewQuality] = useState<
+    "quality" | "performance"
+  >("quality");
   const [captionLocale, setCaptionLocale] = useState("en-US");
   const [history, dispatchHistory] = useReducer(reduceHistory, emptyHistory);
   const { present: project, past, future } = history;
@@ -767,6 +770,7 @@ export default function App() {
             cameraVideo.current && cameraVideo.current.readyState >= 2
               ? cameraVideo.current
               : undefined,
+            previewQuality,
           );
       }
       if (playingRef.current && p) {
@@ -842,7 +846,7 @@ export default function App() {
       for (const v of media)
         for (const event of events) v.removeEventListener(event, invalidate);
     };
-  }, [previewSpeed, loop, url, cameraUrl, project?.id]);
+  }, [previewSpeed, loop, url, cameraUrl, project?.id, previewQuality]);
   useEffect(() => {
     requestPreview.current();
   }, [project, time, playing]);
@@ -1600,6 +1604,17 @@ export default function App() {
                 off={<Volume2 size={14} />}
               />
             </Button>
+            <select
+              aria-label="Preview quality"
+              title="Performance preview skips motion blur. Export keeps all enabled effects."
+              value={previewQuality}
+              onChange={(e) =>
+                setPreviewQuality(e.target.value as "quality" | "performance")
+              }
+            >
+              <option value="quality">Quality</option>
+              <option value="performance">Performance</option>
+            </select>
             <select
               aria-label="Preview speed"
               value={previewSpeed}

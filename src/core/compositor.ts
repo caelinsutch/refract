@@ -125,6 +125,7 @@ export function drawFrame(
   height: number,
   bgImage?: CanvasImageSource,
   camera?: CanvasImageSource,
+  previewQuality: "quality" | "performance" = "quality",
 ) {
   const a = p.appearance,
     scale = width / 1280;
@@ -215,30 +216,36 @@ export function drawFrame(
   c.save();
   rounded(c, x, y, w, h, r);
   c.clip();
-  drawScreenExposure(c, width, height, screenExposure(p, t), (c, transform) => {
-    const { sx, sy, cw, ch } = videoGeometry(p, t, width, height, transform);
-    c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
-    for (const m of p.masks.filter(
-      (m) => source >= m.start && source <= m.end,
-    )) {
-      const mx = x + ((m.x * sw - sx) / cw) * w,
-        my = y + ((m.y * sh - sy) / ch) * h,
-        mw = ((m.width * sw) / cw) * w,
-        mh = ((m.height * sh) / ch) * h;
-      if (m.type === "blur") {
-        c.save();
-        c.beginPath();
-        c.rect(mx, my, mw, mh);
-        c.clip();
-        c.filter = `blur(${m.strength * scale}px)`;
-        c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
-        c.restore();
-      } else {
-        c.fillStyle = `rgba(255,213,80,${m.strength / 100})`;
-        c.fillRect(mx, my, mw, mh);
+  drawScreenExposure(
+    c,
+    width,
+    height,
+    previewQuality === "performance" ? [z] : screenExposure(p, t),
+    (c, transform) => {
+      const { sx, sy, cw, ch } = videoGeometry(p, t, width, height, transform);
+      c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
+      for (const m of p.masks.filter(
+        (m) => source >= m.start && source <= m.end,
+      )) {
+        const mx = x + ((m.x * sw - sx) / cw) * w,
+          my = y + ((m.y * sh - sy) / ch) * h,
+          mw = ((m.width * sw) / cw) * w,
+          mh = ((m.height * sh) / ch) * h;
+        if (m.type === "blur") {
+          c.save();
+          c.beginPath();
+          c.rect(mx, my, mw, mh);
+          c.clip();
+          c.filter = `blur(${m.strength * scale}px)`;
+          c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
+          c.restore();
+        } else {
+          c.fillStyle = `rgba(255,213,80,${m.strength / 100})`;
+          c.fillRect(mx, my, mw, mh);
+        }
       }
-    }
-  });
+    },
+  );
   const cursorStyle = a.cursorSmooth ? a.cursorAnimation : "none";
   const firstSource = p.segments[0].start;
   const lastSource = p.segments[p.segments.length - 1].end;
@@ -298,7 +305,9 @@ export function drawFrame(
         }
       }
     }
-    const points = cursorExposure(p, t).flatMap((sample) => {
+    const points = (
+      previewQuality === "performance" ? [source] : cursorExposure(p, t)
+    ).flatMap((sample) => {
       const point = loopedCursorAt(
         p.cursor,
         sample,

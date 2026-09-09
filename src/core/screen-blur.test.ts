@@ -64,7 +64,10 @@ test("screen blur is deterministic and stationary content takes the unchanged pa
     sc.fillStyle = "#223344";
     sc.fillRect(x, 0, 5, 400);
   }
-  const render = (t: number) => {
+  const render = (
+    t: number,
+    quality: "quality" | "performance" = "quality",
+  ) => {
     drawFrame(
       c as unknown as CanvasRenderingContext2D,
       source as unknown as CanvasImageSource,
@@ -72,6 +75,9 @@ test("screen blur is deterministic and stationary content takes the unchanged pa
       t,
       400,
       400,
+      undefined,
+      undefined,
+      quality,
     );
     return Buffer.from(c.getImageData(0, 0, 400, 400).data);
   };
@@ -81,6 +87,9 @@ test("screen blur is deterministic and stationary content takes the unchanged pa
   p.appearance.screenMoveBlur = 1;
   const blur = render(1100);
   assert.notDeepEqual(blur, sharp);
+  assert.deepEqual(render(1100, "performance"), sharp);
+  assert.equal(p.appearance.screenZoomBlur, 1);
+  assert.deepEqual(render(1100), blur);
   assert.deepEqual(render(0), stationary);
   render(3000);
   assert.deepEqual(render(1100), blur);
