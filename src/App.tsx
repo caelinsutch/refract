@@ -575,6 +575,8 @@ export default function App() {
     replacingProject = useRef(false),
     timeRef = useRef(time),
     seekRevision = useRef(0),
+    videoSeekRevision = useRef(-1),
+    cameraSeekRevision = useRef(-1),
     playingRef = useRef(playing),
     bgImage = useRef<HTMLImageElement | null>(null),
     requestPreview = useRef<() => void>(() => {});
@@ -794,11 +796,12 @@ export default function App() {
         "appearance:" + Object.keys(values).sort().join(","),
       );
   };
-  const seek = (t: number) => {
+  const seek = (t: number, continuePlayback = false) => {
     seekRevision.current++;
     timeRef.current = Math.max(0, Math.min(project ? duration(project) : 0, t));
     setTime(timeRef.current);
-    setPlaying(false);
+    playingRef.current = continuePlayback;
+    setPlaying(continuePlayback);
   };
   const pausePreview = () => {
     // Freeze the source before a slow frame or a new UI can publish stale time.
@@ -946,11 +949,14 @@ export default function App() {
       source.time / 1000,
     );
     if (
-      (!playing || v.paused) &&
+      (!playing ||
+        v.paused ||
+        videoSeekRevision.current !== seekRevision.current) &&
       Number.isFinite(desired) &&
-      Math.abs(v.currentTime - desired) > 0.04
+      Math.abs(v.currentTime - desired) > 0.001
     )
       v.currentTime = desired;
+    videoSeekRevision.current = seekRevision.current;
     if (playing) {
       v.playbackRate = source.segment.speed * previewSpeed;
       void v.play().catch(() => setPlaying(false));
@@ -965,8 +971,16 @@ export default function App() {
       Math.max(0, v.duration - 0.02),
       source.time / 1000,
     );
-    if (Number.isFinite(desired) && Math.abs(v.currentTime - desired) > 0.05)
+    const cameraTolerance =
+      !playing || cameraSeekRevision.current !== seekRevision.current
+        ? 0.001
+        : 0.05;
+    if (
+      Number.isFinite(desired) &&
+      Math.abs(v.currentTime - desired) > cameraTolerance
+    )
       v.currentTime = desired;
+    cameraSeekRevision.current = seekRevision.current;
     v.muted = true;
     if (playing) {
       v.playbackRate = source.segment.speed * previewSpeed;
@@ -1273,8 +1287,28 @@ export default function App() {
           e.shiftKey ? redo() : undo();
         }
       }
-      if (e.key === "ArrowRight") seek(time + 1000 / fps);
-      if (e.key === "ArrowLeft") seek(time - 1000 / fps);
+      if (
+        project &&
+        (e.key === "ArrowRight" || e.key === "ArrowLeft") &&
+        !e.altKey
+      ) {
+        e.preventDefault();
+        const forward = e.key === "ArrowRight";
+        if (e.metaKey || e.ctrlKey) {
+          seek(forward ? duration(project) : 0);
+        } else {
+          const delta = e.shiftKey
+            ? forward
+              ? 1000
+              : -2000
+            : playingRef.current
+              ? forward
+                ? 500
+                : -1000
+              : ((forward ? 1 : -1) * 1000) / 60;
+          seek(timeRef.current + delta, playingRef.current);
+        }
+      }
     };
     const releaseOption = (event: KeyboardEvent) => {
       if (event.key === "Alt") setOptionSplit(false);

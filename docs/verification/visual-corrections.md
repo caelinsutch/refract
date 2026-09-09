@@ -982,3 +982,11 @@ Validation: production build and six theme/window-size layout cases passed, incl
 The reference scissors control toggles split mode rather than immediately splitting at the playhead. Added a latched split tool, temporary Option-key activation, Escape exit, and release/blur cleanup. Clicking a clip in split mode splits at the pointer's timeline position. Trim hit targets are bypassed while splitting. Existing C and inspector split-at-playhead actions remain available.
 
 Validation: production build, full synthetic editor layout checks, and the focused split workflow passed. The fixture verifies activation makes no edit, a quarter-position click splits a two-second clip at 0.5 seconds, one undo restores the clip, ordinary clicks only select, Option release/blur clears temporary activation, and a latched tool survives Option release until Escape. The cursor currently uses a crosshair; the reference's scissors cursor artwork remains a visual gap.
+
+## Playback arrow shortcuts and precise seeks — September 9
+
+Matched the inspected playback command definitions: Command-left/right stop at the first/end position; paused arrows step on the 60 fps preview clock instead of using export FPS. While playing, left/right seek by -1000/+500ms and retain playback; Shift-left/right use the reference's -2000/+1000ms increments. Input fields and dialogs retain their own keyboard handling.
+
+Explicit seek revisions now reach the video even during playback. Paused video and camera seeks use 1ms tolerance instead of 40/50ms, which previously skipped individual frame movements. Continuous camera synchronization retains its existing tolerance.
+
+Validation: build and all 183 core tests passed. The synthetic shortcut fixture verifies successive 1/60-second media positions, first/end stops, fast steps, and continued playback after an arrow seek. The split workflow still passes. These checks inspect media time and interaction state; they do not establish decoded-image parity for every source frame rate or camera source.
