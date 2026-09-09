@@ -2204,6 +2204,28 @@ export default function App() {
             ) : tab === "animations" ? (
               <>
                 <Heading>Animations</Heading>
+                <Range
+                  label="Screen movement blur"
+                  value={(project.appearance.screenMoveBlur ?? 0) * 100}
+                  min={0}
+                  max={100}
+                  step={1}
+                  unit="%"
+                  onChange={(value) =>
+                    appearance({ screenMoveBlur: value / 100 })
+                  }
+                />
+                <Range
+                  label="Screen zoom blur"
+                  value={(project.appearance.screenZoomBlur ?? 0) * 100}
+                  min={0}
+                  max={100}
+                  step={1}
+                  unit="%"
+                  onChange={(value) =>
+                    appearance({ screenZoomBlur: value / 100 })
+                  }
+                />
                 <span>Screen animation</span>
                 <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
                   {(["smooth", "focused", "instant"] as const).map((v) => (

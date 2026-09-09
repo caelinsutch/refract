@@ -1,3 +1,4 @@
+import { screenExposure, drawScreenExposure } from "./screen-blur";
 import { cursorExposure, drawCursorExposure } from "./cursor-render";
 import { drawShortcut } from "./shortcuts";
 import { cameraFrameAt } from "./camera-layout";
@@ -68,6 +69,7 @@ export function videoGeometry(
   t: number,
   width: number,
   height: number,
+  transform?: ReturnType<typeof zoomAt>,
 ) {
   const a = p.appearance,
     sw = p.source.width,
@@ -83,7 +85,7 @@ export function videoGeometry(
     x = (width - w) / 2,
     y = (height - h) / 2;
   const source = sourceAt(p, t)?.time ?? 0;
-  const z = zoomAt(p, source);
+  const z = transform ?? zoomAt(p, source);
   const cw = crop.width / z.scale,
     ch = crop.height / z.scale,
     sx = Math.max(
@@ -213,25 +215,30 @@ export function drawFrame(
   c.save();
   rounded(c, x, y, w, h, r);
   c.clip();
-  c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
-  for (const m of p.masks.filter((m) => source >= m.start && source <= m.end)) {
-    const mx = x + ((m.x * sw - sx) / cw) * w,
-      my = y + ((m.y * sh - sy) / ch) * h,
-      mw = ((m.width * sw) / cw) * w,
-      mh = ((m.height * sh) / ch) * h;
-    if (m.type === "blur") {
-      c.save();
-      c.beginPath();
-      c.rect(mx, my, mw, mh);
-      c.clip();
-      c.filter = `blur(${m.strength * scale}px)`;
-      c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
-      c.restore();
-    } else {
-      c.fillStyle = `rgba(255,213,80,${m.strength / 100})`;
-      c.fillRect(mx, my, mw, mh);
+  drawScreenExposure(c, width, height, screenExposure(p, t), (c, transform) => {
+    const { sx, sy, cw, ch } = videoGeometry(p, t, width, height, transform);
+    c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
+    for (const m of p.masks.filter(
+      (m) => source >= m.start && source <= m.end,
+    )) {
+      const mx = x + ((m.x * sw - sx) / cw) * w,
+        my = y + ((m.y * sh - sy) / ch) * h,
+        mw = ((m.width * sw) / cw) * w,
+        mh = ((m.height * sh) / ch) * h;
+      if (m.type === "blur") {
+        c.save();
+        c.beginPath();
+        c.rect(mx, my, mw, mh);
+        c.clip();
+        c.filter = `blur(${m.strength * scale}px)`;
+        c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
+        c.restore();
+      } else {
+        c.fillStyle = `rgba(255,213,80,${m.strength / 100})`;
+        c.fillRect(mx, my, mw, mh);
+      }
     }
-  }
+  });
   const cursorStyle = a.cursorSmooth ? a.cursorAnimation : "none";
   const firstSource = p.segments[0].start;
   const lastSource = p.segments[p.segments.length - 1].end;

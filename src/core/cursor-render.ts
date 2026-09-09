@@ -18,7 +18,7 @@ const surfaces = new WeakMap<
   CanvasRenderingContext2D,
   { size: number; texture: Surface; layer: Surface }
 >();
-function surface(
+export function createRenderSurface(
   c: CanvasRenderingContext2D,
   width: number,
   height: number,
@@ -83,7 +83,7 @@ export function drawCursorExposure(
   const pad = Math.ceil(size * 2 + 2);
   let cached = surfaces.get(c);
   if (!cached || cached.size !== size) {
-    const texture = surface(
+    const texture = createRenderSurface(
       c,
       Math.ceil(20 * size + pad * 2),
       Math.ceil(28 * size + pad * 2),
@@ -94,7 +94,7 @@ export function drawCursorExposure(
       pad,
       size,
     );
-    cached = { size, texture, layer: surface(c, 1, 1) };
+    cached = { size, texture, layer: createRenderSurface(c, 1, 1) };
     surfaces.set(c, cached);
   }
   const { texture, layer } = cached;

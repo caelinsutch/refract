@@ -62,6 +62,8 @@ export type Appearance = {
   ratio: string;
   cursorSize: number;
   cursorMotionBlur?: number;
+  screenMoveBlur?: number;
+  screenZoomBlur?: number;
   hideCursor: boolean;
   cursorIdleMs: number | null;
   cursorLoopMs: number | null;
@@ -350,6 +352,12 @@ export function validateProject(value: unknown): Project {
       p.appearance.cursorMotionBlur > 1)
   )
     throw new Error("Invalid cursor motion blur strength.");
+  for (const value of [
+    p.appearance.screenMoveBlur,
+    p.appearance.screenZoomBlur,
+  ])
+    if (value !== undefined && (!valid(value) || value < 0 || value > 1))
+      throw new Error("Invalid screen motion blur strength.");
   // Earlier projects stored a boolean ripple toggle.
   const legacyClickEffect: unknown = p.appearance.clickEffect;
   if (typeof legacyClickEffect === "boolean")
