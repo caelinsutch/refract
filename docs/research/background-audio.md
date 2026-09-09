@@ -34,3 +34,13 @@ Relevant implementation surfaces are `src/core/project.ts`, `src/core/audio.ts`,
 ## Still unverified
 
 Short-track repetition versus silence, leading/trailing fades, peak limiting/mix normalization, playback timing through source cuts and speed changes, preview-only Play behavior, volume range/step, user-library refresh rules, and the audio timeline visualization. A generated WAV imported successfully; this does not establish support for every audio codec/container. Supplied catalog assets and their distribution rights have not been evaluated and are not part of the repository.
+
+## Playback and export foundation follow-up
+
+Read-only inspection of the installed playback module shows background music mapped from edited playback milliseconds modulo the media duration, with looping enabled. This supports an output-clock loop independent of source cuts and segment speed. It is implementation evidence, not an observed reference export. The inspector module specifies a 0–1 volume range with 0.01 steps, and the isolated track preview creates a separate audio element and resets it when stopped. No vendor code is included in Refract.
+
+Refract now has a validated optional project background-audio asset with independent name, duration, mute, and volume. A shared clock helper supplies the modulo position. The MP4 encoder loops the asset, trims it to edited duration, and mixes it with the existing cut/retimed source audio without normalizing down either input. Music-only output works when source audio is absent or muted; GIF skips music. The main process resolves the asset inside the project directory before export.
+
+The production encoder verifier generated two actual MP4s from distinct tones. At 0.25 and 1.25 seconds, across an edit into a 2× segment, the mixed source amplitude was 0.06237/0.06239 (expected 0.0625) and music amplitude was 0.03123/0.03115 (expected 0.03125). The music asset lasts only 0.5 seconds, so the later measurement also verifies repetition. Muting the source reduced its measured component below 0.000001 while retaining the music. Files remain ignored scratch artifacts.
+
+This is the project/export foundation, not a finished user-facing feature. Native import, playback synchronization, editor controls, asset reopening, and library support still need implementation. Preview and export parity for a saved music-bearing project is therefore not yet established. Reference mix limiting and fades also remain unverified.

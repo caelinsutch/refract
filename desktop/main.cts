@@ -484,6 +484,9 @@ handle(
       temp,
       fps,
       format as "mp4" | "gif",
+      project.backgroundAudio
+        ? inside(projectDir, project.backgroundAudio.file)
+        : undefined,
     );
     const child = spawn(tool("ffmpeg"), args, {
       stdio: ["pipe", "ignore", "pipe"],
