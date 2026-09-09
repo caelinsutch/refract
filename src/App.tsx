@@ -2579,11 +2579,12 @@ export default function App() {
                 <Range
                   label="Shadow"
                   preview={false}
-                  resetValue={defaults.shadow * 100}
-                  value={project.appearance.shadow * 100}
-                  max={100}
-                  unit="%"
-                  onChange={(shadow) => appearance({ shadow: shadow / 100 })}
+                  resetValue={defaults.shadow}
+                  value={project.appearance.shadow}
+                  min={0}
+                  max={1}
+                  step={0.001}
+                  onChange={(shadow) => appearance({ shadow })}
                 />
                 <Disclosure label="Advanced shadow settings">
                   <Toggle

@@ -890,3 +890,10 @@ continues to require the system permission; window-source listing still does too
 - Added a reusable WallpaperPicker with a favorites collection, persistent validated local preferences, cross-window storage synchronization, centered star feedback, and a context menu. Right-click and Shift–F10 open it; Enter activates, Escape dismisses, and focus returns to the swatch or collection selector when removing the last visible favorite. Random selection continues across the full available collection.
 - Production build and synthetic Electron editor checks passed adding/removing favorites, stored IDs, collection filtering, keyboard activation/focus, and shared hover motion for the menu and existing editor controls. Inspected the rendered favorite indicator in the light-theme editor fixture.
 - The available artwork remains Refract's eight generated wallpapers; the reference's full categories and image library are not reproduced by this change. Collection control presentation and reference pixel equivalence remain unverified.
+
+### Shadow intensity control — 2026-09-09
+
+- Reference inspector inspection confirmed a 0–1 Shadow range with no percent formatter. Its shared slider defaults to a 0.001 step; advanced distance/angle/blur ranges already match Refract's 0–100, 0–180, and 5–30 controls.
+- Refract now exposes the stored 0–1 intensity directly, permits fractional entry, and displays the reference-scale value. Existing project data and compositor intensity are unchanged.
+- Production build and Electron inspector fixture passed initial 0.75, Enter commit at 0.375, arrow adjustment to 0.385, reset to 0.75, and Undo after the normal 350ms appearance edit group closes. Existing inspector tests also passed.
+- Shadow rendering remains a separate comparison: the reference creates/caches a shadow texture (`px`/`ZG`) and applies intensity to that sprite, while Refract uses Canvas shadow properties. No rendering-equivalence claim is made here.

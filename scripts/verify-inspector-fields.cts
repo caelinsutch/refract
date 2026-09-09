@@ -443,6 +443,50 @@ app.whenReady().then(async () => {
       ),
       "0",
     );
+    const shadowConfig = await read(
+      `(()=>{const input=document.querySelector('input[aria-label="Shadow"]');input.scrollIntoView({block:'nearest',behavior:'instant'});return {min:input.min,max:input.max,step:input.step,value:input.value};})()`,
+    );
+    assert.deepEqual(shadowConfig, {
+      min: "0",
+      max: "1",
+      step: "0.001",
+      value: "0.75",
+    });
+    await read(
+      `document.querySelector('button[aria-label="Edit Shadow"]').click()`,
+    );
+    await c.insertText("0.375");
+    c.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    c.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await wait(100);
+    assert.equal(
+      await read(`document.querySelector('input[aria-label="Shadow"]').value`),
+      "0.375",
+    );
+    await read(`document.querySelector('input[aria-label="Shadow"]').focus()`);
+    c.sendInputEvent({ type: "keyDown", keyCode: "Right" });
+    c.sendInputEvent({ type: "keyUp", keyCode: "Right" });
+    await wait(100);
+    assert.equal(
+      await read(`document.querySelector('input[aria-label="Shadow"]').value`),
+      "0.385",
+    );
+    // End the existing 350 ms appearance edit group before a separate reset.
+    await wait(400);
+    await read(
+      `document.querySelector('button[aria-label="Reset Shadow"]').click()`,
+    );
+    await wait(100);
+    assert.equal(
+      await read(`document.querySelector('input[aria-label="Shadow"]').value`),
+      "0.75",
+    );
+    await read(`document.querySelector('button[aria-label="Undo"]').click()`);
+    await wait(100);
+    assert.equal(
+      await read(`document.querySelector('input[aria-label="Shadow"]').value`),
+      "0.385",
+    );
     console.log(
       JSON.stringify({
         rest: "hidden",
