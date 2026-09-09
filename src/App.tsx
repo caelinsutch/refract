@@ -1,3 +1,4 @@
+import { moveMask } from "./core/mask-drag";
 import { useMicrophoneAudio } from "./media/use-microphone-audio";
 import { AudioLibrary } from "./components/AudioLibrary";
 import { confirmProjectReplacement } from "./core/unsaved-project";
@@ -377,6 +378,17 @@ const tabs = [
 ];
 export default function App() {
   const [cropping, setCropping] = useState(false);
+  const maskDrag = useRef<{
+    project: Project;
+    mask: Mask;
+    time: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    draft: Mask;
+  } | null>(null);
+
   const [captionBusy, setCaptionBusy] = useState(false);
   const [musicBusy, setMusicBusy] = useState(false);
   const [previewQuality, setPreviewQuality] = useState<
@@ -800,7 +812,16 @@ export default function App() {
           drawFrame(
             ctx,
             v,
-            p,
+            maskDrag.current?.project === p
+              ? {
+                  ...p,
+                  masks: p.masks.map((m) =>
+                    m.id === maskDrag.current!.mask.id
+                      ? maskDrag.current!.draft
+                      : m,
+                  ),
+                }
+              : p,
             timeRef.current,
             d.width,
             d.height,
@@ -1520,6 +1541,93 @@ export default function App() {
                   ref={canvas}
                   {...sx.props(s.canvas)}
                   aria-label="Video composition preview"
+                  tabIndex={mask ? 0 : undefined}
+                  style={{
+                    cursor: mask ? "move" : z ? "crosshair" : "default",
+                  }}
+                  onLostPointerCapture={() => {
+                    maskDrag.current = null;
+                  }}
+                  onPointerDown={(e) => {
+                    if (!mask || e.button !== 0) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const point = sourcePointAt(
+                      project,
+                      time,
+                      rect.width,
+                      rect.height,
+                      e.clientX - rect.left,
+                      e.clientY - rect.top,
+                    );
+                    const source = sourceAt(project, time)?.time ?? 0;
+                    if (
+                      !point ||
+                      source < mask.start ||
+                      source >= mask.end ||
+                      point.x < mask.x ||
+                      point.x > mask.x + mask.width ||
+                      point.y < mask.y ||
+                      point.y > mask.y + mask.height
+                    )
+                      return;
+                    setPlaying(false);
+                    e.currentTarget.focus({ preventScroll: true });
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    maskDrag.current = {
+                      project,
+                      mask,
+                      time,
+                      x: e.clientX,
+                      y: e.clientY,
+                      width: rect.width,
+                      height: rect.height,
+                      draft: mask,
+                    };
+                  }}
+                  onPointerMove={(e) => {
+                    const drag = maskDrag.current;
+                    if (drag)
+                      drag.draft = moveMask(
+                        drag.project,
+                        drag.mask,
+                        drag.time,
+                        drag.width,
+                        drag.height,
+                        e.clientX - drag.x,
+                        e.clientY - drag.y,
+                      );
+                  }}
+                  onPointerUp={(e) => {
+                    const drag = maskDrag.current;
+                    maskDrag.current = null;
+                    if (!drag || project !== drag.project) return;
+                    const moved = moveMask(
+                      project,
+                      drag.mask,
+                      drag.time,
+                      drag.width,
+                      drag.height,
+                      e.clientX - drag.x,
+                      e.clientY - drag.y,
+                    );
+                    if (moved.x !== drag.mask.x || moved.y !== drag.mask.y)
+                      edit({
+                        ...project,
+                        masks: project.masks.map((m) =>
+                          m.id === moved.id ? moved : m,
+                        ),
+                      });
+                  }}
+                  onPointerCancel={() => {
+                    maskDrag.current = null;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape" && maskDrag.current) {
+                      maskDrag.current = null;
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
                   onClick={(e) => {
                     if (z) {
                       const rect = e.currentTarget.getBoundingClientRect();
@@ -1878,6 +1986,7 @@ export default function App() {
                   <option value="blur">Blur</option>
                   <option value="highlight">Highlight</option>
                 </select>
+                <Note>Drag the mask in the preview to reposition it.</Note>
                 <Divider />
                 {(["x", "y", "width", "height"] as const).map((k) => (
                   <Range
