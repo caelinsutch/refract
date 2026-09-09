@@ -309,10 +309,12 @@ input[data-setting-slider]::-webkit-slider-thumb {
     margin-top 200ms var(--ease-responsive),
     background-color 200ms var(--ease-responsive);
 }
-input[data-setting-slider]:hover::-webkit-slider-runnable-track {
+[data-setting-slider-row]:hover
+  input[data-setting-slider]::-webkit-slider-runnable-track {
   height: 5px;
 }
-input[data-setting-slider]:hover::-webkit-slider-thumb {
+[data-setting-slider-row]:hover
+  input[data-setting-slider]::-webkit-slider-thumb {
   margin-top: -7.5px;
   background: var(--primary-edge);
   box-shadow: none;
@@ -388,4 +390,39 @@ input[data-setting-slider]:active::-webkit-slider-thumb {
 [data-hover-surface]:disabled::before,
 [data-hover-surface][aria-disabled="true"]::before {
   opacity: 0;
+}
+
+/* Inspector values follow the thumb and appear only while interacting. */
+[data-setting-slider-control] {
+  position: relative;
+  flex: 1;
+  min-width: 40px;
+  height: 20px;
+}
+[data-setting-value] {
+  position: absolute;
+  top: 100%;
+  left: calc(10px + (100% - 20px) * var(--slider-fraction));
+  transform: translate(-50%, 4px);
+  z-index: 2;
+  border: 1px solid var(--white-a12);
+  border-radius: 4px;
+  background: var(--surface-popover);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease 200ms;
+}
+[data-setting-slider-row]:hover [data-setting-value],
+[data-setting-slider-control]:focus-within [data-setting-value] {
+  opacity: 1;
+  pointer-events: auto;
+}
+[data-setting-slider-control]:focus-within [data-setting-value] {
+  transition-delay: 0ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting-value] {
+    transition: none;
+  }
 }

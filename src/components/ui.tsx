@@ -40,7 +40,7 @@ const s = sx.create({
     justifyContent: "space-between",
     gap: 12,
   },
-  field: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 19 },
+  field: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 19 },
   sliderRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 },
   reset: {
     height: 38,
@@ -53,7 +53,7 @@ const s = sx.create({
     letterSpacing: "var(--tracking-control)",
     lineHeight: "var(--line-control)",
   },
-  label: { color: "var(--text-secondary)", fontSize: 12 },
+  label: { color: "var(--text-primary)", fontSize: 13 },
   value: {
     color: "var(--text-muted)",
     fontVariantNumeric: "tabular-nums",
@@ -198,61 +198,11 @@ export function Range({
       );
   };
   return (
-    <div {...sx.props(s.field)}>
-      <span {...sx.props(s.row)}>
-        <span {...sx.props(s.label)}>{label}</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {draft === null ? (
-            <button
-              ref={readout}
-              type="button"
-              aria-label={`Edit ${label}`}
-              title={`Enter ${label.toLowerCase()}`}
-              {...sx.props(s.value)}
-              style={{
-                background: "transparent",
-                border: 0,
-                padding: 0,
-                fontVariantNumeric: "tabular-nums",
-              }}
-              onClick={() => {
-                active.current = true;
-                setDraft(String(value));
-              }}
-            >
-              {Number(value.toFixed(2))}
-              {unit}
-            </button>
-          ) : (
-            <input
-              ref={focusInput}
-              aria-label={`${label} value`}
-              type="text"
-              inputMode="decimal"
-              value={draft}
-              style={{
-                width: 68,
-                textAlign: "right",
-                padding: "2px 4px",
-                fontVariantNumeric: "tabular-nums",
-              }}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => finish(true)}
-              onKeyDown={(e) => {
-                e.stopPropagation();
-                if (e.nativeEvent.isComposing) return;
-                if (e.key === "Enter" || e.key === "Escape") {
-                  e.preventDefault();
-                  finish(e.key === "Enter", true);
-                }
-              }}
-            />
-          )}
-        </span>
-      </span>
-      <div {...sx.props(s.sliderRow)}>
-        <input
-          data-setting-slider
+    <div data-setting-field {...sx.props(s.field)}>
+      <span {...sx.props(s.label)}>{label}</span>
+      <div data-setting-slider-row {...sx.props(s.sliderRow)}>
+        <div
+          data-setting-slider-control
           style={
             {
               "--slider-fraction":
@@ -261,14 +211,85 @@ export function Range({
                   : 0,
             } as CSSProperties
           }
-          aria-label={label}
-          type="range"
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(e) => onChange(Number(e.target.value))}
-        />
+        >
+          <input
+            data-setting-slider
+            aria-label={label}
+            type="range"
+            value={value}
+            min={min}
+            max={max}
+            step={step}
+            onChange={(e) => onChange(Number(e.target.value))}
+            onKeyDown={(event) => {
+              if (
+                !["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp"].includes(
+                  event.key,
+                )
+              )
+                return;
+              event.preventDefault();
+              event.stopPropagation();
+              const direction =
+                event.key === "ArrowLeft" || event.key === "ArrowDown" ? -1 : 1;
+              const increment = Math.max(step, (max - min) / 100);
+              const snapped =
+                min +
+                Math.round((value + direction * increment - min) / step) * step;
+              onChange(
+                Number(Math.max(min, Math.min(max, snapped)).toPrecision(12)),
+              );
+            }}
+          />
+          <span data-setting-value>
+            {draft === null ? (
+              <button
+                ref={readout}
+                type="button"
+                aria-label={`Edit ${label}`}
+                title={`Enter ${label.toLowerCase()}`}
+                {...sx.props(s.value)}
+                style={{
+                  background: "transparent",
+                  border: 0,
+                  padding: "2px 4px",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+                onClick={() => {
+                  active.current = true;
+                  setDraft(String(value));
+                }}
+              >
+                {Number(value.toFixed(2))}
+                {unit}
+              </button>
+            ) : (
+              <input
+                ref={focusInput}
+                aria-label={`${label} value`}
+                type="text"
+                inputMode="decimal"
+                value={draft}
+                style={{
+                  width: 68,
+                  textAlign: "right",
+                  padding: "2px 4px",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={() => finish(true)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.nativeEvent.isComposing) return;
+                  if (e.key === "Enter" || e.key === "Escape") {
+                    e.preventDefault();
+                    finish(e.key === "Enter", true);
+                  }
+                }}
+              />
+            )}
+          </span>
+        </div>
         {resetValue !== undefined && (
           <button
             type="button"
