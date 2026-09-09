@@ -175,6 +175,35 @@ app.whenReady().then(async () => {
       58,
       "Inset did not update outer radius",
     );
+    await wait(600);
+    const suggested = await read(
+      `(()=>{const buttons=[...document.querySelectorAll('[aria-label="Suggested inset colors"] button')];return buttons.map(button=>button.title)})()`,
+    );
+    assert.ok(
+      suggested.length > 0 && suggested.length <= 24,
+      "Missing source color suggestions",
+    );
+    const previousColor = await read(
+      `document.querySelector('input[aria-label="Inset color"]').value`,
+    );
+    await read(
+      `document.querySelector('[aria-label="Suggested inset colors"] button').click()`,
+    );
+    await wait(100);
+    assert.equal(
+      await read(
+        `document.querySelector('input[aria-label="Inset color"]').value`,
+      ),
+      suggested[0],
+    );
+    await read(`document.querySelector('button[aria-label="Undo"]').click()`);
+    await wait(100);
+    assert.equal(
+      await read(
+        `document.querySelector('input[aria-label="Inset color"]').value`,
+      ),
+      previousColor,
+    );
     await read(`document.querySelector('button[aria-label="Undo"]').click()`);
     await wait(100);
     assert.equal(

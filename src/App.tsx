@@ -1,3 +1,4 @@
+import { InsetColors } from "./components/InsetColors";
 import { insetAppearance, screenCorners } from "./core/screen-corners";
 import { Tooltip } from "./components/Tooltip";
 import { Disclosure } from "./components/Disclosure";
@@ -2567,17 +2568,21 @@ export default function App() {
                   onChange={(inset) => appearance(insetAppearance(inset))}
                 />
                 {project.appearance.inset ? (
-                  <Row>
-                    <span>Inset color</span>
-                    <input
-                      type="color"
-                      aria-label="Inset color"
-                      value={project.appearance.insetColor}
-                      onChange={(e) =>
-                        appearance({ insetColor: e.target.value })
+                  <InsetColors
+                    video={video}
+                    crop={
+                      project.crop ?? {
+                        x: 0,
+                        y: 0,
+                        width: project.source.width,
+                        height: project.source.height,
                       }
-                    />
-                  </Row>
+                    }
+                    source={url}
+                    playing={playing}
+                    value={project.appearance.insetColor}
+                    onChange={(insetColor) => appearance({ insetColor })}
+                  />
                 ) : null}
                 <Range
                   label="Shadow"

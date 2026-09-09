@@ -809,3 +809,11 @@ continues to require the system permission; window-source listing still does too
 - Preview/export share the updated compositor; both video and cursor clipping use the derived inner radius. Project validation checks optional outer radii without requiring migration of older projects.
 - All 159 core tests passed before the final compositor assertion; the focused 12-test compositor/corner suite then passed, including pixel equality for equivalent legacy/new settings and distinct video/frame corner changes. Inspector verification passed fractional edits, coupled radius changes, reset, Undo/Redo, and prior editing/hover checks.
 - Asymmetric per-edge inset positioning, source-derived color suggestions, and live reference comparison remain open.
+
+### Source-derived inset color suggestions — 2026-09-09
+
+- Reopened the reference's recent 12-second project through its File menu. The editor accessibility tree is available, but its screenshot still returns blank; a pixel-perfect comparison remains unproven.
+- Installed inset code samples two perimeter rings around the cropped frame, ranks colors by frequency, and shows up to 24 suggestions in a horizontal strip. Added independently implemented perimeter sampling and ranking to Refract, with 28px swatches, 4px spacing, and the custom color input retained.
+- Sampling is debounced after source load, seek, crop change, and pause; it does not run continuously during playback. The source video is sampled before effects, respecting the current crop. Suggestions do not change the project until selected, and selections use ordinary undoable appearance edits.
+- Build, color-ranking unit checks, and the synthetic inspector fixture passed. The editor produced suggestions, applied one, and restored the original color through Undo while prior inset/corner and keyboard checks remained green.
+- Exact palette parity on identical decoded reference frames remains to be measured. Asymmetric inset positioning is still missing.
