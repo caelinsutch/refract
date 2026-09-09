@@ -1,3 +1,4 @@
+import { effectiveZooms } from "./system-zooms.js";
 import { initialZoomScale } from "./framing.js";
 import { autoZoomTargets } from "./auto-zoom.js";
 import type { Project } from "./project.js";
@@ -48,7 +49,7 @@ export function screenMotionAt(p: Project, time: number): Target {
   const config =
     p.appearance.screenSpring ??
     screenPresets[p.appearance.animation === "smooth" ? "smooth" : "focused"];
-  const key = `${p.appearance.animation}/${config.stiffness}/${config.damping}/${config.mass}/${p.crop?.width}/${p.crop?.height}/${p.source.width}/${p.source.height}/${p.appearance.ratio}/${p.appearance.padding}`;
+  const key = `${p.appearance.animation}/${config.stiffness}/${config.damping}/${config.mass}/${p.crop?.width}/${p.crop?.height}/${p.source.width}/${p.source.height}/${p.appearance.ratio}/${p.appearance.padding}/${p.appearance.alwaysKeepZoomedIn}/${p.source.duration}`;
   let entry = cache.get(p);
   if (
     !entry ||
@@ -56,12 +57,10 @@ export function screenMotionAt(p: Project, time: number): Target {
     entry.cursor !== p.cursor ||
     entry.key !== key
   ) {
-    const zooms = p.zooms
-      .filter((z) => !z.disabled)
-      .map((z) => ({
-        z,
-        targets: z.mode === "auto" ? autoZoomTargets(p, z) : [],
-      }));
+    const zooms = effectiveZooms(p).map((z) => ({
+      z,
+      targets: z.mode === "auto" ? autoZoomTargets(p, z) : [],
+    }));
     const times = new Set<number>([0]);
     for (const { z, targets } of zooms) {
       times.add(z.start);

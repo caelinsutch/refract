@@ -66,6 +66,7 @@ export type Appearance = {
   shadowBlur: number;
   blur: number;
   ratio: string;
+  alwaysKeepZoomedIn: boolean;
   cursorSize: number;
   motionBlurAmount?: number;
   cursorMotionBlur?: number;
@@ -141,6 +142,7 @@ export const defaults: Appearance = {
   shadowBlur: 20,
   blur: 0,
   ratio: "Auto",
+  alwaysKeepZoomedIn: false,
   cursorSize: 1.5,
   motionBlurAmount: 0,
   cursorMotionBlur: 1,
@@ -436,6 +438,8 @@ export function validateProject(value: unknown): Project {
     ...p.appearance,
     ...normalizeMotionBlur(p.appearance),
   };
+  if (typeof p.appearance.alwaysKeepZoomedIn !== "boolean")
+    throw new Error("Invalid vertical framing setting.");
   if (
     p.appearance.cursorMotionBlur !== undefined &&
     (!valid(p.appearance.cursorMotionBlur) ||

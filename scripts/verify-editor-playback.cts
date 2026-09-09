@@ -641,6 +641,12 @@ app.whenReady().then(async () => {
       const canvas=document.querySelector('canvas[aria-label="Video composition preview"]');
       if(Math.abs(canvas.width/canvas.height-0.75)>0.005) throw Error('Tall ratio did not reach composition');
     })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "End" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "End" });
+    await window.webContents.executeJavaScript(`(() => {
+      if(document.activeElement.getAttribute('aria-label')!=='Always keep zoomed in') throw Error('Vertical framing option is not keyboard reachable');
+    })()`);
+
     window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
     window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
     await window.webContents.executeJavaScript(`(async () => {

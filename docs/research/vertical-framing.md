@@ -139,3 +139,23 @@ continuity. All 138 tests pass; the encoded H.264 landmark fixture still passes.
 The current calculation follows Refract's existing crop/padding normalization;
 exact reference inset and output-size normalization still need comparison. The
 hidden system-gap ranges and vertical picker toggle are not implemented yet.
+
+## Persistent vertical gap-follow toggle — 2026-09-09
+
+The aspect-ratio picker now exposes “Always keep zoomed in” for explicit vertical
+ratios. The boolean persists in project appearance, rejects invalid values, and
+defaults off when loading older projects. Switching to Auto or horizontal output
+makes it inactive without erasing the preference.
+
+Enabled vertical projects derive auto-follow ranges in the gaps around enabled
+explicit zooms, leaving the observed 1ms guard on each explicit boundary. These
+ranges use scale 1 and never enter `project.zooms`; explicit ranges keep priority.
+The existing source-time grouping, fill scale, and spring evaluation apply to the
+derived ranges in both preview and export composition.
+
+Three additional core tests verify gap generation, explicit/disabled priorities,
+actual zoom targets, unchanged editable timeline data, serialization, validation,
+legacy defaults, and Undo. All 141 tests pass. The Electron verifier additionally
+checks that the vertical-only control is reachable with menu keyboard navigation.
+Exact edge snapping, initial-frame behavior, inset normalization, and rendered
+comparison with Screen Studio remain unverified.

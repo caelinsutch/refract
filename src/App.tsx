@@ -1767,6 +1767,10 @@ export default function App() {
                   <>
                     <AspectRatioPicker
                       value={project.appearance.ratio}
+                      alwaysKeepZoomedIn={project.appearance.alwaysKeepZoomedIn}
+                      onKeepZoomedIn={(alwaysKeepZoomedIn) =>
+                        appearance({ alwaysKeepZoomedIn })
+                      }
                       onChange={(ratio) => appearance({ ratio })}
                     />
                     <Button

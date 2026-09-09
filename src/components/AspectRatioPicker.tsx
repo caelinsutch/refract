@@ -1,3 +1,5 @@
+import { Toggle } from "./ui";
+import { isVerticalRatio } from "../core/system-zooms";
 import { useId, useRef, useState } from "react";
 import * as sx from "@stylexjs/stylex";
 import { Check, ChevronDown, Proportions } from "lucide-react";
@@ -73,8 +75,12 @@ const s = sx.create({
 export function AspectRatioPicker({
   value,
   onChange,
+  alwaysKeepZoomedIn,
+  onKeepZoomedIn,
 }: {
   value: string;
+  alwaysKeepZoomedIn: boolean;
+  onKeepZoomedIn: (enabled: boolean) => void;
   onChange: (ratio: string) => void;
 }) {
   const trigger = useRef<HTMLButtonElement>(null),
@@ -88,7 +94,7 @@ export function AspectRatioPicker({
   const buttons = () =>
     Array.from(
       menu.current?.querySelectorAll<HTMLButtonElement>(
-        '[role="menuitemradio"]',
+        '[role="menuitemradio"], [role="switch"]',
       ) ?? [],
     );
   const close = () => {
@@ -204,6 +210,20 @@ export function AspectRatioPicker({
             </button>
           );
         })}
+        {isVerticalRatio(value) && (
+          <div
+            style={{
+              padding: "12px 8px 0",
+              borderTop: "1px solid var(--white-a0a)",
+            }}
+          >
+            <Toggle
+              label="Always keep zoomed in"
+              value={alwaysKeepZoomedIn}
+              onChange={onKeepZoomedIn}
+            />
+          </div>
+        )}
       </div>
     </>
   );
