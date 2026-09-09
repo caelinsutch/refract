@@ -946,3 +946,9 @@ Validation: production build passed. All 15 synthetic quick-export combinations 
 Matched the installed reference command definitions: Shift-Command-E opens export, Option-Command-C quick-exports to clipboard, and Option-Command-S quick-exports to a file. A native Export menu now includes current-settings exports, quick exports, and previous clipboard copies. Quick exports read the saved recorder resolution/FPS and produce MP4 while retaining the editor dialog's independent settings. Cancelling quick file export dismisses the temporary dialog.
 
 Validation: production build and focused synthetic Electron workflow passed. The fixture starts with editor GIF/1280/24 settings, quick-exports MP4/1080/30 from saved recorder settings, checks frame count, cancels quick file export, and verifies the next current-settings request still uses GIF/1280/24. Existing manual Enter-to-export, clipboard GIF, duplicate suppression, and previous-copies dispatch checks also passed.
+
+## Native export availability — September 9
+
+The five native export actions now start disabled and follow editor readiness. They disable while no project is loaded, a dialog/crop/command menu is open, or export is active. Reload and renderer termination clear stale availability. Previous clipboard exports remains available without a project.
+
+Validation: production build and the synthetic completion/editor workflow passed, including availability=false during every rendered frame and availability=true for a loaded idle project. The packaged app's native menu was inspected with no project and showed all five export actions disabled and previous exports enabled. A live import attempt could not be completed reliably because the UI tool returned stale menu accessibility state for the file dialog and no screenshot; loaded-project availability is established by the synthetic fixture, not a completed live comparison.

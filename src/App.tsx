@@ -535,6 +535,13 @@ export default function App() {
         return [];
       }
     });
+  useEffect(() => {
+    void window.refract
+      ?.setExportAvailability?.(
+        !!project && !exporting && !modal && !cropping && !commandOpen,
+      )
+      .catch(() => {});
+  }, [!!project, exporting, modal, cropping, commandOpen]);
   const video = useRef<HTMLVideoElement>(null),
     cameraVideo = useRef<HTMLVideoElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),

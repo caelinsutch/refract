@@ -105,6 +105,8 @@ contextBridge.exposeInMainWorld("refract", {
   openProject: () => ipcRenderer.invoke("open-project"),
   saveProject: (project: Project, saveAs?: boolean) =>
     ipcRenderer.invoke("save-project", project, saveAs),
+  setExportAvailability: (ready: boolean) =>
+    ipcRenderer.invoke("export-availability", ready),
   showClipboardExports: () => ipcRenderer.invoke("show-clipboard-exports"),
   exportStart: (options: {
     project: Project;

@@ -37,10 +37,15 @@ app.whenReady().then(async () => {
     contextBridge.exposeInMainWorld('refract',{
       onMenu:callback=>{const listener=(_,a)=>callback(a);ipcRenderer.on('menu-action',listener);return()=>ipcRenderer.removeListener('menu-action',listener);},onProjectGuard:()=>()=>{},
       showClipboardExports:()=>ipcRenderer.invoke('verify-clipboard-folder'),
+      setExportAvailability:ready=>ipcRenderer.invoke('verify-export-availability',ready),
       onRecordingFinished:callback=>{const listener=(_,r)=>callback(r);ipcRenderer.on('recording-finished',listener);return()=>ipcRenderer.removeListener('recording-finished',listener);},
       exportStart:settings=>ipcRenderer.invoke('verify-export',settings),exportCancel:async()=>{},exportFrame:(id,data)=>ipcRenderer.invoke("verify-frame",data),exportFinish:()=>ipcRenderer.invoke("verify-finish"),
     });`,
     );
+    const availability: boolean[] = [];
+    ipcMain.handle("verify-export-availability", (_, ready: boolean) => {
+      availability.push(ready);
+    });
     let folderRequests = 0;
     ipcMain.handle("verify-clipboard-folder", () => {
       folderRequests++;
@@ -74,6 +79,11 @@ app.whenReady().then(async () => {
       source,
     ]);
     ipcMain.handle("verify-frame", async (_, data) => {
+      assert.equal(
+        availability.at(-1),
+        false,
+        "Native export actions remained enabled during rendering",
+      );
       const frame = Buffer.from(data);
       frames.push(frame);
       await writeEncoderFrame(encoder!, frame);
@@ -163,6 +173,7 @@ app.whenReady().then(async () => {
       `new Promise(resolve=>setTimeout(resolve,100))`,
     );
     assert.equal(requests.length, 1, "Create-project action exported");
+    await until(() => availability.at(-1) === true);
     encode = true;
     for (const resolution of process.env.REFRACT_EXPORT_DIALOG_ONLY
       ? [720]
@@ -359,7 +370,13 @@ app.whenReady().then(async () => {
     );
     assert.equal(requests.at(-1).fps, 24);
     assert.equal(requests.at(-1).width, 1280);
+    assert.equal(availability[0], false, "Empty editor enabled exports");
+    assert.ok(
+      availability.includes(true),
+      "Loaded project did not enable exports",
+    );
     const report = {
+      nativeExportAvailability: true,
       quickExportSavedSettings: true,
       quickExportCancellation: true,
       editorExportSettingsRetained: true,

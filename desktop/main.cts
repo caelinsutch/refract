@@ -154,6 +154,27 @@ app.whenReady().then(() => {
   });
   setupCropWindow(win);
   const send = (action: string) => win.webContents.send("menu-action", action);
+  const exportMenuIDs = [
+    "export-dialog",
+    "export-file",
+    "export-clipboard",
+    "quick-export-file",
+    "quick-export-clipboard",
+  ];
+  const updateExportAvailability = (ready: unknown) => {
+    const menu = Menu.getApplicationMenu();
+    for (const id of exportMenuIDs) {
+      const item = menu?.getMenuItemById(id);
+      if (item) item.enabled = ready === true;
+    }
+  };
+  handle("export-availability", updateExportAvailability);
+  win.webContents.on("did-start-loading", () =>
+    updateExportAvailability(false),
+  );
+  win.webContents.on("render-process-gone", () =>
+    updateExportAvailability(false),
+  );
   const editAction = (action: "undo" | "redo") => {
     const focused = BrowserWindow.getFocusedWindow();
     if (!focused || focused.isDestroyed()) return;
@@ -354,23 +375,36 @@ app.whenReady().then(() => {
         submenu: [
           {
             label: "Export…",
+            id: "export-dialog",
+            enabled: false,
             accelerator: "CmdOrCtrl+Shift+E",
             click: () => send("export"),
           },
           { type: "separator" },
-          { label: "Export to file…", click: () => send("export-file") },
+          {
+            label: "Export to file…",
+            id: "export-file",
+            enabled: false,
+            click: () => send("export-file"),
+          },
           {
             label: "Export to clipboard",
+            id: "export-clipboard",
+            enabled: false,
             click: () => send("export-clipboard"),
           },
           { type: "separator" },
           {
             label: "Quick export to file…",
+            id: "quick-export-file",
+            enabled: false,
             accelerator: "CmdOrCtrl+Alt+S",
             click: () => send("quick-export-file"),
           },
           {
             label: "Quick export to clipboard",
+            id: "quick-export-clipboard",
+            enabled: false,
             accelerator: "CmdOrCtrl+Alt+C",
             click: () => send("quick-export-clipboard"),
           },
