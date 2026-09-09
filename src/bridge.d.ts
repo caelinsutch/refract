@@ -63,6 +63,11 @@ declare global {
         url: string;
         title: string;
       } | null>;
+      audioLibraryList(): Promise<string[]>;
+      audioLibraryOpen(): Promise<void>;
+      audioLibraryImport(
+        name: string,
+      ): Promise<NonNullable<Project["backgroundAudio"]> | null>;
       importBackgroundAudio(): Promise<NonNullable<
         Project["backgroundAudio"]
       > | null>;

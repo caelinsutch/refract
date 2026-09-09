@@ -1,3 +1,8 @@
+import {
+  audioExtensions,
+  listAudioLibrary,
+  resolveLibraryTrack,
+} from "./audio-library.cjs";
 import { setupEditorLifecycle } from "./editor-lifecycle.cjs";
 import { setupCropWindow } from "./crop-window.cjs";
 import { setupProjectGuard } from "./project-guard.cjs";
@@ -391,21 +396,34 @@ handle("project-audio-url", async (file: string) => {
   await fs.access(resolved);
   return expose(resolved);
 });
+const audioLibraryDirectory = () =>
+  path.join(app.getPath("userData"), "audio-library");
+handle("audio-library-list", () => listAudioLibrary(audioLibraryDirectory()));
+handle("audio-library-open", async () => {
+  const directory = audioLibraryDirectory();
+  await fs.mkdir(directory, { recursive: true });
+  const error = await shell.openPath(directory);
+  if (error) throw Error(error);
+});
+handle("audio-library-import", async (name: unknown) => {
+  if (!projectDir) throw Error("Open a video first.");
+  const directory = projectDir;
+  const source = await resolveLibraryTrack(audioLibraryDirectory(), name);
+  if (projectDir !== directory) return null;
+  return importAudioAsset(source, directory);
+});
 handle("import-background-audio", async () => {
   if (!projectDir) throw Error("Open a video first.");
   const directory = projectDir;
   const selected = await dialog.showOpenDialog(win, {
     title: "Add background audio",
     properties: ["openFile"],
-    filters: [
-      {
-        name: "Audio",
-        extensions: ["mp3", "mp4", "m4a", "wav", "aiff", "aif", "flac", "ogg"],
-      },
-    ],
+    filters: [{ name: "Audio", extensions: audioExtensions }],
   });
   if (selected.canceled || projectDir !== directory) return null;
-  const source = selected.filePaths[0];
+  return importAudioAsset(selected.filePaths[0], directory);
+});
+async function importAudioAsset(source: string, directory: string) {
   const { stdout } = await run(
     tool("ffprobe"),
     [
@@ -440,7 +458,8 @@ handle("import-background-audio", async () => {
     volume: 0.05,
     muted: false,
   };
-});
+}
+
 handle("open-project", async () => {
   const chosen = await dialog.showOpenDialog(win, {
     properties: ["openDirectory"],

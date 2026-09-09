@@ -1,3 +1,4 @@
+import { AudioLibrary } from "./components/AudioLibrary";
 import { confirmProjectReplacement } from "./core/unsaved-project";
 import { Modal } from "./components/Modal";
 import { ShortcutSettings } from "./components/ShortcutSettings";
@@ -509,12 +510,14 @@ export default function App() {
     playing || exporting || tab !== "audio",
     tell,
   );
-  async function importBackgroundAudio() {
+  async function importBackgroundAudio(libraryName?: string) {
     if (!project || musicBusy || !window.refract) return;
     const id = project.id;
     setMusicBusy(true);
     try {
-      const track = await window.refract.importBackgroundAudio();
+      const track = libraryName
+        ? await window.refract.audioLibraryImport(libraryName)
+        : await window.refract.importBackgroundAudio();
       const current = projectRef.current;
       if (track && current?.id === id)
         edit({ ...current, backgroundAudio: track });
@@ -2243,6 +2246,10 @@ export default function App() {
                 </Note>
                 <Divider />
                 <Heading>Background audio</Heading>
+                <AudioLibrary
+                  disabled={musicBusy || !window.refract}
+                  onSelect={importBackgroundAudio}
+                />
                 {project.backgroundAudio ? (
                   <>
                     <Button
@@ -2315,7 +2322,7 @@ export default function App() {
                 ) : null}
                 <Button
                   disabled={musicBusy || !window.refract}
-                  onClick={importBackgroundAudio}
+                  onClick={() => void importBackgroundAudio()}
                 >
                   {musicBusy
                     ? "Adding audio…"

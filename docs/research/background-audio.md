@@ -60,3 +60,17 @@ A final filesystem check confirmed the saved manifest retains the imported proje
 The selected track now has a Play/Stop control backed by a separate audio element. Audition starts at the beginning, uses the track gain, and does not change the video playhead. Stopping resets the audition position. Starting video playback, leaving the Audio inspector, replacing the track, or closing the project stops audition. Media URL resolution and playback errors are guarded against stale assets.
 
 The production renderer build passes. The verification app reloaded to the empty editor without console errors. The Mac locked while reopening the saved music project, before the new button could be exercised, so live audition and audible playback remain unverified. This does not establish music library or complete inspector parity.
+
+## Folder-backed User Library
+
+Read-only inspection of the installed Audio inspector identifies separate `backgroundAudio.userLibraryPath` and `backgroundAudio.userLibraryTracks` endpoints. The inspector subscribes to the latter and copies a selected library track into the project. This establishes the folder/subscription/project-copy contract, but not the exact native watcher behavior or full library file-format support.
+
+Refract now exposes an application-owned `audio-library` folder under its user-data directory. The Audio inspector opens that folder in Finder and lists direct regular audio files in a keyboard-operated selector. While the panel is visible it refreshes every 1.5 seconds, and refreshes on window focus. Choosing a track uses the same stream validation, unique project-relative copy, default gain, and undo state as native file import. Removing or relocating the original library file therefore does not invalidate a saved project's copy. Project imports do not silently add files to the library.
+
+The library reader test verifies initial folder creation, numeric filename sorting, additions/removals, case-insensitive extensions, and exclusion/rejection of hidden entries, directories, symlinks, and paths outside the library. All 85 tests and the production build pass. Live Finder/selector verification remains pending. Bundled music categories/catalog, exact selector layout, and measured audible preview remain open gaps.
+
+### Live verification follow-up
+
+The verification app reopened the saved 12-second project with its original music asset and 5% gain. Adding a generated WAV to Refract's library folder made the User Library selector appear without reloading the editor. Selecting the WAV created a new UUID-named project asset and updated the audition button. Play changed to Stop while the video playhead remained at 0:00.00; stopping returned it to Play. Saving retained the new project-relative filename, 5000 ms duration, 0.05 volume, and mute false.
+
+Removing only the generated library test file returned the inspector to its empty-library state without reloading. The selected project track remained available. A filesystem/hash check confirmed its copied bytes matched the original fixture after the library file was removed. This verifies live addition/removal, selection/import, saved independent media, and basic audition UI state. Audible output, exact stop timing, and reference catalog/layout parity are not established by these checks.
