@@ -678,6 +678,18 @@ export default function App() {
     setTime(timeRef.current);
     setPlaying(false);
   };
+  const togglePlayback = () => {
+    if (!project) return;
+    if (!playing && timeRef.current >= duration(project)) {
+      seekRevision.current++;
+      timeRef.current = 0;
+      setTime(0);
+    } else if (playing) {
+      // Publish the media position before handing the clock back to paused UI.
+      setTime(timeRef.current);
+    }
+    setPlaying((value) => !value);
+  };
   const cut = () => {
     if (project) {
       const next = splitAt(project, time);
@@ -1030,7 +1042,7 @@ export default function App() {
         return;
       if (e.code === "Space") {
         e.preventDefault();
-        if (project) setPlaying((p) => !p);
+        togglePlayback();
       }
       if (
         !modal &&
@@ -1762,7 +1774,11 @@ export default function App() {
                 onChange={setTimelineTracks}
               />
             )}
-            <span {...sx.props(s.time)}>
+            <span
+              role="timer"
+              aria-label="Playback position"
+              {...sx.props(s.time)}
+            >
               {formatTime(time, true)}{" "}
               <span {...sx.props(s.muted)}>
                 / {formatTime(project ? duration(project) : 0, true)}
@@ -1781,13 +1797,7 @@ export default function App() {
               icon
               title={playing ? "Pause" : "Play"}
               disabled={!project}
-              onClick={() => {
-                if (project && time >= duration(project)) {
-                  timeRef.current = 0;
-                  setTime(0);
-                }
-                setPlaying((p) => !p);
-              }}
+              onClick={togglePlayback}
             >
               <StateIcon
                 active={playing}

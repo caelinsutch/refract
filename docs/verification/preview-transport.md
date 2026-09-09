@@ -22,3 +22,16 @@ npx tsc scripts/verify-preview-transport.cts --target ES2022 --module Node16 --m
 ```
 
 This verifies production transport decisions with actual Electron media playback. The harness drives the helper directly; it does not mount the full React editor, inspect rendered frames, measure auxiliary audio synchronization, or reproduce network/disk buffering. The user's running app and projects are untouched.
+
+## Full React editor playback and keyboard regression
+
+`scripts/verify-editor-playback.cts` loads the production renderer in an isolated Electron profile with no desktop bridge, imports a generated two-second H.264 video through the real browser-file input, then drives the rendered Play/Pause/End controls and C/Space keyboard handlers. It checks actual media advancement, a stationary paused video, and displayed timeline alignment after splitting and restarting from the end. The playback position now has a named timer role for accessible identification.
+
+The first split-timeline run failed: Space restarted the video near 105 ms, but the timeline stayed at the second clip's 350 ms boundary. Keyboard playback bypassed the Play button's end-reset behavior. Both now call one `togglePlayback` handler that resets the shared position at end; pausing also publishes the latest media-clock value before handing control back to paused React state.
+
+The corrected full-editor run passed (paused source 359.892 ms, restarted source 105.064 ms with displayed timeline within 100 ms). All 121 core tests and production build pass. This covers the actual React transport controls and split shortcut in browser-import mode, not native project IPC, multi-track audio, or visual frame fidelity.
+
+```sh
+npx tsc scripts/verify-editor-playback.cts --target ES2022 --module Node16 --moduleResolution Node16 --esModuleInterop --skipLibCheck --strict --outDir work/editor-playback-runner
+./node_modules/.bin/electron work/editor-playback-runner/verify-editor-playback.cjs
+```

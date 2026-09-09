@@ -1,0 +1,85 @@
+import { app, BrowserWindow } from "electron";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs/promises";
+import path from "node:path";
+const directory = path.resolve("work/editor-playback");
+app.setPath("userData", path.join(directory, "profile"));
+app.whenReady().then(async () => {
+  let window: BrowserWindow | undefined;
+  try {
+    await fs.mkdir(directory, { recursive: true });
+    const source = path.join(directory, "source.mp4");
+    execFileSync("/opt/homebrew/bin/ffmpeg", [
+      "-v",
+      "error",
+      "-y",
+      "-f",
+      "lavfi",
+      "-i",
+      "testsrc2=size=320x180:rate=30:duration=2",
+      "-c:v",
+      "libx264",
+      "-pix_fmt",
+      "yuv420p",
+      source,
+    ]);
+    const encoded = (await fs.readFile(source)).toString("base64");
+    window = new BrowserWindow({
+      show: false,
+      width: 1320,
+      height: 880,
+      webPreferences: {
+        sandbox: true,
+        backgroundThrottling: false,
+        autoplayPolicy: "no-user-gesture-required",
+      },
+    });
+    await window.loadFile(path.resolve("dist/index.html"));
+    const result = await window.webContents.executeJavaScript(`(async () => {
+      const check = (condition, message) => { if (!condition) throw Error(message); };
+      const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+      const until = async (predicate, message) => {
+        const deadline = performance.now() + 6000;
+        while (!predicate()) { check(performance.now() < deadline, message); await wait(20); }
+      };
+      await until(() => document.querySelector('input[accept="video/*"]'), 'Editor did not mount');
+      const bytes = Uint8Array.from(atob(${JSON.stringify(encoded)}), c => c.charCodeAt(0));
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([bytes], 'Playback verification.mp4', {type:'video/mp4'}));
+      const input = document.querySelector('input[accept="video/*"]');
+      input.files = transfer.files;
+      input.dispatchEvent(new Event('change', {bubbles:true}));
+      const button = label => document.querySelector('button[aria-label="' + label + '"]');
+      const video = () => Array.from(document.querySelectorAll('video')).find(v => v.src.startsWith('blob:'));
+      await until(() => video()?.readyState >= 2 && !button('Play')?.disabled, 'Video did not load');
+      button('Play').click();
+      await until(() => video().currentTime > 0.35, 'Play did not advance media');
+      button('Pause').click();
+      await until(() => video().paused, 'Pause did not reach media');
+      const paused = video().currentTime;
+      await wait(150);
+      check(Math.abs(video().currentTime - paused) < 0.01, 'Media moved while paused');
+      document.dispatchEvent(new KeyboardEvent('keydown', {key:'c',code:'KeyC',bubbles:true}));
+      await wait(100);
+      button('End').click();
+      await until(() => video().currentTime > 1.9 && !video().seeking, 'End did not seek');
+      document.dispatchEvent(new KeyboardEvent('keydown', {key:' ',code:'Space',bubbles:true}));
+      await until(() => !video().paused && video().currentTime < 1, 'Space did not restart from the end');
+      await until(() => video().currentTime > 0.1, 'Restart did not advance');
+      const label = document.querySelector('[role="timer"]').textContent;
+      const match = label.match(/([0-9]+):([0-9]+)[.]([0-9]+)/);
+      check(match, 'Missing playback position');
+      const displayed = Number(match[1])*60 + Number(match[2]) + Number('0.'+match[3]);
+      check(Math.abs(displayed - video().currentTime) < 0.1, 'Restart used the wrong clip: '+label+' media='+video().currentTime);
+      button('Pause').click();
+      return { pausedAt:paused, restartedAt:video().currentTime, canvasCount:document.querySelectorAll('canvas').length };
+    })()`);
+    console.log(JSON.stringify(result));
+  } catch (error) {
+    console.error(error);
+    process.exitCode = 1;
+  } finally {
+    window?.destroy();
+    app.exit(Number(process.exitCode ?? 0));
+  }
+});
