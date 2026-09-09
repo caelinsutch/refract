@@ -32,6 +32,7 @@ import { Modal } from "./components/Modal";
 import { ShortcutSettings } from "./components/ShortcutSettings";
 import { clipAudioGain } from "./core/audio";
 import { useBackgroundAudio } from "./media/use-background-audio";
+import { useAudioScrubber } from "./media/use-audio-scrubber";
 import { useAudioPreview } from "./media/use-audio-preview";
 import { CameraLayouts } from "./components/CameraLayouts";
 import { StateIcon } from "./components/StateIcon";
@@ -70,7 +71,6 @@ import {
   CirclePlay,
   SkipBack,
   SkipForward,
-  Repeat2,
   Volume2,
   VolumeX,
   Crop,
@@ -498,6 +498,18 @@ export default function App() {
     setShowSidebar(restore);
     setShowTimeline(restore);
   };
+  const [audioScrubbing, setAudioScrubbing] = useState(() => {
+    try {
+      return localStorage.getItem("refract.audio.scrubber") === "true";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("refract.audio.scrubber", String(audioScrubbing));
+    } catch {}
+  }, [audioScrubbing]);
   const [splitTool, setSplitTool] = useState(false);
   const [optionSplit, setOptionSplit] = useState(false);
   const splitMode = splitTool || optionSplit;
@@ -705,6 +717,12 @@ export default function App() {
     previewSpeed,
     tell,
   );
+  const scrubAudio = useAudioScrubber(
+    project,
+    url,
+    audioScrubbing,
+    playing || !!modal || cropping || commandOpen || exporting,
+  );
   const audioPreview = useAudioPreview(
     project,
     playing || exporting || tab !== "audio",
@@ -830,6 +848,7 @@ export default function App() {
     setTime(timeRef.current);
     playingRef.current = continuePlayback;
     setPlaying(continuePlayback);
+    if (!continuePlayback) scrubAudio(timeRef.current);
   };
   const pausePreview = () => {
     // Freeze the source before a slow frame or a new UI can publish stale time.
@@ -2367,13 +2386,17 @@ export default function App() {
                 </>
               )}
               <Button
-                active={loop}
-                aria-pressed={loop}
+                active={audioScrubbing}
+                aria-pressed={audioScrubbing}
                 icon
-                title="Loop playback"
-                onClick={() => setLoop((v) => !v)}
+                title={
+                  audioScrubbing
+                    ? "Disable audio scrubber"
+                    : "Enable audio scrubber (experimental)"
+                }
+                onClick={() => setAudioScrubbing((value) => !value)}
               >
-                <Repeat2 size={14} />
+                <AudioLines size={14} />
               </Button>
               <Button
                 icon
