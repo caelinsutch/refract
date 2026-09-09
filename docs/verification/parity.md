@@ -79,3 +79,7 @@ Exact parity remains unverified until every applicable requirement is implemente
 - The live UI reported 12 seconds and rendered the clip on its styled background.
 - Screenshot inspection confirmed the initial preview, framing controls, 320px sidebar, and clip/zoom tracks. This is an internal inspection, not reference pixel parity.
 - Export, saved-project reopen, recording, camera, and device workflows have not yet passed live verification.
+
+## Recording completion audit
+
+Live reference Record-menu inspection and read-only bundle inspection confirmed a missing workflow beyond manual export: automatic file/clipboard/share-link delivery and the quick-export widget/settings. Refract currently implements only create-project completion. See [recording completion research and acceptance scope](../research/recording-completion.md). The reference editor screenshot remains blank even after raising its window; AX evidence does not establish visual matching.
