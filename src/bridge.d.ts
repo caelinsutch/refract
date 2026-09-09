@@ -2,6 +2,8 @@ import type {
   CaptureChoice,
   CaptureSources,
   RecorderState,
+  RecorderInputMenu,
+  RecorderInputSelection,
 } from "./core/recorder";
 import type { Project } from "./core/project";
 declare global {
@@ -35,6 +37,9 @@ declare global {
       recorderDirectory(): Promise<string>;
       recorderChooseDirectory(): Promise<string | null>;
       recorderSources(): Promise<CaptureSources>;
+      recorderInputMenu(
+        request: RecorderInputMenu,
+      ): Promise<RecorderInputSelection | null>;
       recorderExpand(expanded: boolean): Promise<void>;
       recorderStart(choice: CaptureChoice): Promise<void>;
       recorderPause(): Promise<void>;

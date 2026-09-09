@@ -5,6 +5,13 @@ export type CaptureSource = {
   height: number;
   app?: string;
 };
+export type RecorderInputMenu = {
+  kind: "camera" | "microphone" | "audio";
+  selected: string | null;
+  x: number;
+  y: number;
+};
+export type RecorderInputSelection = { value: string | null; label: string };
 export type CaptureSources = {
   keyboardPermission?: "granted" | "required";
   permission: "granted" | "required";

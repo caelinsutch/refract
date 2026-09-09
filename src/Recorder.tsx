@@ -33,6 +33,7 @@ import type {
   CaptureSources,
   CaptureChoice,
   RecorderState,
+  RecorderInputMenu,
 } from "./core/recorder";
 import { formatTime } from "./core/project";
 const s = sx.create({
@@ -400,6 +401,11 @@ export default function Recorder() {
       displayId: number;
     } | null>(null);
   const areaStartButton = useRef<HTMLButtonElement>(null);
+  const inputMenuBusy = useRef(false);
+  const [inputNames, setInputNames] = useState({ camera: "", microphone: "" });
+  const [inputMenu, setInputMenu] = useState<RecorderInputMenu["kind"] | null>(
+    null,
+  );
   useEffect(() => {
     if (panel === "area-ready")
       areaStartButton.current?.focus({ preventScroll: true });
@@ -511,6 +517,58 @@ export default function Recorder() {
       ].includes(mode)
     )
       await refresh();
+  };
+  const pickInput = async (
+    kind: RecorderInputMenu["kind"],
+    button: HTMLButtonElement,
+  ) => {
+    if (!api?.recorderInputMenu) {
+      await pick(kind);
+      return;
+    }
+    if (inputMenuBusy.current) return;
+    inputMenuBusy.current = true;
+    setInputMenu(kind);
+    try {
+      if (panel) {
+        setPanel(null);
+        await api.recorderExpand(false);
+        // Read the anchor after the native window and bottom bar have settled.
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
+      }
+      const rect = button.getBoundingClientRect();
+      const selected =
+        kind === "audio"
+          ? systemAudio
+            ? "all"
+            : null
+          : ((kind === "camera" ? camera : microphone) ?? null);
+      const result = await api.recorderInputMenu({
+        kind,
+        selected,
+        x: rect.left,
+        y: rect.top,
+      });
+      if (!result) return;
+      if (kind === "audio") setSystemAudio(result.value === "all");
+      else {
+        setInputNames((names) => ({
+          ...names,
+          [kind]: result.value ? result.label : "",
+        }));
+        if (kind === "camera") setCamera(result.value ?? undefined);
+        else setMicrophone(result.value ?? undefined);
+      }
+    } catch (error) {
+      setError(String(error));
+      expand("error");
+    } finally {
+      inputMenuBusy.current = false;
+      setInputMenu(null);
+      button.focus({ preventScroll: true });
+    }
   };
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -1091,7 +1149,13 @@ export default function Recorder() {
               </button>
             ))}
             <div {...sx.props(s.line)} />
-            <button {...sx.props(s.choice)} onClick={() => pick("camera")}>
+            <button
+              aria-haspopup="menu"
+              aria-expanded={inputMenu === "camera"}
+              data-motion="static"
+              {...sx.props(s.choice)}
+              onClick={(event) => void pickInput("camera", event.currentTarget)}
+            >
               {camera ? <Video size={19} /> : <VideoOff size={19} />}
               <span
                 style={{
@@ -1101,12 +1165,21 @@ export default function Recorder() {
                 }}
               >
                 {camera
-                  ? (sources?.cameras?.find((c) => c.id === camera)?.name ??
-                    "Camera")
+                  ? inputNames.camera ||
+                    sources?.cameras?.find((c) => c.id === camera)?.name ||
+                    "Camera"
                   : "No camera"}
               </span>
             </button>
-            <button {...sx.props(s.choice)} onClick={() => pick("microphone")}>
+            <button
+              aria-haspopup="menu"
+              aria-expanded={inputMenu === "microphone"}
+              data-motion="static"
+              {...sx.props(s.choice)}
+              onClick={(event) =>
+                void pickInput("microphone", event.currentTarget)
+              }
+            >
               {microphone ? <Mic size={19} /> : <MicOff size={19} />}
               <span
                 style={{
@@ -1115,10 +1188,18 @@ export default function Recorder() {
                   textOverflow: "ellipsis",
                 }}
               >
-                {microphone ? micName : "No microphone"}
+                {microphone
+                  ? inputNames.microphone || micName
+                  : "No microphone"}
               </span>
             </button>
-            <button {...sx.props(s.choice)} onClick={() => pick("audio")}>
+            <button
+              aria-haspopup="menu"
+              aria-expanded={inputMenu === "audio"}
+              data-motion="static"
+              {...sx.props(s.choice)}
+              onClick={(event) => void pickInput("audio", event.currentTarget)}
+            >
               <StateIcon
                 active={systemAudio}
                 size={19}

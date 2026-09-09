@@ -11,6 +11,7 @@ import {
   shell,
   systemPreferences,
   dialog,
+  Menu,
 } from "electron";
 import path from "node:path";
 import fs from "node:fs/promises";
@@ -32,6 +33,8 @@ import type {
   CaptureChoice,
   CaptureSources,
   RecorderState,
+  RecorderInputMenu,
+  RecorderInputSelection,
 } from "../src/core/recorder.js" with { "resolution-mode": "import" };
 const run = promisify(execFile);
 export function setupRecorder(
@@ -101,15 +104,22 @@ export function setupRecorder(
   function resize(nextExpanded: boolean) {
     expanded = nextExpanded;
     if (!bar) return;
-    positioning = true;
-    bar.setBounds(
-      recorderBounds(
-        position,
-        screen.getAllDisplays(),
-        screen.getPrimaryDisplay(),
-        expanded,
-      ),
+    const next = recorderBounds(
+      position,
+      screen.getAllDisplays(),
+      screen.getPrimaryDisplay(),
+      expanded,
     );
+    const current = bar.getBounds();
+    if (
+      next.x === current.x &&
+      next.y === current.y &&
+      next.width === current.width &&
+      next.height === current.height
+    )
+      return;
+    positioning = true;
+    bar.setBounds(next);
     lastBounds = bar.getBounds();
     positioning = false;
   }
@@ -339,6 +349,75 @@ export function setupRecorder(
   register("recorder-show", () => show());
   register("recorder-state", () => state);
   register("recorder-sources", list);
+  let inputMenuOpen = false;
+  register("recorder-input-menu", async (request: RecorderInputMenu) => {
+    if (
+      inputMenuOpen ||
+      !bar ||
+      bar.isDestroyed() ||
+      !["idle", "error"].includes(state.phase)
+    )
+      return null;
+    if (
+      !request ||
+      !["camera", "microphone", "audio"].includes(request.kind) ||
+      !Number.isFinite(request.x) ||
+      !Number.isFinite(request.y)
+    )
+      throw new Error("Invalid recorder input menu.");
+    inputMenuOpen = true;
+    const owner = bar;
+    try {
+      const sources = request.kind === "audio" ? null : await list();
+      if (owner.isDestroyed()) return null;
+      const inputs =
+        request.kind === "audio"
+          ? [{ value: "all", label: "Record system audio from all apps" }]
+          : (request.kind === "camera"
+              ? sources!.cameras
+              : sources!.microphones
+            ).map((input) => ({ value: input.id, label: input.name }));
+      const offLabel =
+        request.kind === "audio"
+          ? "Don't record system audio"
+          : `Don't record ${request.kind}`;
+      return await new Promise<RecorderInputSelection | null>((resolve) => {
+        let selection: RecorderInputSelection | null = null;
+        const finish = () => {
+          owner.removeListener("closed", finish);
+          resolve(selection);
+        };
+        const menu = Menu.buildFromTemplate([
+          ...inputs.map((input) => ({
+            label: input.label,
+            type: "checkbox" as const,
+            checked: request.selected === input.value,
+            click: () => {
+              selection = input;
+            },
+          })),
+          ...(inputs.length ? [{ type: "separator" as const }] : []),
+          {
+            label: offLabel,
+            type: "checkbox",
+            checked: !request.selected,
+            click: () => {
+              selection = { value: null, label: offLabel };
+            },
+          },
+        ]);
+        owner.once("closed", finish);
+        menu.popup({
+          window: owner,
+          x: Math.max(0, Math.round(request.x)),
+          y: Math.max(0, Math.round(request.y)),
+          callback: finish,
+        });
+      });
+    } finally {
+      inputMenuOpen = false;
+    }
+  });
   register("recorder-expand", (expanded: boolean) => resize(expanded));
   register("recorder-directory", () => recordingDirectory);
   register("recorder-directory-choose", async () => {

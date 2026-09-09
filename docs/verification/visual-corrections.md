@@ -387,6 +387,32 @@ process were compared byte-for-byte with the current production build. CUA scree
 works, so launch verification is not a claim of pixel equality. Full Screen Studio
 parity is still incomplete.
 
-The reference tool rail also specifies left-side tooltips. Refract currently uses
-browser title tooltips; their placement and presentation are not matched. Source
-inspection does not show an expanding text label in the rail itself.
+The reference tool rail also specifies left-side tooltips. Refract now uses a
+shared descriptive popover on that side, including disabled-track explanations.
+Native pointer verification checks its placement, lack of focus stealing, and
+Escape dismissal without clearing the selected clip. Exact reference tooltip
+colors, dimensions, and delay are unverified; the current 400ms hover delay is
+provisional. Source inspection does not show an expanding label in the rail itself.
+
+## Recorder input menus and toolbar redraw — 2026-09-09
+
+Live Screen Studio accessibility inspection confirms audio and microphone choices
+are native macOS menus. Refract previously resized its transparent recorder window
+from 64px to 404px and rendered a loading panel for these input choices. Camera,
+microphone, and system audio now use Electron native menus through the production
+preload bridge. They preserve the compact window, avoid the source-loading panel,
+and no longer shrink their button on press. Repeated requests are guarded while a
+menu is pending. Identical recorder bounds no longer call native setBounds.
+
+`verify-recorder-menus.cts` loads the production main process and preload in an
+isolated profile. It sends mouse input, opens the real native menu, invokes its
+selection callback, and closes it through Electron. It checks cancellation,
+selection propagation, the original toolbar/button DOM identities, and zero native
+resize events. The automation waits 1.2 seconds between programmatic NSMenu closes;
+rapid programmatic reopen at 200ms did not reliably produce a second native menu.
+This is not evidence of rapid real-mouse menu switching or exact visual parity.
+
+The reference's per-application system audio, microphone normalization, and gain
+controls remain missing. Camera/microphone device choices use the capture helper;
+the automated native-menu test exercises system audio only. API behavior follows
+[Electron's native menu documentation](https://www.electronjs.org/docs/latest/api/menu).
