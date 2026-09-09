@@ -207,9 +207,20 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         }
         if CommandLine.arguments.contains("--list") {
             guard CGPreflightScreenCaptureAccess() else { emit(["keyboardPermission": CGPreflightListenEventAccess() ? "granted" : "required", "permission": "required", "displays": [], "windows": [], "microphones": [], "cameras": []]); return }
-            do { let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+            do { let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
                 let displays = content.displays.map { ["id": $0.displayID, "name": "Display \($0.displayID)", "width": $0.width, "height": $0.height] as [String: Any] }
-                let windows = content.windows.filter { $0.frame.width > 100 && $0.frame.height > 60 && $0.owningApplication?.bundleIdentifier != "com.github.Electron" && $0.owningApplication?.bundleIdentifier != "com.caelinsutch.refract" }.map { ["id": $0.windowID, "name": $0.title ?? "Untitled", "app": $0.owningApplication?.applicationName ?? "", "width": $0.frame.width, "height": $0.frame.height] as [String: Any] }
+                let windows = content.windows.filter { window in
+                    // The chooser lists app windows, not desktop surfaces or overlays.
+                    guard let app = window.owningApplication,
+                          NSRunningApplication(processIdentifier: app.processID)?.activationPolicy == .regular else { return false }
+                    return window.windowLayer == 0 && window.frame.width > 100 && window.frame.height > 60
+                        && app.processID != getppid() && app.bundleIdentifier != "com.caelinsutch.refract"
+                }.map { window in
+                    let app = window.owningApplication?.applicationName ?? ""
+                    let title = window.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    return ["id": window.windowID, "name": title.isEmpty ? app : title, "app": app,
+                            "width": window.frame.width, "height": window.frame.height] as [String: Any]
+                }
                 let microphones = AVCaptureDevice.DiscoverySession(deviceTypes: [.microphone], mediaType: .audio, position: .unspecified).devices.map { ["id": $0.uniqueID, "name": $0.localizedName] }
                 let cameras = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified).devices.map { ["id": $0.uniqueID, "name": $0.localizedName] }
                 emit(["keyboardPermission": CGPreflightListenEventAccess() ? "granted" : "required", "permission": "granted", "displays": displays, "windows": windows, "microphones": microphones, "cameras": cameras])

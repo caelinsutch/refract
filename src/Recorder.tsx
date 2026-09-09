@@ -404,7 +404,16 @@ export default function Recorder() {
       return;
     }
     expand(mode);
-    if (["display", "window", "area", "microphone", "camera"].includes(mode))
+    if (
+      [
+        "display",
+        "window",
+        "area",
+        "microphone",
+        "camera",
+        "settings",
+      ].includes(mode)
+    )
       await refresh();
   };
   useEffect(() => {
@@ -535,6 +544,17 @@ export default function Recorder() {
             </>
           ) : panel === "window" ? (
             <>
+              {sources?.windows.length === 0 ? (
+                <>
+                  <p {...sx.props(s.text)}>
+                    No app windows are available. Open the window you want to
+                    record, then refresh.
+                  </p>
+                  <button {...sx.props(s.item)} onClick={refresh}>
+                    <RefreshCw size={14} /> Refresh windows
+                  </button>
+                </>
+              ) : null}
               {sources?.windows.map((w) => (
                 <button
                   key={w.id}
