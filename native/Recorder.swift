@@ -51,7 +51,11 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     let queue = DispatchQueue(label: "com.caelinsutch.refract.capture")
     func hostTime() -> CMTime { CMClockGetTime(CMClockGetHostTimeClock()) }
     func normalizedTime() -> Double { guard let origin else { return 0 }; return CMTimeGetSeconds(CMTimeSubtract(CMTimeSubtract(pausedAt ?? stoppedAt ?? hostTime(), origin), pauseOffset)) * 1000 }
-    func start(_ config: CaptureConfig) async throws {
+    @MainActor func start(_ config: CaptureConfig) async throws {
+        // Window filters consult WindowServer through AppKit. Initialize that
+        // connection on the main thread before creating capture filters.
+        _ = NSApplication.shared
+        NSApp.setActivationPolicy(.prohibited)
         output = config.output
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         let filter: SCContentFilter

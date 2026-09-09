@@ -61,3 +61,7 @@ Run from the repository root:
 swiftc -parse-as-library -module-cache-path native/.build/module-cache native/KeyboardLabel.swift scripts/verify-keyboard-labels.swift -o work/verify-keyboard-labels -framework AppKit
 work/verify-keyboard-labels
 ```
+
+## Live permission flow and delivery limitation
+
+The packaged recorder's permission action opened System Settings Input Monitoring. Enabling Refract there and rechecking through the recorder changed its option to “Keyboard shortcuts enabled.” This verifies the app-context permission flow. A subsequent 26.13-second window recording finalized successfully, but `keyboard.json` contained zero events after UI-tool key attempts. The global pause shortcut also did not change recorder state; clicking Pause worked. These observations do not establish whether the UI tool delivered global key events or the listener failed to receive them. Native keyboard delivery and pause alignment remain unverified, and the enabled permission label must not be interpreted as successful capture evidence.

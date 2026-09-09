@@ -87,3 +87,9 @@ A new one-second production-encoder probe found that 60 fps GIFs contain alterna
 GIF export now offers 24/30/50 fps; MP4 retains 24/30/60. Switching formats converts 60 to 50 or 50 to 60 as appropriate, while retaining 24/30. Main-process validation and encoder arguments reject unsupported combinations. At 50 fps, the one-second GIF has 50 frames with a consistent 20 ms delay and a total duration of one second. The 24/30 fps probes have 40/50 ms and 30/40 ms delays respectively.
 
 The export-settings verifier now inspects every decoded GIF frame duration with FFprobe's minimum-delay adjustment disabled and rejects any below 20 ms. All 18 short MP4/GIF combinations through 4K pass, including the revised GIF rates; production compilation also passes. These checks establish encoded timing, not long-file memory behavior or actual browser scheduling under load. Exact Screen Studio GIF options still need a reference UI comparison.
+
+## Live window capture initialization fix
+
+A window recording initially aborted inside `SCContentFilter.init(desktopIndependentWindow:)`, with the crash stack entering `SLSGetDisplaysWithRect` and a WindowServer initialization assertion. Capture startup now runs on the main actor and initializes AppKit before constructing the filter; the helper uses the prohibited activation policy to avoid presenting its own app window. Native compilation passed.
+
+Repeating the same window recording through the floating controller succeeded, including Pause, Resume, Stop, and automatic opening of the saved project. FFprobe reports 1,505 H.264 frames at 2040 × 2034 and 26.131667 seconds, matching the project duration. The cursor file contains 1,631 samples from 47.979 to 26,123.743 ms, but only one distinct position because this test did not establish movement inside the captured window. This result verifies window recording finalization, not cursor movement or keyboard delivery.
