@@ -8,6 +8,8 @@ import {
   loopedCursorAt,
   recentClicks,
   cursorVisibleAt,
+  cursorPresentAt,
+  cursorLoopStart,
 } from "./cursor";
 import { type Project, sourceAt, zoomAt } from "./project";
 export const wallpapers = [
@@ -263,7 +265,11 @@ export function drawFrame(
     );
     const to = animatedCursorAt(
       p.cursor,
-      firstSource,
+      cursorLoopStart(
+        p.cursor,
+        firstSource,
+        Math.max(firstSource, lastSource - a.cursorLoopMs),
+      ) ?? firstSource,
       cursorStyle,
       a.cursorSpring,
     );
@@ -272,6 +278,7 @@ export function drawFrame(
   if (
     !a.hideCursor &&
     !sourceAt(p, t)?.segment.hideCursor &&
+    cursorPresentAt(p.cursor, source) &&
     (loopMoving || cursorVisibleAt(p.cursor, source, a.cursorIdleMs))
   ) {
     const { x: px, y: py } = loopedCursorAt(
@@ -308,6 +315,7 @@ export function drawFrame(
     const points = (
       previewQuality === "performance" ? [source] : cursorExposure(p, t)
     ).flatMap((sample) => {
+      if (!cursorPresentAt(p.cursor, sample)) return [];
       const point = loopedCursorAt(
         p.cursor,
         sample,

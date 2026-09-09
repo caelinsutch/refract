@@ -36,7 +36,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     var stoppedAt: CMTime?
     var lastVideo: CMSampleBuffer?
     var lastVideoTime: CMTime = .invalid
-    var cursor: [[String: Any]] = []
+    var cursor: [[String: Any]] = [["time": 0.0, "x": 0.0, "y": 0.0, "visible": false]]
+    var cursorInside = false
     var keyboard: [[String: Any]] = []
     var keyboardCapture: KeyboardCapture?
     var keyboardStatus = "unavailable"
@@ -144,7 +145,11 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         let location = NSEvent.mouseLocation
         let mainHeight = CGDisplayBounds(CGMainDisplayID()).height
         if let point = normalizedCursorPosition(location, mainDisplayHeight: mainHeight, bounds: bounds) {
-            cursor.append(["time": max(0, normalizedTime()), "x": point.x, "y": point.y, "click": click])
+            cursor.append(["time": max(0, normalizedTime()), "x": point.x, "y": point.y, "click": click, "visible": true])
+            cursorInside = true
+        } else if cursorInside {
+            cursor.append(["time": max(0, normalizedTime()), "x": cursor.last?["x"] ?? 0.0, "y": cursor.last?["y"] ?? 0.0, "visible": false])
+            cursorInside = false
         }
     }
     func retime(_ sample: CMSampleBuffer, to time: CMTime? = nil) -> CMSampleBuffer? {

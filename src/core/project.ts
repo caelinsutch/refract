@@ -39,6 +39,7 @@ export type CursorEvent = {
   x: number;
   y: number;
   click?: boolean;
+  visible?: boolean;
 };
 export type Caption = { id: string; start: number; end: number; text: string };
 export type Appearance = {
@@ -264,7 +265,8 @@ export function validateProject(value: unknown): Project {
       event.x < 0 ||
       event.x > 1 ||
       event.y < 0 ||
-      event.y > 1
+      event.y > 1 ||
+      (event.visible !== undefined && typeof event.visible !== "boolean")
     )
       throw new Error("The project has invalid cursor data.");
   p.cursor = [...p.cursor].sort((a, b) => a.time - b.time);

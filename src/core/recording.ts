@@ -30,7 +30,7 @@ export function recordedProject(
     .sort((a, b) => a.time - b.time);
   if (options.automaticZooms === false) return p;
   let lastEnd = 0;
-  for (const click of p.cursor.filter((e) => e.click)) {
+  for (const click of p.cursor.filter((e) => e.click && e.visible !== false)) {
     if (click.time < lastEnd) continue;
     const start = Math.max(0, click.time - 300),
       end = Math.min(source.duration, click.time + 2500);

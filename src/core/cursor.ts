@@ -19,7 +19,10 @@ export function cursorAt(events: CursorEvent[], time: number, smooth: boolean) {
   const prev = events[Math.max(0, index - 1)];
   const next = events[Math.min(index, events.length - 1)];
   let f =
-    smooth && next.time > prev.time
+    smooth &&
+    prev.visible !== false &&
+    next.visible !== false &&
+    next.time > prev.time
       ? Math.max(0, Math.min(1, (time - prev.time) / (next.time - prev.time)))
       : 0;
   f = f * f * (3 - 2 * f);
@@ -27,6 +30,14 @@ export function cursorAt(events: CursorEvent[], time: number, smooth: boolean) {
     x: prev.x + (next.x - prev.x) * f,
     y: prev.y + (next.y - prev.y) * f,
   };
+}
+
+/** Explicit capture visibility is independent of idle hiding and cursor looping. */
+export function cursorPresentAt(events: CursorEvent[], time: number) {
+  if (!events.length) return false;
+  const index = after(events, time) - 1;
+  if (index < 0) return events[0].visible === undefined;
+  return events[index].visible !== false;
 }
 
 /** Only inspect the short active click-effect window, rather than the full recording. */
@@ -37,7 +48,7 @@ export function recentClicks(
 ) {
   return events
     .slice(after(events, time - lifetime), after(events, time))
-    .filter((e) => e.click);
+    .filter((e) => e.click && e.visible !== false);
 }
 
 const activityTracks = new WeakMap<CursorEvent[], number[]>();
@@ -47,14 +58,19 @@ export function cursorVisibleAt(
   time: number,
   idleMs: number | null,
 ) {
-  if (!events.length) return false;
+  if (!cursorPresentAt(events, time)) return false;
   if (idleMs == null) return true;
   let activity = activityTracks.get(events);
   if (!activity) {
     let last = events[0].time;
     activity = events.map((event, i) => {
       const previous = events[Math.max(0, i - 1)];
-      if (event.click || event.x !== previous.x || event.y !== previous.y)
+      if (
+        (previous.visible === false && event.visible !== false) ||
+        event.click ||
+        event.x !== previous.x ||
+        event.y !== previous.y
+      )
         last = event.time;
       return last;
     });
@@ -64,6 +80,20 @@ export function cursorVisibleAt(
 }
 
 export type CursorStyle = "smooth" | "medium" | "rapid" | "none";
+export function cursorLoopStart(
+  events: CursorEvent[],
+  start: number,
+  end: number,
+) {
+  if (cursorPresentAt(events, start)) return start;
+  for (
+    let i = after(events, start);
+    i < events.length && events[i].time <= end;
+    i++
+  )
+    if (events[i].visible !== false) return events[i].time;
+  return null;
+}
 /** Return toward the first retained source position over the final source-time interval. */
 export function loopedCursorAt(
   events: CursorEvent[],
@@ -77,9 +107,11 @@ export function loopedCursorAt(
   const current = animatedCursorAt(events, time, style, custom);
   if (!current || loopMs == null || end <= start) return current;
   const begins = Math.max(start, end - loopMs);
+  const targetTime = cursorLoopStart(events, start, begins);
+  if (targetTime === null || !cursorPresentAt(events, begins)) return current;
   if (time <= begins) return current;
   const from = animatedCursorAt(events, begins, style, custom)!;
-  const to = animatedCursorAt(events, start, style, custom)!;
+  const to = animatedCursorAt(events, targetTime, style, custom)!;
   if (time >= end) return to;
   const progress = Math.max(0, Math.min(1, (time - begins) / (end - begins)));
   const blend = progress * progress * (3 - 2 * progress);
@@ -128,12 +160,14 @@ export function animatedCursorAt(
     states = [{ x: events[0].x, y: events[0].y, vx: 0, vy: 0 }];
     for (let i = 1; i < events.length; i++)
       states.push(
-        advance(
-          states[i - 1],
-          events[i - 1],
-          events[i].time - events[i - 1].time,
-          config,
-        ),
+        events[i - 1].visible === false || events[i].visible === false
+          ? { x: events[i].x, y: events[i].y, vx: 0, vy: 0 }
+          : advance(
+              states[i - 1],
+              events[i - 1],
+              events[i].time - events[i - 1].time,
+              config,
+            ),
       );
     if (styles.size >= 8) styles.delete(styles.keys().next().value!);
     styles.set(key, states);
