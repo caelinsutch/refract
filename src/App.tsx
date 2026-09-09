@@ -451,6 +451,7 @@ export default function App() {
     dirtyRef = useRef(dirty),
     replacingProject = useRef(false),
     timeRef = useRef(time),
+    seekRevision = useRef(0),
     playingRef = useRef(playing),
     bgImage = useRef<HTMLImageElement | null>(null),
     requestPreview = useRef<() => void>(() => {});
@@ -543,7 +544,8 @@ export default function App() {
   useMicrophoneAudio(project, time, playing, previewSpeed, tell);
   const auditionClick = useClickAudio(
     project,
-    time,
+    timeRef,
+    seekRevision,
     playing,
     previewSpeed,
     tell,
@@ -668,7 +670,9 @@ export default function App() {
       );
   };
   const seek = (t: number) => {
-    setTime(Math.max(0, Math.min(project ? duration(project) : 0, t)));
+    seekRevision.current++;
+    timeRef.current = Math.max(0, Math.min(project ? duration(project) : 0, t));
+    setTime(timeRef.current);
     setPlaying(false);
   };
   const cut = () => {

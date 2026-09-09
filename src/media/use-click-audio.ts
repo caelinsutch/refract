@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import type { Project } from "../core/project";
 import { clickSoundCues } from "../core/click-sounds";
 import { clickSoundBank, type ClickSoundProfile } from "../core/click-audio";
 import { ClickAudition } from "../core/click-audition";
+import { ClickSchedule } from "../core/click-schedule";
 export function useClickAudio(
   project: Project | null,
-  time: number,
+  clock: RefObject<number>,
+  seekRevision: RefObject<number>,
   playing: boolean,
   speed: number,
   report: (message: string) => void,
@@ -17,12 +19,10 @@ export function useClickAudio(
     if (project?.appearance.clickSound === "none") audition.current.stop();
   }, [project?.appearance.clickSound]);
   const latest = useRef({
-    time,
     volume: project?.appearance.clickSoundVolume ?? 0.25,
     report,
   });
   latest.current = {
-    time,
     volume: project?.appearance.clickSoundVolume ?? 0.25,
     report,
   };
@@ -45,8 +45,7 @@ export function useClickAudio(
     if (!playing || profile === "none") return;
     let cancelled = false,
       timer: ReturnType<typeof setInterval> | undefined;
-    const nodes = new Set<AudioBufferSourceNode>(),
-      scheduled = new Set<number>();
+    const nodes = new Set<AudioBufferSourceNode>();
     const stopNodes = () => {
       for (const node of nodes) {
         try {
@@ -54,7 +53,6 @@ export function useClickAudio(
         } catch {}
       }
       nodes.clear();
-      scheduled.clear();
     };
     let cleanupGain = () => {};
     void (async () => {
@@ -72,40 +70,35 @@ export function useClickAudio(
       const gain = ctx.createGain();
       gain.connect(ctx.destination);
       cleanupGain = () => gain.disconnect();
-      let observed = latest.current.time,
-        lowerBound = observed,
-        wall = performance.now();
+      const schedule = new ClickSchedule(
+        cues,
+        clock.current,
+        seekRevision.current,
+      );
+      const lengths = {
+        click: buffers.click.duration,
+        down: buffers.down.duration,
+        up: buffers.up.duration,
+      };
       const tick = () => {
-        const now = performance.now(),
-          value = latest.current;
-        if (value.time !== observed) {
-          const expected = observed + (now - wall) * speed;
-          if (value.time < observed || Math.abs(value.time - expected) > 100) {
-            stopNodes();
-            lowerBound = value.time;
-          }
-          observed = value.time;
-          wall = now;
-        }
-        const position = observed + (now - wall) * speed;
-        gain.gain.value = value.volume;
-        for (let i = 0; i < cues.length; i++) {
-          const cue = cues[i];
-          if (cue.time > position + 150 * speed) break;
-          if (cue.time < lowerBound || scheduled.has(i)) continue;
-          const delay = (cue.time - position) / 1000 / speed;
-          const offset = Math.max(0, -delay);
-          if (offset >= buffers[cue.kind].duration) continue;
-          scheduled.add(i);
+        const plan = schedule.update(
+          clock.current,
+          seekRevision.current,
+          speed,
+          lengths,
+        );
+        if (plan.reset) stopNodes();
+        gain.gain.value = latest.current.volume;
+        for (const start of plan.starts) {
           const node = ctx.createBufferSource();
-          node.buffer = buffers[cue.kind];
+          node.buffer = buffers[start.kind];
           node.connect(gain);
           nodes.add(node);
           node.onended = () => {
             nodes.delete(node);
             node.disconnect();
           };
-          node.start(ctx.currentTime + Math.max(0, delay), offset);
+          node.start(ctx.currentTime + start.delay, start.offset);
         }
       };
       tick();
@@ -120,7 +113,7 @@ export function useClickAudio(
       stopNodes();
       cleanupGain();
     };
-  }, [playing, profile, speed, cues, project?.id]);
+  }, [playing, profile, speed, cues, project?.id, clock, seekRevision]);
   return async (choice: ClickSoundProfile, volume = latest.current.volume) => {
     try {
       await audition.current.play(getContext(), choice, volume);
