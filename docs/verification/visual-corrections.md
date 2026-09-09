@@ -276,3 +276,18 @@ The existing editor verifier now exercises narrow and wide views and a real
 pointer click to copy the paused timestamp. Reference frame-based time formatting
 is still distinct from Refract's hundredths formatting; this pass does not claim
 complete time-display or transport parity.
+
+## Playback speed control — 2026-09-09
+
+The installed `PlaybackSpeedPicker` is a transparent button, not a select.
+Primary activation cycles 1× → 2× → 4× → 8× → 1×; from a slower value it returns
+to 1×. Its context menu groups 0.25×/0.5× as Slower, 1× as Normal and 2×/4×/8×
+as Faster. Replaced the dropdown with that behavior and added a grouped radio
+menu. Arrow keys or Shift-F10 open it, arrows/Home/End move focus, Enter selects,
+and Escape dismisses with trigger focus restored. The shared source and camera
+preview rate updates continue to use the selected value.
+
+This menu currently uses an HTML popover with semantic theme tokens. It does not
+establish native macOS menu material parity. The isolated editor verification
+covers all cycle transitions, selecting 0.25× using keyboard input, confirming
+that rate on the real video element, returning to 1×, and context-menu dismissal.

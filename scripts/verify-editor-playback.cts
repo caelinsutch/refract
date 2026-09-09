@@ -557,6 +557,46 @@ app.whenReady().then(async () => {
       await new Promise(resolve=>setTimeout(resolve,40));
       if (!reset.disabled || Number(slider.value)!==10) throw Error('Reset did not restore default');
     })()`);
+    await window.webContents.executeJavaScript(`(async () => {
+      const button=document.querySelector('button[aria-label="Playback speed"]');
+      for(const rate of [2,4,8,1]) {
+        button.click();
+        await new Promise(resolve=>setTimeout(resolve,30));
+        if(button.textContent!==rate+'×') throw Error('Incorrect speed cycle');
+      }
+      button.focus();
+    })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Down" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Down" });
+    await window.webContents.executeJavaScript(`(async () => {
+      await new Promise(resolve=>setTimeout(resolve,30));
+      if(document.activeElement.textContent.trim()!=='1×') throw Error('Speed menu did not focus selected rate');
+    })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Home" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Home" });
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await window.webContents.executeJavaScript(`(async () => {
+      await new Promise(resolve=>setTimeout(resolve,50));
+      const button=document.querySelector('button[aria-label="Playback speed"]');
+      if(button.textContent!=='0.25×' || document.activeElement!==button) throw Error('Speed selection or focus restoration failed: '+button.textContent+' focus='+document.activeElement.outerHTML.slice(0,300));
+      document.querySelector('button[aria-label="Play"]').click();
+      await new Promise(resolve=>setTimeout(resolve,100));
+      const video=Array.from(document.querySelectorAll('video')).find(video=>video.src.startsWith('blob:'));
+      if(video.playbackRate!==0.25) throw Error('Selected speed did not reach media');
+      document.querySelector('button[aria-label="Pause"]').click();
+      button.click();
+      await new Promise(resolve=>setTimeout(resolve,30));
+      if(button.textContent!=='1×') throw Error('Slow speed did not cycle to normal');
+      button.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true}));
+    })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    await window.webContents.executeJavaScript(`(async () => {
+      await new Promise(resolve=>setTimeout(resolve,30));
+      if(document.querySelector('[aria-label="Playback speed options"]').matches(':popover-open')) throw Error('Escape did not dismiss speed menu');
+      if(document.activeElement.getAttribute('aria-label')!=='Playback speed') throw Error('Escape did not restore speed focus');
+    })()`);
     const smallBounds = window.getBounds();
     assert.equal(
       await window.webContents.executeJavaScript(
@@ -566,6 +606,7 @@ app.whenReady().then(async () => {
     );
     window.setSize(1700, 880);
     window.show();
+    app.focus({ steal: true });
     window.focus();
     await window.webContents.executeJavaScript(
       `new Promise(resolve => setTimeout(resolve, 100))`,
@@ -576,6 +617,13 @@ app.whenReady().then(async () => {
       ),
       "block",
     );
+    await window.webContents.executeJavaScript(`(async () => {
+      const deadline=performance.now()+2000;
+      while(!document.hasFocus()) {
+        if(performance.now()>deadline) throw Error('Clipboard test window is not focused');
+        await new Promise(resolve=>setTimeout(resolve,25));
+      }
+    })()`);
     const timestamp = await window.webContents.executeJavaScript(`(() => {
       const button=document.querySelector('button[title="Copy playback position"]');
       const rect=button.getBoundingClientRect();
@@ -639,6 +687,7 @@ app.whenReady().then(async () => {
         sidebarClose: "passed",
         settingsReset: "passed",
         responsivePlaybackAndCopy: "passed",
+        speedMenuAndMediaRate: "passed",
       }),
     );
   } catch (error) {

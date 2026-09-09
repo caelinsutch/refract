@@ -1,3 +1,4 @@
+import { PlaybackSpeed } from "./components/PlaybackSpeed";
 import {
   RecordingCompletions,
   recordingCompletion,
@@ -2092,17 +2093,7 @@ export default function App() {
                 <option value="quality">Quality</option>
                 <option value="performance">Performance</option>
               </select>
-              <select
-                aria-label="Preview speed"
-                value={previewSpeed}
-                onChange={(e) => setPreviewSpeed(Number(e.target.value))}
-              >
-                {[0.5, 1, 1.5, 2].map((v) => (
-                  <option key={v} value={v}>
-                    {v}×
-                  </option>
-                ))}
-              </select>
+              <PlaybackSpeed value={previewSpeed} onChange={setPreviewSpeed} />
             </div>
           </div>
         </div>
