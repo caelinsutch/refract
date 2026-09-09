@@ -970,3 +970,9 @@ Validation: production build passed. The synthetic editor layout fixture passed 
 Fixed a remaining mismatch between measured timeline width and its new 20px margins. Measurement now shares the actual padding constant. End-of-range ruler labels align inward so their text no longer creates overflow beyond the final track boundary. This removes the unnecessary horizontal scrollbar at fit while retaining scrollable content when zoomed.
 
 Validation: production build and all six theme/window-size layout cases passed. Each case also zooms to 4×, scrolls to the end, returns to 1×, and verifies the scroll offset resets to zero. Fitted scroll width equals viewport width. This establishes Refract's fit behavior; reference screenshot parity remains unverified.
+
+## Preview size and inspector alignment — September 9
+
+The reference preview's stylesheet has a 720px fallback, but its live style is driven by a persisted preference whose default is 1080px. Its command definitions expose 480p, 720p, 1080p, 1440p, and 2160p. Added these preview-size commands with a validated persisted preference, a centered height-limited preview, and unchanged export dimensions. Removed Refract's extra 6px inspector bottom margin; the inspector now reaches the playback area's lower boundary.
+
+Validation: production build and six theme/window-size layout cases passed, including timeline fit/zoom/scroll checks. All five preview commands were exercised against the synthetic video: 480p displayed at exactly 480 CSS pixels high; larger choices fit the available 642px space. Each applied cap and saved preference matched its command, and the saved preference survived renderer reload. This checks functional layout behavior; the installed reference editor screenshot is still unavailable for direct pixel comparison.

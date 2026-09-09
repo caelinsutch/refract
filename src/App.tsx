@@ -126,6 +126,7 @@ import {
   Note,
   Heading,
 } from "./components/ui";
+const previewSizes = [480, 720, 1080, 1440, 2160] as const;
 const s = sx.create({
   app: {
     height: "100%",
@@ -172,6 +173,7 @@ const s = sx.create({
   },
   workspace: { display: "flex", flexDirection: "column", flex: 1, minWidth: 0 },
   stage: {
+    justifyContent: "center",
     flex: 1,
     minHeight: 0,
     display: "flex",
@@ -192,6 +194,7 @@ const s = sx.create({
     paddingInline: 7,
   },
   canvasHolder: {
+    width: "100%",
     flex: 1,
     minHeight: 0,
     display: "flex",
@@ -258,7 +261,6 @@ const s = sx.create({
     backgroundColor: "var(--surface-panel)",
     borderRadius: "var(--radius-panel)",
     overflow: "hidden",
-    marginBottom: 6,
     display: "flex",
     flexDirection: "column",
   },
@@ -495,6 +497,21 @@ export default function App() {
     "quality" | "performance"
   >("quality");
   const [previewPowerSaving, setPreviewPowerSaving] = useState(false);
+  const [previewHeight, setPreviewHeight] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem("refract.preview.height"));
+      return previewSizes.some((size) => size === saved) ? saved : 1080;
+    } catch {
+      return 1080;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("refract.preview.height", String(previewHeight));
+    } catch {
+      /* Preview sizing still works when storage is unavailable. */
+    }
+  }, [previewHeight]);
   const [captionLocale, setCaptionLocale] = useState("en-US");
   const [history, dispatchHistory] = useReducer(reduceHistory, emptyHistory);
   const { present: project, past, future } = history;
@@ -1579,6 +1596,13 @@ export default function App() {
     }
   };
   const commands: EditorCommand[] = [
+    ...previewSizes.map((height) => ({
+      id: `preview-size-${height}`,
+      label: `Preview size: ${height}p`,
+      group: "Playback",
+      keywords: "preview resolution height performance",
+      run: () => setPreviewHeight(height),
+    })),
     {
       id: "record",
       disabled: !window.refract,
@@ -1889,7 +1913,10 @@ export default function App() {
                   </>
                 ) : null}
               </div>
-              <div {...sx.props(s.canvasHolder)}>
+              <div
+                {...sx.props(s.canvasHolder)}
+                style={{ maxHeight: previewHeight + 22 }}
+              >
                 {project ? (
                   <canvas
                     ref={canvas}

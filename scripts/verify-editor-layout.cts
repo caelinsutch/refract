@@ -92,6 +92,7 @@ app.whenReady().then(async () => {
         assert.equal(layout.clip.y - layout.timeline.y, 29);
         assert.equal(layout.zoom.y - layout.clip.bottom, 12);
         assert.equal(layout.sidebar.width, 340);
+        assert.equal(layout.sidebar.bottom, layout.timeline.y);
         assert.equal(layout.sliderInTimeline, false);
         assert.ok(layout.cut.bottom <= layout.timeline.y);
         assert.ok(layout.slider.right <= layout.sidebar.x);
@@ -140,6 +141,38 @@ app.whenReady().then(async () => {
         results.push({ theme, width, height, ...layout, zoomed });
       }
     }
+    const previewSizes = [];
+    for (const height of [480, 720, 1080, 1440, 2160]) {
+      await read(
+        "document.activeElement?.blur(); window.dispatchEvent(new KeyboardEvent('keydown',{key:'k',metaKey:true,bubbles:true}))",
+      );
+      await wait(100);
+      await read(
+        `document.querySelector('#command-preview-size-${height}').click()`,
+      );
+      await wait(300);
+      const preview = await read(`(() => {
+        const canvas = document.querySelector('canvas[aria-label="Video composition preview"]');
+        const holder = canvas.parentElement;
+        return {height:canvas.getBoundingClientRect().height, maxHeight:parseFloat(getComputedStyle(holder).maxHeight),saved:localStorage.getItem('refract.preview.height')};
+      })()`);
+      assert.equal(preview.maxHeight, height + 22);
+      assert.equal(preview.saved, String(height));
+      assert.ok(preview.height <= height + 1);
+      if (height === 480)
+        assert.ok(
+          Math.abs(preview.height - 480) < 1,
+          "480p preview did not use available space",
+        );
+      previewSizes.push({ setting: height, ...preview });
+    }
+    await c.reload();
+    await wait(500);
+    assert.equal(
+      await read("localStorage.getItem('refract.preview.height')"),
+      "2160",
+    );
+    console.log(JSON.stringify({ previewSizes }));
     await fs.writeFile(
       path.join(directory, "layout.json"),
       JSON.stringify(results, null, 2),
