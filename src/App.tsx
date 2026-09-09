@@ -1,3 +1,4 @@
+import { useMicrophoneAudio } from "./media/use-microphone-audio";
 import { AudioLibrary } from "./components/AudioLibrary";
 import { confirmProjectReplacement } from "./core/unsaved-project";
 import { Modal } from "./components/Modal";
@@ -512,6 +513,7 @@ export default function App() {
   );
 
   useBackgroundAudio(project, time, playing, previewSpeed, tell);
+  useMicrophoneAudio(project, time, playing, previewSpeed, tell);
   const audioPreview = useAudioPreview(
     project,
     playing || exporting || tab !== "audio",
@@ -1630,7 +1632,7 @@ export default function App() {
                   : "Mute source audio"
               }
               aria-pressed={project?.appearance.muted ?? false}
-              disabled={!project}
+              disabled={!project?.source.hasAudio}
               onClick={() => appearance({ muted: !project?.appearance.muted })}
             >
               <StateIcon
@@ -1774,7 +1776,7 @@ export default function App() {
                     })
                   }
                 />
-                {project.source.hasAudio && (
+                {(project.source.hasAudio || project.microphoneAudio) && (
                   <>
                     <Toggle
                       label="Mute clip audio"
@@ -2234,24 +2236,66 @@ export default function App() {
               </>
             ) : tab === "audio" ? (
               <>
-                <Heading>Audio</Heading>
-                <Toggle
-                  label="Mute source audio"
-                  value={project.appearance.muted}
-                  onChange={(muted) => appearance({ muted })}
-                />
-                <Range
-                  label="Volume"
-                  value={project.appearance.volume * 100}
-                  max={100}
-                  unit="%"
-                  onChange={(v) => appearance({ volume: v / 100 })}
-                />
-                <Note>
-                  Audio follows clip cuts and speed changes in the exported
-                  video.
-                </Note>
-                <Divider />
+                {project.microphoneAudio && (
+                  <>
+                    <Heading>Microphone</Heading>
+                    <Toggle
+                      label="Mute microphone"
+                      value={project.microphoneAudio.muted}
+                      onChange={(muted) =>
+                        edit({
+                          ...project,
+                          microphoneAudio: {
+                            ...project.microphoneAudio!,
+                            muted,
+                          },
+                        })
+                      }
+                    />
+                    {!project.microphoneAudio.muted && (
+                      <Range
+                        label="Microphone volume"
+                        value={project.microphoneAudio.volume * 100}
+                        max={100}
+                        resetValue={100}
+                        unit="%"
+                        onChange={(volume) =>
+                          edit(
+                            {
+                              ...project,
+                              microphoneAudio: {
+                                ...project.microphoneAudio!,
+                                volume: volume / 100,
+                              },
+                            },
+                            "microphone-volume",
+                          )
+                        }
+                      />
+                    )}
+                    <Divider />
+                  </>
+                )}
+                {project.source.hasAudio && (
+                  <>
+                    <Heading>
+                      {project.microphoneAudio ? "System audio" : "Audio"}
+                    </Heading>
+                    <Toggle
+                      label="Mute source audio"
+                      value={project.appearance.muted}
+                      onChange={(muted) => appearance({ muted })}
+                    />
+                    <Range
+                      label="Volume"
+                      value={project.appearance.volume * 100}
+                      max={100}
+                      unit="%"
+                      onChange={(v) => appearance({ volume: v / 100 })}
+                    />
+                    <Divider />
+                  </>
+                )}
                 <Heading>Background audio</Heading>
                 <AudioLibrary
                   disabled={musicBusy || !window.refract}
@@ -2488,7 +2532,9 @@ export default function App() {
                 <Button
                   primary
                   disabled={
-                    captionBusy || !project.source.hasAudio || !window.refract
+                    captionBusy ||
+                    (!project.source.hasAudio && !project.microphoneAudio) ||
+                    !window.refract
                   }
                   onClick={generateCaptions}
                 >
@@ -2508,7 +2554,7 @@ export default function App() {
                   from Apple the first time. Captions follow your cuts and speed
                   changes.
                 </Note>
-                {!project.source.hasAudio && (
+                {!project.source.hasAudio && !project.microphoneAudio && (
                   <Note>This video has no audio track.</Note>
                 )}
                 <Divider />

@@ -164,27 +164,37 @@ app.whenReady().then(() => {
     async (dir, choice) => {
       const raw = path.join(dir, "media/screen.mp4");
       const mic = path.join(dir, "media/microphone.m4a");
-      let file = raw;
-      try {
-        await fs.access(mic);
-        const original = await probe(raw);
-        const mixed = path.join(dir, "media/source.mp4");
-        const args = ["-y", "-i", raw, "-i", mic];
-        if (original.hasAudio)
-          args.push(
-            "-filter_complex",
-            "[0:a][1:a]amix=inputs=2:normalize=0[a]",
-            "-map",
-            "0:v",
-            "-map",
-            "[a]",
+      const file = raw;
+      let microphoneAudio: Project["microphoneAudio"];
+      if (choice.microphoneId) {
+        const { stdout } = await run(
+          tool("ffprobe"),
+          [
+            "-v",
+            "error",
+            "-show_entries",
+            "stream=codec_type:format=duration",
+            "-of",
+            "json",
+            mic,
+          ],
+          { timeout: 15000 },
+        );
+        const info = JSON.parse(stdout);
+        if (
+          !info.streams?.some(
+            (stream: { codec_type: string }) => stream.codec_type === "audio",
+          ) ||
+          !(Number(info.format?.duration) > 0)
+        )
+          throw Error(
+            "The microphone recording could not be read. The original recording files remain in the project folder.",
           );
-        else args.push("-map", "0:v", "-map", "1:a");
-        args.push("-c:v", "copy", "-c:a", "aac", mixed);
-        await run(tool("ffmpeg"), args);
-        file = mixed;
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        microphoneAudio = {
+          file: "media/microphone.m4a",
+          volume: 1,
+          muted: false,
+        };
       }
       const source = await probe(file);
       source.file = "media/" + path.basename(file);
@@ -223,6 +233,7 @@ app.whenReady().then(() => {
         keys,
         { automaticZooms: choice.automaticZooms },
       );
+      if (microphoneAudio) project.microphoneAudio = microphoneAudio;
       const { writeProjectManifest } =
         await import("../src/core/project-storage.js");
       await writeProjectManifest(dir, project);
@@ -368,6 +379,8 @@ handle("confirm-unsaved", async (title: string) => {
   return ["save", "discard", "cancel"][result.response] ?? "cancel";
 });
 handle("import-video", async () => {
+  win.show();
+  win.focus();
   const chosen = await dialog.showOpenDialog(win, {
     properties: ["openFile"],
     filters: [{ name: "Video", extensions: ["mp4", "mov", "webm", "m4v"] }],
@@ -461,8 +474,10 @@ async function importAudioAsset(source: string, directory: string) {
 }
 
 handle("open-project", async () => {
+  win.show();
+  win.focus();
   const chosen = await dialog.showOpenDialog(win, {
-    properties: ["openDirectory"],
+    properties: ["openDirectory", "treatPackageAsDirectory"],
   });
   if (chosen.canceled) return null;
   const dir = chosen.filePaths[0];
@@ -601,14 +616,17 @@ let transcription: AbortController | null = null;
 handle("captions-generate", async (project: Project, locale: string) => {
   if (transcription) throw Error("Caption generation is already running.");
   if (!projectDir) throw Error("Open a video first.");
-  if (!project.source.hasAudio)
+  if (!project.source.hasAudio && !project.microphoneAudio)
     throw Error("This video has no audio to transcribe.");
   if (
     typeof locale !== "string" ||
     !/^[a-z]{2,3}[-_][A-Za-z]{2,4}$/.test(locale)
   )
     throw Error("Choose a supported caption language.");
-  const source = inside(projectDir, project.source.file);
+  const source = inside(
+    projectDir,
+    project.microphoneAudio?.file ?? project.source.file,
+  );
   const controller = new AbortController();
   transcription = controller;
   let temp: string | undefined;
