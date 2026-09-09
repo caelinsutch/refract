@@ -453,6 +453,7 @@ export default function Recorder() {
     },
   );
   const sourceRequest = useRef<Promise<void> | null>(null);
+  const displayRequest = useRef(0);
   const inputMenuBusy = useRef(false);
   const [sourceMenu, setSourceMenu] = useState<"display" | "window" | null>(
     null,
@@ -460,6 +461,30 @@ export default function Recorder() {
   const [selectedSource, setSelectedSource] =
     useState<RecorderSourceSelection | null>(null);
   const sourceStartButton = useRef<HTMLButtonElement>(null);
+  const panelElement = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = panelElement.current;
+    if (!element || !api?.recorderPanelGlass) return;
+    let disposed = false;
+    const update = () => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      void api
+        .recorderPanelGlass?.({ x, y, width, height })
+        .then((installed) => {
+          if (!disposed) element.dataset.nativePanelGlass = String(installed);
+        });
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    window.addEventListener("resize", update);
+    update();
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+      void api.recorderPanelGlass?.(null);
+    };
+  }, [panel, state.phase]);
   useEffect(() => {
     if (panel === "source-ready")
       sourceStartButton.current?.focus({ preventScroll: true });
@@ -493,6 +518,10 @@ export default function Recorder() {
     cameraResolution,
   };
   const expand = (next: string | null) => {
+    if (panel === "display-picker" && next !== "display-picker") {
+      displayRequest.current++;
+      void api?.recorderDisplayPickerCancel?.();
+    }
     setPanel(next);
     void api?.recorderExpand(Boolean(next));
   };
@@ -527,7 +556,13 @@ export default function Recorder() {
     }
   };
   useEffect(() => {
-    void api?.recorderState().then(setState);
+    void api?.recorderState().then((next) => {
+      setState(next);
+      if (next.phase === "error") {
+        setError(next.error ?? "");
+        setPanel("error");
+      }
+    });
     void api
       ?.recorderDirectory()
       .then(setRecordingDirectory)
@@ -577,6 +612,10 @@ export default function Recorder() {
     return () => window.removeEventListener("focus", onFocus);
   }, [panel, sources?.permission, loading]);
   const pick = async (mode: string) => {
+    if (mode === "display" && api?.recorderDisplayPicker) {
+      await pickDisplay();
+      return;
+    }
     if (panel === mode) {
       expand(null);
       return;
@@ -594,6 +633,24 @@ export default function Recorder() {
     )
       await refresh();
   };
+  const pickDisplay = async (selectedId?: number) => {
+    if (panel === "display-picker" && selectedId === undefined) {
+      expand(null);
+      return;
+    }
+    const generation = ++displayRequest.current;
+    setPanel("display-picker");
+    try {
+      const id = await api?.recorderDisplayPicker?.(selectedId);
+      if (generation !== displayRequest.current) return;
+      setPanel(null);
+      if (id != null) await start({ mode: "display", displayId: id });
+    } catch (error) {
+      if (generation !== displayRequest.current) return;
+      setError(String(error));
+      expand("error");
+    }
+  };
   const pickInput = async (
     kind: RecorderInputMenu["kind"],
     button: HTMLButtonElement,
@@ -607,6 +664,10 @@ export default function Recorder() {
     setInputMenu(kind);
     try {
       if (panel) {
+        if (panel === "display-picker") {
+          displayRequest.current++;
+          await api?.recorderDisplayPickerCancel?.();
+        }
         setPanel(null);
         await api.recorderExpand(false);
         // Read the anchor after the native window and bottom bar have settled.
@@ -730,7 +791,9 @@ export default function Recorder() {
       });
       if (selection) {
         setSelectedSource(selection);
-        expand("source-ready");
+        if (selection.kind === "display" && api?.recorderDisplayPicker)
+          void pickDisplay(selection.source.id);
+        else expand("source-ready");
       }
     } catch (error) {
       setError(String(error));
@@ -785,8 +848,12 @@ export default function Recorder() {
   return (
     <RecorderSymbols.Provider value={symbols}>
       <div {...sx.props(s.root)}>
-        {panel && !busy ? (
-          <section {...sx.props(s.panel)} data-floating-surface="recorder">
+        {panel && panel !== "display-picker" && !busy ? (
+          <section
+            ref={panelElement}
+            {...sx.props(s.panel)}
+            data-floating-surface="recorder"
+          >
             <div
               style={{
                 display: "flex",
@@ -853,9 +920,13 @@ export default function Recorder() {
               </>
             ) : loading ? (
               <p {...sx.props(s.text)}>Finding available sources…</p>
-            ) : error ? (
+            ) : error || panel === "error" ? (
               <>
-                <p {...sx.props(s.text)}>{error}</p>
+                <p {...sx.props(s.text)} role="alert">
+                  {error ||
+                    state.error ||
+                    "Recording could not start. Close this message and select a recording source to try again."}
+                </p>
                 <button {...sx.props(s.primary)} onClick={refresh}>
                   <RefreshCw size={13} />
                   Try again
@@ -1359,6 +1430,7 @@ export default function Recorder() {
                     key={m.id}
                     aria-pressed={
                       panel === m.id ||
+                      (m.id === "display" && panel === "display-picker") ||
                       (panel === "source-ready" &&
                         selectedSource?.kind === m.id)
                     }
@@ -1369,7 +1441,12 @@ export default function Recorder() {
                     }
                     aria-expanded={sourceMenu === m.id}
                     data-motion="static"
-                    {...sx.props(s.mode, panel === m.id && s.active)}
+                    {...sx.props(
+                      s.mode,
+                      (panel === m.id ||
+                        (m.id === "display" && panel === "display-picker")) &&
+                        s.active,
+                    )}
                     onClick={() => pick(m.id)}
                     onContextMenu={(event) => {
                       if (m.id !== "display" && m.id !== "window") return;

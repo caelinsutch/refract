@@ -1,6 +1,12 @@
+import { createCountdownWindow } from "./countdown-window.cjs";
+import { createDisplayPicker } from "./display-picker.cjs";
 import { recorderSourceItems } from "./recorder-source-menu.cjs";
 import { countdownDuration, countdownRemaining } from "./countdown.cjs";
-import { installRecorderGlass, recorderSymbols } from "./recorder-glass.cjs";
+import {
+  installRecorderGlass,
+  updateRecorderPanelGlass,
+  recorderSymbols,
+} from "./recorder-glass.cjs";
 import {
   readRecordingDestination,
   saveRecordingDestination,
@@ -103,7 +109,9 @@ export function setupRecorder(
     __dirname,
     "../../native/.build/refract-capture",
   );
+  const countdownWindow = createCountdownWindow(stop);
   function send() {
+    if (state.phase === "countdown") countdownWindow.update(state.countdown);
     bar?.webContents.send("recorder-state", state);
   }
   function resize(nextExpanded: boolean) {
@@ -145,6 +153,7 @@ export function setupRecorder(
         query: nativeGlass ? { nativeGlass: "1" } : undefined,
       });
   }
+  const displayPicker = createDisplayPicker();
   function show() {
     if (!bar) {
       expanded = false;
@@ -170,6 +179,7 @@ export function setupRecorder(
           sandbox: true,
         },
       });
+      bar.setAlwaysOnTop(true, "floating", 2);
       bar.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
       lastBounds = bar.getBounds();
       bar.on("moved", () => {
@@ -194,6 +204,7 @@ export function setupRecorder(
       bar.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
       bar.webContents.on("will-navigate", (e) => e.preventDefault());
       bar.on("closed", () => {
+        displayPicker.cancel();
         bar = null;
       });
       loadWindow(bar, "recorder", installRecorderGlass(bar));
@@ -227,6 +238,9 @@ export function setupRecorder(
     }
   }
   function fail(error: unknown) {
+    void countdownWindow.close();
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = null;
     state = { ...state, phase: "error", error: String(error) };
     if (timer) clearInterval(timer);
     send();
@@ -250,6 +264,16 @@ export function setupRecorder(
     }
     state = { phase: "countdown", countdown: seconds, elapsed: 0 };
     send();
+    try {
+      if (!(await countdownWindow.open(seconds, selected.displayId))) return;
+      if (state.phase !== "countdown") {
+        await countdownWindow.close();
+        return;
+      }
+    } catch (error) {
+      fail(error);
+      return;
+    }
     const deadline = performance.now() + seconds * 1000;
     countdownTimer = setInterval(() => {
       const remaining = countdownRemaining(deadline, performance.now());
@@ -260,7 +284,9 @@ export function setupRecorder(
       if (state.countdown <= 0) {
         clearInterval(countdownTimer!);
         countdownTimer = null;
-        void record(selected);
+        void countdownWindow.close().then(() => {
+          if (state.phase === "countdown") void record(selected);
+        });
       }
     }, 100);
   }
@@ -358,6 +384,7 @@ export function setupRecorder(
       return;
     }
     if (state.phase === "countdown") {
+      void countdownWindow.close();
       if (countdownTimer) clearInterval(countdownTimer);
       countdownTimer = null;
       state = { phase: "idle", countdown: 3, elapsed: 0 };
@@ -370,6 +397,17 @@ export function setupRecorder(
     send();
     child.stdin.write("stop\n");
   }
+  register("recorder-panel-glass", (rect: unknown) =>
+    bar ? updateRecorderPanelGlass(bar, rect) : false,
+  );
+  register("recorder-display-picker", (id?: number) => {
+    if (!bar || !["idle", "error"].includes(state.phase)) return null;
+    resize(false);
+    return displayPicker.open(id);
+  });
+  register("recorder-display-picker-cancel", () => {
+    displayPicker.cancel();
+  });
   register("recorder-show", () => show());
   register("recorder-state", () => state);
   register("recorder-sources", list);
@@ -393,7 +431,21 @@ export function setupRecorder(
     inputMenuOpen = true;
     const owner = bar;
     try {
-      const sources = await list();
+      const sources: CaptureSources =
+        request.kind === "display"
+          ? {
+              permission: "granted",
+              cameras: [],
+              microphones: [],
+              windows: [],
+              displays: screen.getAllDisplays().map((display) => ({
+                id: display.id,
+                name: display.label || "Display",
+                width: display.bounds.width,
+                height: display.bounds.height,
+              })),
+            }
+          : await list();
       if (owner.isDestroyed() || !["idle", "error"].includes(state.phase))
         return null;
       return await new Promise<RecorderSourceSelection | null>((resolve) => {
@@ -614,6 +666,7 @@ export function setupRecorder(
     }
   });
   register("recorder-start", async (selected: CaptureChoice) => {
+    displayPicker.cancel();
     if (
       choosingDirectory ||
       checkingStart ||
@@ -659,6 +712,7 @@ export function setupRecorder(
   });
   register("recorder-stop", stop);
   register("recorder-close", () => {
+    displayPicker.cancel();
     startGeneration++;
     if (state.phase === "countdown") stop();
     if (["idle", "error"].includes(state.phase)) {
@@ -667,6 +721,7 @@ export function setupRecorder(
     }
   });
   register("recorder-import", () => {
+    displayPicker.cancel();
     bar?.hide();
     editor.show();
     onImport();

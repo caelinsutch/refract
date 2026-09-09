@@ -66,6 +66,65 @@ private let install: napi_callback = { env, info in
     return result
 }
 
+// Panel geometry comes from the shared renderer surface, in CSS screen points.
+private let panel: napi_callback = { env, info in
+    var args: [napi_value?] = [nil, nil]
+    var count = 2
+    var result: napi_value?
+    var bytes: UnsafeMutableRawPointer?
+    var length = 0
+    var ok = false
+    if Thread.isMainThread,
+       napi_get_cb_info(env, info, &count, &args, nil, nil) == 0, count == 2,
+       napi_get_buffer_info(env, args[0], &bytes, &length) == 0,
+       length == MemoryLayout<UnsafeRawPointer>.size, let bytes,
+       let pointer = UnsafeRawPointer(bitPattern: bytes.loadUnaligned(as: UInt.self)) {
+        var size = 0
+        _ = napi_get_value_string_utf8(env, args[1], nil, 0, &size)
+        var text = [CChar](repeating: 0, count: size + 1)
+        _ = napi_get_value_string_utf8(env, args[1], &text, text.count, &size)
+        let view = Unmanaged<NSView>.fromOpaque(pointer).takeUnretainedValue()
+        let id = NSUserInterfaceItemIdentifier("refract.recorder.panel")
+        let existing = view.subviews.first { $0.identifier == id }
+        if let data = String(cString: text).data(using: .utf8),
+           let rect = try? JSONSerialization.jsonObject(with: data) as? [String: Double],
+           let x = rect["x"], let y = rect["y"], let width = rect["width"], let height = rect["height"] {
+            let host = existing ?? RecorderMaterialHost()
+            if existing == nil {
+                host.identifier = id
+                let material: NSView
+                if #available(macOS 26.0, *) {
+                    let glass = NSGlassEffectView()
+                    glass.style = .regular
+                    glass.cornerRadius = 19
+                    glass.contentView = NSView()
+                    material = glass
+                } else {
+                    let frost = NSVisualEffectView()
+                    frost.material = .hudWindow
+                    frost.blendingMode = .behindWindow
+                    frost.state = .active
+                    frost.wantsLayer = true
+                    frost.layer?.cornerRadius = 19
+                    frost.layer?.masksToBounds = true
+                    material = frost
+                }
+                material.autoresizingMask = [.width, .height]
+                host.addSubview(material)
+                view.addSubview(host, positioned: .below, relativeTo: nil)
+            }
+            host.frame = NSRect(x: x, y: view.isFlipped ? y : view.bounds.height - y - height, width: width, height: height)
+            host.subviews.first?.frame = host.bounds
+            ok = true
+        } else {
+            existing?.removeFromSuperview()
+            ok = true
+        }
+    }
+    _ = napi_get_boolean(env, ok, &result)
+    return result
+}
+
 private let symbolAtlas: napi_callback = { env, _ in
     var result: napi_value?
     let atlas = recorderSymbolAtlas()
@@ -82,5 +141,7 @@ public func registerRecorderGlass(_ env: napi_env?, _ exports: napi_value?) -> n
     _ = napi_set_named_property(env, exports, "install", function)
     _ = napi_create_function(env, "symbolAtlas", 11, symbolAtlas, nil, &function)
     _ = napi_set_named_property(env, exports, "symbolAtlas", function)
+    _ = napi_create_function(env, "panel", 5, panel, nil, &function)
+    _ = napi_set_named_property(env, exports, "panel", function)
     return exports
 }

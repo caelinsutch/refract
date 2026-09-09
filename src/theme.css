@@ -36,6 +36,7 @@
   --surface-control: #33363e;
   --surface-modal: #282b32e8;
   --surface-opaque: #282b32;
+  --display-picker-cover: color-mix(in srgb, var(--primary) 25%, transparent);
   --surface-recorder: #33363ae8;
   --surface-recorder-panel: #2b2e34f5;
   --surface-area-hint: #272a31ec;

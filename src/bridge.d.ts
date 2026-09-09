@@ -33,11 +33,19 @@ declare global {
       ): Promise<{ captions: Project["captions"]; locale: string }>;
       cancelCaptions(): Promise<void>;
       showRecorder(): Promise<void>;
+      countdownCancel(): Promise<void>;
+      onCountdownTick(cb: (seconds: number) => void): () => void;
+      recorderPanelGlass?(
+        rect: { x: number; y: number; width: number; height: number } | null,
+      ): Promise<boolean>;
       recorderState(): Promise<RecorderState>;
       recorderDirectory(): Promise<string>;
       recorderChooseDirectory(): Promise<string | null>;
       recorderSymbols(): Promise<Record<string, string>>;
       recorderSources(): Promise<CaptureSources>;
+      recorderDisplayPicker?(id?: number): Promise<number | null>;
+      recorderDisplayPickerCancel(): Promise<void>;
+      displayPickerFinish(accepted: boolean): Promise<void>;
       recorderSourceMenu(
         request: import("./core/recorder").RecorderSourceMenu,
       ): Promise<import("./core/recorder").RecorderSourceSelection | null>;

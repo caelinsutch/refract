@@ -1,3 +1,5 @@
+import { Countdown } from "./components/Countdown";
+import { DisplayPicker } from "./components/DisplayPicker";
 import { installButtonHover } from "./ui/button-hover";
 import { CropWindow } from "./components/CropWindow";
 import React from "react";
@@ -27,7 +29,12 @@ document.addEventListener(
   },
   true,
 );
-if (location.hash === "#recorder" || location.hash === "#area")
+if (
+  location.hash === "#recorder" ||
+  location.hash === "#area" ||
+  location.hash === "#countdown" ||
+  location.hash === "#display-picker"
+)
   document.documentElement.classList.add("recorder-surface");
 if (
   location.hash === "#recorder" &&
@@ -38,7 +45,11 @@ if (location.hash === "#crop")
   document.documentElement.classList.add("native-window");
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {location.hash === "#crop" ? (
+    {location.hash === "#countdown" ? (
+      <Countdown />
+    ) : location.hash === "#display-picker" ? (
+      <DisplayPicker />
+    ) : location.hash === "#crop" ? (
       <CropWindow />
     ) : location.hash === "#recorder" ? (
       <Recorder />

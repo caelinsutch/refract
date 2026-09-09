@@ -657,3 +657,50 @@ cancellation, target selection, unchanged toolbar identity, and the idle recordi
 state after selection. The renderer capture-request check confirms the selected
 window ID and recording preferences only get sent after the explicit Record
 button is activated; it uses a capture stub and does not record desktop content.
+
+## Full-display selection overlay — 2026-09-09
+
+Inspected the live reference's Display action without starting capture. It opens
+one transparent full-display window per screen, with centered display name,
+logical resolution, refresh rate, and Start recording action. Its cover combines
+40% black with a 25% active accent tint. Read-only reference inspection confirmed
+the separate per-display window structure and target-info layout.
+
+Refract now follows that structure for primary Display selection and Display
+context-menu choices. Each screen gets its own frameless overlay; the recorder
+stays above those windows and does not expand into a list. The display label,
+logical bounds, and refresh rate come from Electron's native screen inventory.
+The overlay uses the intentionally selected teal accent. Escape closes the
+picker. Clicking the background focuses its explicit Start action. Selecting a
+display closes every overlay before handing its ID to the existing recording
+flow, preserving countdown and input preferences. Closing/importing from the
+recorder also cancels pending overlays. Generation checks prevent completed picker promises from overwriting a newer
+mode selection.
+
+Application build passes. The dedicated Electron verifier checks every connected
+display's full bounds, transparent renderer background, Escape cancellation,
+selection results, and complete window cleanup before resolution. A renderer
+fixture confirms no capture request before acceptance, no list expansion for
+Display, cancellation when switching to Window, and forwarding the accepted
+display ID. Capture is stubbed in this test; it does not record the desktop.
+The first lifecycle run caught premature promise resolution before native window
+closure; the implementation now waits for all `closed` events.
+
+This replaces the display confirmation panel noted in the previous section.
+The reference's Start-button dropdown, richer selection feedback across multiple
+displays, and its window-highlighting picker remain open work. No full picker or
+application parity claim is made.
+
+A packaged-app check exposed an unnecessary capture-permission gate in display
+selection. Display overlays and display context menus now use native monitor
+inventory directly, without calling the capture helper. Actual screen capture
+continues to require the system permission; window-source listing still does too.
+
+### Full-display countdown and shared native recorder panels — 2026-09-09
+
+- Countdown now opens a transparent, frameless full-display window with a dimmed desktop, large centered remaining seconds, and Escape/Cancel. Display/area recordings use the selected display; selections without a display ID use the display under the pointer.
+- The main process remains the countdown clock. Timing begins after the overlay loads; the existing monotonic deadline handles delayed ticks. The overlay closes completely before capture starts. Zero-second countdowns bypass it.
+- Recorder popovers (including errors and advanced settings) now report their geometry to the existing Swift addon. A separate non-interactive `NSGlassEffectView` uses the same regular material and 19-point radius as the toolbar. Older macOS versions retain the AppKit HUD material fallback. Web chrome becomes transparent only after native installation succeeds.
+- Error state hydration and a nonempty fallback prevent a heading-only error panel. This does not claim to resolve the underlying capture error or Screen Recording authorization.
+- Verification: TypeScript/renderer build, Swift native build, 152 core tests, native countdown/glass fixture (full display bounds, ticks, Escape, completion cleanup, native panel installation, invalid geometry rejection, error fallback), and display-picker renderer handoff/cancellation regression passed. Capture was not started by these fixtures.
+- Packaged display selection was also verified to open without requiring Screen Recording access. The packaged app still needs its own macOS capture authorization for an actual end-to-end recording test. Exact Screen Studio countdown motion and multi-monitor window targeting remain parity work.

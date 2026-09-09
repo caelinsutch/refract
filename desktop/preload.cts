@@ -19,12 +19,26 @@ contextBridge.exposeInMainWorld("refract", {
     ipcRenderer.invoke("captions-generate", project, locale),
   cancelCaptions: () => ipcRenderer.invoke("captions-cancel"),
   showRecorder: () => ipcRenderer.invoke("recorder-show"),
+  countdownCancel: () => ipcRenderer.invoke("countdown-cancel"),
+  onCountdownTick: (callback: (seconds: number) => void) => {
+    const listener = (_event: unknown, seconds: number) => callback(seconds);
+    ipcRenderer.on("countdown-tick", listener);
+    return () => ipcRenderer.removeListener("countdown-tick", listener);
+  },
+  recorderPanelGlass: (rect: unknown) =>
+    ipcRenderer.invoke("recorder-panel-glass", rect),
   recorderState: () => ipcRenderer.invoke("recorder-state"),
   recorderDirectory: () => ipcRenderer.invoke("recorder-directory"),
   recorderChooseDirectory: () =>
     ipcRenderer.invoke("recorder-directory-choose"),
   recorderSymbols: () => ipcRenderer.invoke("recorder-symbols"),
   recorderSources: () => ipcRenderer.invoke("recorder-sources"),
+  recorderDisplayPicker: (id?: number) =>
+    ipcRenderer.invoke("recorder-display-picker", id),
+  recorderDisplayPickerCancel: () =>
+    ipcRenderer.invoke("recorder-display-picker-cancel"),
+  displayPickerFinish: (accepted: boolean) =>
+    ipcRenderer.invoke("display-picker-finish", accepted),
   recorderSourceMenu: (request: unknown) =>
     ipcRenderer.invoke("recorder-source-menu", request),
   recorderInputMenu: (request: unknown) =>
