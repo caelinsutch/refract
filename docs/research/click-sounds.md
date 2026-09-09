@@ -29,3 +29,9 @@ Two independently synthesized profiles (soft and mechanical) now provide down, u
 The audio verifier builds a one-second output from a trimmed 2× clip, renders in 128-sample chunks at gain 0.25, writes 24-bit PCM WAVs with FFmpeg, then decodes them. Both profiles have nonzero audio at the planned 100/500/700 ms cue positions and exact silence in intervening test windows; decoded length is 48,000 samples. Core tests cover deterministic sample generation, distinct profiles, gain, overlaps, silence, and equivalence between whole-buffer and chunked rendering. All 109 tests and production compilation pass.
 
 Run `node --import tsx scripts/verify-click-audio.ts` to reproduce these generated-audio checks. Project settings, audition controls, live preview scheduling, and encoder integration remain unfinished; no nonfunctional click-sound picker has been exposed.
+
+## Saved settings and MP4 export
+
+Projects now default to disabled click sounds with gain 0.25 and accept the two original synthesized profiles. Settings validate and round-trip with appearance presets. MP4 export consumes a separate mono float-PCM stream on file descriptor 3, generated in one-second chunks. Click gain is applied once in the chunk renderer, and the encoder mixes it with any enabled source, microphone, and music tracks. Export completion waits for both encoder completion and the click-audio pipeline. GIF excludes click audio.
+
+The actual MP4 verifier streamed video and click PCM concurrently, decoded the resulting AAC, and measured sounds at 100/500/700 ms plus quiet intervening windows. The input-index test covers a four-track mix configuration; a four-track encoded acoustic check remains pending. All 110 tests pass and the production desktop/renderer build passes. Run `node --import tsx scripts/verify-click-export.ts` for the encoded check. UI selection, audition, synchronized preview, live cancellation with click audio, and acoustic parity remain unfinished.

@@ -1,4 +1,4 @@
-import type { Project } from "./project";
+import type { Project } from "./project.js";
 export type ClickSoundCue = {
   time: number;
   sourceTime: number;

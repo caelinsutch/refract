@@ -45,6 +45,8 @@ export type CursorEvent = {
 };
 export type Caption = { id: string; start: number; end: number; text: string };
 export type Appearance = {
+  clickSound?: "none" | "soft" | "mechanical";
+  clickSoundVolume?: number;
   showShortcuts: boolean;
   showSingleKeyShortcuts: boolean;
   shortcutSize: number;
@@ -119,6 +121,8 @@ export type Project = {
   appearance: Appearance;
 };
 export const defaults: Appearance = {
+  clickSound: "none",
+  clickSoundVolume: 0.25,
   showShortcuts: false,
   showSingleKeyShortcuts: false,
   shortcutSize: 1,
@@ -446,6 +450,14 @@ export function validateProject(value: unknown): Project {
   ])
     if (value !== undefined && (!valid(value) || value < 0 || value > 1))
       throw new Error("Invalid screen motion blur strength.");
+  if (
+    !["none", "soft", "mechanical"].includes(p.appearance.clickSound!) ||
+    typeof p.appearance.clickSoundVolume !== "number" ||
+    !valid(p.appearance.clickSoundVolume) ||
+    p.appearance.clickSoundVolume < 0 ||
+    p.appearance.clickSoundVolume > 1
+  )
+    throw new Error("The project has invalid click sound settings.");
   // Earlier projects stored a boolean ripple toggle.
   const legacyClickEffect: unknown = p.appearance.clickEffect;
   if (typeof legacyClickEffect === "boolean")

@@ -1,4 +1,4 @@
-import type { ClickSoundCue } from "./click-sounds";
+import type { ClickSoundCue } from "./click-sounds.js";
 export type ClickSoundProfile = "soft" | "mechanical";
 export type ClickSoundBank = Record<ClickSoundCue["kind"], Float32Array>;
 /** Original synthesized transients; these are not recordings from a vendor mouse. */

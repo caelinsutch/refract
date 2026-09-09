@@ -1,3 +1,5 @@
+import { Readable, type Writable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { alignMicrophoneArgs } from "./microphone-audio.cjs";
 import {
   audioExtensions,
@@ -581,9 +583,10 @@ handle(
       project.microphoneAudio
         ? inside(projectDir, project.microphoneAudio.file)
         : undefined,
+      "pipe:3",
     );
     const child = spawn(tool("ffmpeg"), args, {
-      stdio: ["pipe", "ignore", "pipe"],
+      stdio: ["pipe", "ignore", "pipe", "pipe"],
     });
     const current: ExportJob = {
       id: crypto.randomUUID(),
@@ -602,6 +605,40 @@ handle(
           : reject(Error(current.error || "Export process stopped.")),
       );
     });
+    const clicks =
+      format === "mp4" &&
+      project.appearance.clickSound !== "none" &&
+      (project.appearance.clickSoundVolume ?? 0) > 0;
+    const clickPipe = child.stdio[3] as Writable;
+    clickPipe.on("error", () => {});
+    if (clicks) {
+      const audioDone = (async () => {
+        const { clickSoundBank, clickAudioChunk } =
+          await import("../src/core/click-audio.js");
+        const { clickSoundCues } = await import("../src/core/click-sounds.js");
+        const { duration } = await import("../src/core/project.js");
+        const bank = clickSoundBank(
+          project.appearance.clickSound as "soft" | "mechanical",
+        );
+        const cues = clickSoundCues(project),
+          frames = Math.ceil(duration(project) * 48);
+        function* chunks() {
+          for (let start = 0; start < frames; start += 48000) {
+            const data = clickAudioChunk(
+              cues,
+              bank,
+              48000,
+              start,
+              Math.min(48000, frames - start),
+              project.appearance.clickSoundVolume ?? 0.25,
+            );
+            yield Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+          }
+        }
+        await pipeline(Readable.from(chunks()), clickPipe);
+      })();
+      current.done = Promise.all([current.done, audioDone]).then(() => {});
+    } else clickPipe.end();
     current.done.catch(() => {});
     // A failed/cancelled pipe must not become an uncaught main-process error.
     child.stdin!.on("error", () => {});

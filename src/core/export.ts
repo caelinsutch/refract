@@ -8,6 +8,7 @@ export function exportArgs(
   format: "mp4" | "gif",
   backgroundFile?: string,
   microphoneFile?: string,
+  clickAudioFile?: string,
 ): string[] {
   validateProject(project);
   if (!(format === "gif" ? [24, 30, 50] : [24, 30, 60]).includes(fps))
@@ -99,10 +100,24 @@ export function exportArgs(
       `[${1 + Number(audio) + Number(Boolean(microphone))}:a]atrim=duration=${duration(project) / 1000},asetpts=PTS-STARTPTS,volume=${music.volume}[music]`,
     );
   }
+  const clicks =
+    format === "mp4" &&
+    project.appearance.clickSound !== "none" &&
+    (project.appearance.clickSoundVolume ?? 0) > 0;
+  if (clicks) {
+    if (!clickAudioFile) throw Error("Click audio is unavailable.");
+    const input =
+      1 + Number(audio) + Number(Boolean(microphone)) + Number(Boolean(music));
+    args.push("-f", "f32le", "-ar", "48000", "-ac", "1", "-i", clickAudioFile);
+    filters.push(
+      `[${input}:a]atrim=duration=${duration(project) / 1000},asetpts=PTS-STARTPTS[clicks]`,
+    );
+  }
   const tracks = [
     audio ? "[asource]" : "",
     microphone ? "[amicrophone]" : "",
     music ? "[music]" : "",
+    clicks ? "[clicks]" : "",
   ].filter(Boolean);
   if (tracks.length > 1)
     filters.push(
