@@ -24,6 +24,7 @@ import {
   Check,
   RefreshCw,
   Keyboard,
+  KeyboardOff,
   GripVertical,
 } from "lucide-react";
 import type {
@@ -735,6 +736,32 @@ export default function Recorder() {
                   </span>
                   <span {...sx.props(s.hint)}>
                     {state.phase === "paused" ? "Paused" : "Recording"}
+                  </span>
+                  <span
+                    role="img"
+                    aria-label={
+                      state.keyboardStatus === "available"
+                        ? state.phase === "paused"
+                          ? "Keyboard capture paused"
+                          : "Keyboard capture active"
+                        : "Keyboard capture unavailable"
+                    }
+                    title={
+                      state.keyboardStatus === "available"
+                        ? state.phase === "paused"
+                          ? "Keyboard capture paused"
+                          : "Keyboard capture active"
+                        : state.keyboardStatus === "permission-required"
+                          ? "Keyboard capture needs Input Monitoring permission. Enable it in Recording options before your next recording."
+                          : "Keyboard capture unavailable for this recording"
+                    }
+                    style={{ display: "flex", color: "var(--text-muted)" }}
+                  >
+                    {state.keyboardStatus === "available" ? (
+                      <Keyboard size={15} />
+                    ) : (
+                      <KeyboardOff size={15} />
+                    )}
                   </span>
                   <div style={{ width: 25 }} />
                   <button

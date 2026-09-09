@@ -65,3 +65,7 @@ work/verify-keyboard-labels
 ## Live permission flow and delivery limitation
 
 The packaged recorder's permission action opened System Settings Input Monitoring. Enabling Refract there and rechecking through the recorder changed its option to “Keyboard shortcuts enabled.” This verifies the app-context permission flow. A subsequent 26.13-second window recording finalized successfully, but `keyboard.json` contained zero events after UI-tool key attempts. The global pause shortcut also did not change recorder state; clicking Pause worked. These observations do not establish whether the UI tool delivered global key events or the listener failed to receive them. Native keyboard delivery and pause alignment remain unverified, and the enabled permission label must not be interpreted as successful capture evidence.
+
+## Listener status propagation
+
+The main process previously assigned the helper's keyboard status and immediately overwrote the entire recorder state, losing that status. The recording state now retains it, and the controller shows a compact keyboard indicator with active, paused, permission-required, or unavailable tooltip text. A fresh packaged recording showed “Keyboard capture active,” confirming successful tap creation reached the UI. The 12.54-second recording still contained zero key events after automation sent Right/Left to the captured reference app. This narrows the unknown to event delivery/handling; it does not prove successful keyboard recording.

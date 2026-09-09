@@ -9,6 +9,13 @@ import {
 } from "electron";
 import path from "node:path";
 import fs from "node:fs/promises";
+import { readFileSync, writeFileSync, renameSync } from "node:fs";
+import {
+  recorderBounds,
+  readRecorderPosition,
+  rememberRecorderPosition,
+  type RecorderPosition,
+} from "./recorder-position.cjs";
 import {
   spawn,
   execFile,
@@ -43,6 +50,31 @@ export function setupRecorder(
   let checkingStart = false;
   let startGeneration = 0;
   let state: RecorderState = { phase: "idle", countdown: 3, elapsed: 0 };
+  const positionFile = path.join(
+    app.getPath("userData"),
+    "recorder-position.json",
+  );
+  let position: RecorderPosition | undefined;
+  let positionTimer: ReturnType<typeof setTimeout> | undefined;
+  let expanded = false;
+  try {
+    position = readRecorderPosition(
+      JSON.parse(readFileSync(positionFile, "utf8")),
+    );
+  } catch {
+    /* First launch or invalid preferences use the default position. */
+  }
+  function savePosition() {
+    if (positionTimer) clearTimeout(positionTimer);
+    positionTimer = undefined;
+    if (!position) return;
+    try {
+      writeFileSync(positionFile + ".tmp", JSON.stringify(position));
+      renameSync(positionFile + ".tmp", positionFile);
+    } catch {
+      /* Position persistence must not interrupt a recording. */
+    }
+  }
   const executable = path.join(
     __dirname,
     "../../native/.build/refract-capture",
@@ -50,27 +82,17 @@ export function setupRecorder(
   function send() {
     bar?.webContents.send("recorder-state", state);
   }
-  function resize(expanded: boolean) {
+  function resize(nextExpanded: boolean) {
+    expanded = nextExpanded;
     if (!bar) return;
-    const current = bar.getBounds();
-    const bounds = screen.getDisplayMatching(current).workArea;
-    const h = expanded ? 404 : 64;
-    bar.setBounds({
-      x: Math.round(
-        Math.max(bounds.x, Math.min(current.x, bounds.x + bounds.width - 855)),
+    bar.setBounds(
+      recorderBounds(
+        position,
+        screen.getAllDisplays(),
+        screen.getPrimaryDisplay(),
+        expanded,
       ),
-      y: Math.round(
-        Math.max(
-          bounds.y,
-          Math.min(
-            current.y + current.height - h,
-            bounds.y + bounds.height - h,
-          ),
-        ),
-      ),
-      width: 855,
-      height: h,
-    });
+    );
   }
   function loadWindow(window: BrowserWindow, hash: string) {
     if (process.env.REFRACT_DEV_URL)
@@ -82,12 +104,13 @@ export function setupRecorder(
   }
   function show() {
     if (!bar) {
-      const bounds = screen.getPrimaryDisplay().workArea;
       bar = new BrowserWindow({
-        x: Math.round(bounds.x + (bounds.width - 855) / 2),
-        y: Math.round(bounds.y + bounds.height - 64 - 54),
-        width: 855,
-        height: 64,
+        ...recorderBounds(
+          position,
+          screen.getAllDisplays(),
+          screen.getPrimaryDisplay(),
+          false,
+        ),
         frame: false,
         transparent: true,
         resizable: false,
@@ -104,6 +127,14 @@ export function setupRecorder(
         },
       });
       bar.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      bar.on("will-move", (_event, bounds) => {
+        position = rememberRecorderPosition(
+          bounds,
+          screen.getDisplayMatching(bounds),
+        );
+        if (positionTimer) clearTimeout(positionTimer);
+        positionTimer = setTimeout(savePosition, 300);
+      });
       bar.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
       bar.webContents.on("will-navigate", (e) => e.preventDefault());
       bar.on("closed", () => {
@@ -195,8 +226,12 @@ export function setupRecorder(
           try {
             const event = JSON.parse(line);
             if (event.event === "started") {
-              state.keyboardStatus = event.keyboardStatus;
-              state = { phase: "recording", countdown: 0, elapsed: 0 };
+              state = {
+                phase: "recording",
+                countdown: 0,
+                elapsed: 0,
+                keyboardStatus: event.keyboardStatus,
+              };
               started = Date.now();
               pausedTotal = 0;
               timer = setInterval(() => {
@@ -407,9 +442,12 @@ export function setupRecorder(
     return true;
   }
   app.on("will-quit", () => {
+    savePosition();
     if (countdownTimer) clearInterval(countdownTimer);
     if (timer) clearInterval(timer);
     globalShortcut.unregisterAll();
   });
+  screen.on("display-removed", () => resize(expanded));
+  screen.on("display-metrics-changed", () => resize(expanded));
   return { show, stop, prepareQuit };
 }
