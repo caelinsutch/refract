@@ -66,6 +66,32 @@ app.whenReady().then(async () => {
         }
         checks.push({strength,max,mean:total/count});
       }
+      const kernels=[5.5,23/6,13/6];
+      const kawaseOutput=filter.render(input,0,kernels);
+      if(!kawaseOutput) throw Error('Kawase filter unavailable');
+      const kc=new OffscreenCanvas(size,size).getContext('2d');kc.drawImage(kawaseOutput,0,0);
+      const actualKawase=kc.getImageData(0,0,size,size).data;
+      let expectedKawase=new Uint8ClampedArray(data.data);
+      for(const offset of kernels) {
+        const next=new Uint8ClampedArray(expectedKawase.length);
+        const read=(x,y,ch)=>expectedKawase[(Math.max(0,Math.min(size-1,y))*size+Math.max(0,Math.min(size-1,x)))*4+ch];
+        for(let y=0;y<size;y++) for(let x=0;x<size;x++) for(let ch=0;ch<4;ch++) {
+          let sum=0;
+          for(const dx of [-offset,offset]) for(const dy of [-offset,offset]) {
+            const px=x+dx,py=y+dy,l=Math.floor(px),t=Math.floor(py),fx=px-l,fy=py-t;
+            sum+=((read(l,t,ch)*(1-fx)+read(l+1,t,ch)*fx)*(1-fy)
+              +(read(l,t+1,ch)*(1-fx)+read(l+1,t+1,ch)*fx)*fy)/4;
+          }
+          next[(y*size+x)*4+ch]=Math.round(sum);
+        }
+        expectedKawase=next;
+      }
+      let kawaseMax=0,kawaseSum=0,kawaseCount=0;
+      for(let y=40;y<88;y++) for(let x=40;x<88;x++) for(let ch=0;ch<3;ch++) {
+        const i=(y*size+x)*4+ch,delta=Math.abs(actualKawase[i]-expectedKawase[i]);
+        kawaseMax=Math.max(kawaseMax,delta);kawaseSum+=delta;kawaseCount++;
+      }
+      const kawase={max:kawaseMax,mean:kawaseSum/kawaseCount};
       const translucent=new OffscreenCanvas(128,128);
       const tc=translucent.getContext('2d');
       tc.fillStyle='rgba(255,0,0,0.5)';tc.fillRect(0,0,64,128);
@@ -96,12 +122,14 @@ app.whenReady().then(async () => {
         encoded.getContext('2d').drawImage(filtered,0,0);
         exports.push({width,height,milliseconds:performance.now()-begin,png:encoded.toDataURL().split(',')[1]});
       }
-      return {checks,alphaPixel,resized:resizedDimensions,exports};
+      return {checks,kawase,alphaPixel,resized:resizedDimensions,exports};
     })()`);
     for (const check of result.checks) {
       assert.ok(check.max <= 3, JSON.stringify(check));
       assert.ok(check.mean < 0.8, JSON.stringify(check));
     }
+    assert.ok(result.kawase.max <= 2, JSON.stringify(result.kawase));
+    assert.ok(result.kawase.mean < 0.5, JSON.stringify(result.kawase));
     assert.ok(result.alphaPixel[0] >= 254, JSON.stringify(result.alphaPixel));
     assert.equal(result.alphaPixel[1], 0);
     assert.equal(result.alphaPixel[2], 0);

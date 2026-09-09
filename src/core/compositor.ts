@@ -1,3 +1,4 @@
+import { drawOrdinaryShadow } from "./shadow-layer";
 import { drawBackgroundLayer } from "./background-layer";
 import { gradientColors } from "./gradient-presets";
 import { insetEdges } from "./inset-balance";
@@ -298,7 +299,9 @@ export function drawFrame(
       const edges = insetEdges(a);
       const edgeScale = scale * transform.scale;
       c.save();
-      c.shadowColor = `rgba(0,0,0,${a.shadow * 0.6})`;
+      c.shadowColor = a.shadowDirectional
+        ? `rgba(0,0,0,${a.shadow * 0.6})`
+        : "transparent";
       c.shadowBlur = a.shadowBlur * 2 * scale * transform.scale;
       // Distance and angle apply to ordinary shadows too. Directional mode
       // controls the shadow shape in the reference, not whether it has an offset.
@@ -311,6 +314,33 @@ export function drawFrame(
         frameWidth = w + (edges.left + edges.right) * edgeScale,
         frameHeight = h + (edges.top + edges.bottom) * edgeScale;
       const opacity = a.insetOpacity ?? 1;
+      if (!a.shadowDirectional) {
+        c.save();
+        // Keep translucent inset interiors independent of the outside shadow.
+        c.beginPath();
+        c.rect(0, 0, width, height);
+        c.roundRect(
+          frameX,
+          frameY,
+          frameWidth,
+          frameHeight,
+          Math.max(0, Math.min(outerRadius, frameWidth / 2, frameHeight / 2)),
+        );
+        c.clip("evenodd");
+        c.shadowBlur = 0;
+        c.shadowOffsetX = c.shadowOffsetY = 0;
+        drawOrdinaryShadow(
+          c,
+          a,
+          frameX,
+          frameY,
+          frameWidth,
+          frameHeight,
+          outerRadius,
+          edgeScale,
+        );
+        c.restore();
+      }
       c.fillStyle = a.insetColor;
       if (opacity < 1) {
         // Draw the outside shadow at full strength before blending the inset color.

@@ -43,6 +43,7 @@ export class BackgroundFilter {
       uniform sampler2D image;
       uniform vec2 stepSize;
       uniform bool present;
+      uniform bool diagonal;
       in vec2 uv;
       out vec4 color;
       vec4 sampleAt(vec2 p) {
@@ -51,6 +52,12 @@ export class BackgroundFilter {
       }
       void main() {
         if (present) { color = texture(image, vec2(uv.x, 1.0 - uv.y)); return; }
+        if (diagonal) {
+          color = (sampleAt(uv + stepSize) + sampleAt(uv - stepSize)
+            + sampleAt(uv + vec2(stepSize.x, -stepSize.y))
+            + sampleAt(uv + vec2(-stepSize.x, stepSize.y))) * 0.25;
+          return;
+        }
         color = sampleAt(uv - 2.0 * stepSize) * 0.153388
           + sampleAt(uv - stepSize) * 0.221461
           + sampleAt(uv) * 0.250301
@@ -80,7 +87,11 @@ export class BackgroundFilter {
     }
   }
 
-  render(source: OffscreenCanvas | HTMLCanvasElement, strength: number) {
+  render(
+    source: OffscreenCanvas | HTMLCanvasElement,
+    strength: number,
+    kernels?: readonly number[],
+  ) {
     const gl = this.gl;
     if (!gl || !this.program || gl.isContextLost()) return null;
     const { width, height } = source;
@@ -118,30 +129,31 @@ export class BackgroundFilter {
     const present = gl.getUniformLocation(this.program, "present");
     gl.uniform1i(present, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer!);
-    let input = 0;
-    for (let axis = 0; axis < 2; axis++) {
-      gl.uniform2f(
-        step,
-        axis === 0 ? strength / 20 / width : 0,
-        axis === 1 ? strength / 20 / height : 0,
-      );
-      for (let pass = 0; pass < 20; pass++) {
-        const output = 1 - input;
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[input]);
-        gl.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          gl.COLOR_ATTACHMENT0,
-          gl.TEXTURE_2D,
-          this.textures[output],
-          0,
+    gl.uniform1i(
+      gl.getUniformLocation(this.program, "diagonal"),
+      kernels ? 1 : 0,
+    );
+    const steps: [number, number][] = kernels
+      ? kernels.map((offset) => [offset / width, offset / height])
+      : Array.from({ length: 40 }, (_, i) =>
+          i < 20 ? [strength / 20 / width, 0] : [0, strength / 20 / height],
         );
-        if (
-          gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE
-        )
-          return null;
-        gl.drawArrays(gl.TRIANGLES, 0, 3);
-        input = output;
-      }
+    let input = 0;
+    for (const [dx, dy] of steps) {
+      gl.uniform2f(step, dx, dy);
+      const output = 1 - input;
+      gl.bindTexture(gl.TEXTURE_2D, this.textures[input]);
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        this.textures[output],
+        0,
+      );
+      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
+        return null;
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      input = output;
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.bindTexture(gl.TEXTURE_2D, this.textures[input]);
