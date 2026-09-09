@@ -477,3 +477,9 @@ Down-key events, and left-button events across cancellation and selection cycles
 Camera resolution selection passes through this path with unchanged camera input,
 toolbar identity, and native bounds. This does not replace the pending live
 comparison with Screen Studio on the unlocked Mac.
+
+The system-audio variant also passes cancellation and selection through these
+input methods. One initial right-click attempt did not open a menu; a diagnostic
+rerun passed. The verifier now explicitly waits for document focus and two frames
+before sending input, and that run passed too. Live comparison is still needed
+to distinguish any remaining native interaction issues from automation timing.

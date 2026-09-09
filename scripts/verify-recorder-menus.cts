@@ -50,6 +50,14 @@ void app.whenReady().then(async () => {
         ),
       "Recorder did not mount",
     );
+    contents.focus();
+    await until(
+      () => contents.executeJavaScript("document.hasFocus()"),
+      "Recorder did not receive focus",
+    );
+    await contents.executeJavaScript(
+      "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null))))",
+    );
     const bounds = bar!.getBounds();
     let resizes = 0;
     bar!.on("resize", () => resizes++);
