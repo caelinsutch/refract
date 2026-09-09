@@ -91,6 +91,7 @@ export type Project = {
   crop?: CropRect;
   id: string;
   title: string;
+  microphoneAudio?: { file: string; volume: number; muted: boolean };
   backgroundAudio?: {
     file: string;
     name: string;
@@ -233,6 +234,19 @@ export function validateProject(value: unknown): Project {
   )
     throw new Error("This is not a supported Refract project.");
   const valid = (v: number) => Number.isFinite(v);
+  if (p.microphoneAudio !== undefined) {
+    const audio = p.microphoneAudio;
+    if (
+      !audio ||
+      typeof audio.file !== "string" ||
+      !audio.file ||
+      !valid(audio.volume) ||
+      audio.volume < 0 ||
+      audio.volume > 1 ||
+      typeof audio.muted !== "boolean"
+    )
+      throw Error("The project has invalid microphone audio.");
+  }
   if (p.backgroundAudio !== undefined) {
     const audio = p.backgroundAudio;
     if (

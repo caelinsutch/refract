@@ -7,6 +7,7 @@ export function exportArgs(
   fps: number,
   format: "mp4" | "gif",
   backgroundFile?: string,
+  microphoneFile?: string,
 ): string[] {
   validateProject(project);
   if (!(format === "gif" ? [24, 30, 50] : [24, 30, 60]).includes(fps))
@@ -33,6 +34,12 @@ export function exportArgs(
     !project.backgroundAudio.muted
       ? project.backgroundAudio
       : undefined;
+  const microphone =
+    format === "mp4" &&
+    project.microphoneAudio &&
+    !project.microphoneAudio.muted
+      ? project.microphoneAudio
+      : undefined;
   const filters: string[] = [];
   if (audio) {
     args.push("-i", sourceFile);
@@ -57,16 +64,49 @@ export function exportArgs(
         `concat=n=${project.segments.length}:v=0:a=1[asource]`,
     );
   }
+  if (microphone) {
+    if (!microphoneFile) throw Error("Microphone audio file is unavailable.");
+    const input = audio ? 2 : 1;
+    args.push("-i", microphoneFile);
+    filters.push(
+      ...project.segments.map((segment, index) => {
+        let speed = segment.speed;
+        const tempo: string[] = [];
+        while (speed > 2) {
+          tempo.push("atempo=2");
+          speed /= 2;
+        }
+        while (speed < 0.5) {
+          tempo.push("atempo=0.5");
+          speed /= 0.5;
+        }
+        tempo.push("atempo=" + speed);
+        const gain = segment.muted
+          ? 0
+          : microphone.volume * (segment.volume ?? 1);
+        return `[${input}:a]atrim=start=${segment.start / 1000}:end=${segment.end / 1000},asetpts=PTS-STARTPTS,${tempo.join(",")},volume=${gain}[mic${index}]`;
+      }),
+    );
+    filters.push(
+      project.segments.map((_, index) => `[mic${index}]`).join("") +
+        `concat=n=${project.segments.length}:v=0:a=1[amicrophone]`,
+    );
+  }
   if (music) {
     if (!backgroundFile) throw Error("Background audio file is unavailable.");
     args.push("-stream_loop", "-1", "-i", backgroundFile);
     filters.push(
-      `[${audio ? 2 : 1}:a]atrim=duration=${duration(project) / 1000},asetpts=PTS-STARTPTS,volume=${music.volume}[music]`,
+      `[${1 + Number(audio) + Number(Boolean(microphone))}:a]atrim=duration=${duration(project) / 1000},asetpts=PTS-STARTPTS,volume=${music.volume}[music]`,
     );
   }
-  if (audio && music)
+  const tracks = [
+    audio ? "[asource]" : "",
+    microphone ? "[amicrophone]" : "",
+    music ? "[music]" : "",
+  ].filter(Boolean);
+  if (tracks.length > 1)
     filters.push(
-      "[asource][music]amix=inputs=2:duration=longest:normalize=0[aout]",
+      `${tracks.join("")}amix=inputs=${tracks.length}:duration=longest:normalize=0[aout]`,
     );
   if (filters.length)
     args.push(
@@ -75,7 +115,7 @@ export function exportArgs(
       "-map",
       "0:v",
       "-map",
-      audio && music ? "[aout]" : music ? "[music]" : "[asource]",
+      tracks.length > 1 ? "[aout]" : tracks[0],
     );
   if (format === "mp4")
     args.push(
@@ -89,7 +129,7 @@ export function exportArgs(
       "yuv420p",
       "-movflags",
       "+faststart",
-      ...(audio || music ? ["-c:a", "aac", "-b:a", "192k"] : []),
+      ...(tracks.length ? ["-c:a", "aac", "-b:a", "192k"] : []),
     );
   else
     args.push(

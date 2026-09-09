@@ -563,6 +563,9 @@ handle(
       project.backgroundAudio
         ? inside(projectDir, project.backgroundAudio.file)
         : undefined,
+      project.microphoneAudio
+        ? inside(projectDir, project.microphoneAudio.file)
+        : undefined,
     );
     const child = spawn(tool("ffmpeg"), args, {
       stdio: ["pipe", "ignore", "pipe"],
