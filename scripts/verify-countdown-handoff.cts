@@ -1,8 +1,9 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, screen } from "electron";
 import assert from "node:assert/strict";
 import path from "node:path";
 import fs from "node:fs";
 import childProcess from "node:child_process";
+import { promisify } from "node:util";
 app.setPath(
   "userData",
   path.resolve(`work/countdown-handoff/profile-${process.pid}`),
@@ -34,6 +35,41 @@ void app.whenReady().then(async () => {
       captures.push(JSON.parse(fs.readFileSync(args[1], "utf8")));
       throw Error("Capture stub: intentionally not recording");
     }) as unknown as typeof childProcess.spawn;
+    const display = screen.getPrimaryDisplay();
+    let nativeSources = {
+      permission: "granted",
+      windows: [
+        {
+          id: 404,
+          name: "Fixture",
+          width: 400,
+          height: 300,
+          bounds: {
+            x: display.bounds.x + 10,
+            y: display.bounds.y + 10,
+            width: 400,
+            height: 300,
+          },
+        },
+      ],
+      displays: [],
+      microphones: [],
+      cameras: [],
+    };
+    childProcess.execFile = ((
+      _file: string,
+      _args: string[],
+      _options: unknown,
+      callback: (error: Error | null, stdout: string, stderr: string) => void,
+    ) => {
+      queueMicrotask(() => callback(null, JSON.stringify(nativeSources), ""));
+    }) as unknown as typeof childProcess.execFile;
+    Object.defineProperty(childProcess.execFile, promisify.custom, {
+      value: async () => ({
+        stdout: JSON.stringify(nativeSources),
+        stderr: "",
+      }),
+    });
     const handlers = new Map<string, (...args: any[]) => any>();
     const original = ipcMain.handle.bind(ipcMain);
     ipcMain.handle = (channel, handler) => {
@@ -90,9 +126,46 @@ void app.whenReady().then(async () => {
     );
     await wait(100);
     assert.equal(captures.length, 1);
+    await invoke("recorder-start", {
+      mode: "window",
+      windowId: 404,
+      countdownSeconds: 0,
+      systemAudio: false,
+    });
+    await until(
+      () => captures.length === 2,
+      "Window source did not reach capture",
+    );
+    assert.equal(captures[1].windowId, 404);
+    assert.equal(
+      captures[1].displayId,
+      display.id,
+      "Window countdown selected the wrong display",
+    );
+    await invoke("recorder-start", {
+      mode: "window",
+      windowId: 999,
+      countdownSeconds: 0,
+      systemAudio: false,
+    }).then(
+      () => assert.fail("Missing window was accepted"),
+      (error: Error) => assert.match(error.message, /no longer available/),
+    );
+    nativeSources = { ...nativeSources, permission: "required" };
+    await invoke("recorder-start", {
+      mode: "window",
+      windowId: 404,
+      countdownSeconds: 0,
+      systemAudio: false,
+    }).then(
+      () => assert.fail("Missing permission was accepted"),
+      (error: Error) => assert.match(error.message, /macOS Settings/),
+    );
+    assert.equal(captures.length, 2);
     BrowserWindow.getAllWindows().forEach((window) => window.destroy());
     console.log(
       JSON.stringify({
+        windowSourceValidation: true,
         oldCountdownCannotStart: true,
         currentSource: 202,
         quitCancels: true,

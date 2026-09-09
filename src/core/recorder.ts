@@ -6,6 +6,9 @@ export type CaptureSource = {
   height: number;
   app?: string;
   appPath?: string;
+  bounds?: { x: number; y: number; width: number; height: number };
+  /** Smaller values are nearer the front of the desktop. */
+  order?: number;
 };
 export type RecorderSourceMenu = {
   kind: "display" | "window";

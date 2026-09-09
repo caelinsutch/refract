@@ -290,18 +290,25 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                     }?.localizedName ?? "Display \(display.displayID)"
                     return ["id": display.displayID, "name": name, "width": display.width, "height": display.height] as [String: Any]
                 }
+                let orderedWindows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+                let order = Dictionary(uniqueKeysWithValues: orderedWindows.enumerated().compactMap { index, info -> (CGWindowID, Int)? in
+                    guard let id = info[kCGWindowNumber as String] as? NSNumber else { return nil }
+                    return (id.uint32Value, index)
+                })
                 let windows = content.windows.filter { window in
                     // The chooser lists app windows, not desktop surfaces or overlays.
                     guard let app = window.owningApplication,
                           NSRunningApplication(processIdentifier: app.processID)?.activationPolicy == .regular else { return false }
                     return window.windowLayer == 0 && window.frame.width > 100 && window.frame.height > 60
                         && app.processID != getppid() && app.bundleIdentifier != "com.caelinsutch.refract"
-                }.map { window in
+                }.sorted { (order[$0.windowID] ?? Int.max) < (order[$1.windowID] ?? Int.max) }.map { window in
                     let app = window.owningApplication?.applicationName ?? ""
                     let title = window.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                     return ["id": window.windowID, "name": title.isEmpty ? app : title, "app": app,
                             "appPath": window.owningApplication.flatMap { NSRunningApplication(processIdentifier: $0.processID)?.bundleURL?.path } ?? "",
-                            "width": window.frame.width, "height": window.frame.height] as [String: Any]
+                            "width": window.frame.width, "height": window.frame.height,
+                            "bounds": ["x": window.frame.minX, "y": window.frame.minY, "width": window.frame.width, "height": window.frame.height],
+                            "order": order[window.windowID] ?? Int.max] as [String: Any]
                 }
                 let microphones = AVCaptureDevice.DiscoverySession(deviceTypes: [.microphone], mediaType: .audio, position: .unspecified).devices.map { ["id": $0.uniqueID, "name": $0.localizedName] }
                 let cameras = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified).devices.map { ["id": $0.uniqueID, "name": $0.localizedName] }

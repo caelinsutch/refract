@@ -747,3 +747,12 @@ continues to require the system permission; window-source listing still does too
 - Closing or changing panels invalidates pending recovery, preventing a late result from reopening a dismissed error. The recovery action receives initial keyboard focus and shows a disabled Checking state while pending.
 - Production build and a new renderer recovery verifier passed missing-permission handling, successful dismissal, failed checks, Escape during a pending check, and zero capture requests. Existing recorder-refresh regression also passed scan coalescing, cached controls, updated device data, and stable toolbar identity.
 - These fixtures simulate source responses and do not grant macOS permissions or prove that a particular native capture failure is resolved.
+
+### Window-picker geometry and countdown targeting — 2026-09-09
+
+- Live inspection resumed after the Mac became accessible. The reference Window command activates its compact recorder; full pointer-hover behavior still needs direct comparison. Refract's existing list is not yet replaced by the overlay.
+- Native window sources now include desktop bounds and front-to-back ordering from the on-screen Core Graphics window list. Existing app-window filtering is preserved. The metadata uses public [CGWindowListCopyWindowInfo](https://developer.apple.com/documentation/coregraphics/cgwindowlistcopywindowinfo(_:_:)) and [SCWindow.frame](https://developer.apple.com/documentation/screencapturekit/scwindow/frame).
+- Added shared TypeScript geometry for topmost window hit testing and selecting the display with the greatest window intersection. Tests cover overlapping windows, source-array order independence, negative desktop coordinates, half-open edges, missing/invalid bounds, and windows spanning displays.
+- Window capture now revalidates the target before countdown. Missing permission and vanished windows produce actionable errors; an available window supplies the correct display for the fullscreen countdown instead of using the pointer's screen.
+- Swift and TypeScript builds passed; 155 core tests passed. The native helper returned seven live windows with valid geometry and ordered indices. Recorder state-machine checks passed window validation, permission rejection, display selection, and existing stale-countdown protection; actual capture remained stubbed.
+- The visible window highlighting picker remains unfinished. Native metadata is ready for its integration; this change does not claim window-picker visual parity.

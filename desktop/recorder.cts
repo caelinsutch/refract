@@ -713,6 +713,32 @@ export function setupRecorder(
           throw Error("Camera access was not granted.");
       }
       if (!stillWanted()) return;
+      if (selected.mode === "window") {
+        const sources = await list();
+        if (!stillWanted()) return;
+        if (sources.permission !== "granted")
+          throw Error(
+            "Allow Refract to record your screen in macOS Settings, then choose the window again.",
+          );
+        const target = sources.windows.find(
+          (window) => window.id === selected.windowId,
+        );
+        if (!target)
+          throw Error(
+            "The selected window is no longer available. Choose another window.",
+          );
+        if (target.bounds) {
+          const { windowDisplayId } =
+            await import("../src/core/window-picker.js");
+          selected = {
+            ...selected,
+            displayId:
+              windowDisplayId(target.bounds, screen.getAllDisplays()) ??
+              undefined,
+          };
+        }
+      }
+      if (!stillWanted()) return;
       await begin(selected);
     } finally {
       checkingStart = false;
