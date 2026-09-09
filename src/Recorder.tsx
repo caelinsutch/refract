@@ -1,3 +1,4 @@
+import { captureAreaBetween } from "./core/capture-area";
 import { StateIcon } from "./components/StateIcon";
 import { useEffect, useState, useRef } from "react";
 import * as sx from "@stylexjs/stylex";
@@ -288,6 +289,7 @@ export function AreaPicker() {
     <div
       {...sx.props(s.area)}
       onPointerDown={(e) => {
+        if (e.button !== 0) return;
         origin.current = { x: e.clientX, y: e.clientY };
         setRect({ x: e.clientX, y: e.clientY, width: 0, height: 0 });
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -295,17 +297,32 @@ export function AreaPicker() {
       onPointerMove={(e) => {
         const start = origin.current;
         if (start)
-          setRect({
-            x: Math.min(start.x, e.clientX),
-            y: Math.min(start.y, e.clientY),
-            width: Math.abs(e.clientX - start.x),
-            height: Math.abs(e.clientY - start.y),
-          });
+          setRect(
+            captureAreaBetween(
+              start,
+              { x: e.clientX, y: e.clientY },
+              window.innerWidth,
+              window.innerHeight,
+            ),
+          );
       }}
-      onPointerUp={() => {
+      onPointerUp={(e) => {
+        const start = origin.current;
         origin.current = null;
-        if (rect.width >= 32 && rect.height >= 32)
-          void window.refract?.recorderAreaSelected(rect);
+        if (!start) return;
+        const selected = captureAreaBetween(
+          start,
+          { x: e.clientX, y: e.clientY },
+          window.innerWidth,
+          window.innerHeight,
+        );
+        setRect(selected);
+        if (selected.width >= 32 && selected.height >= 32)
+          void window.refract?.recorderAreaSelected(selected);
+      }}
+      onPointerCancel={() => {
+        origin.current = null;
+        setRect({ x: 0, y: 0, width: 0, height: 0 });
       }}
     >
       <div {...sx.props(s.areaHint)}>
