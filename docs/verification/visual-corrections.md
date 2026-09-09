@@ -381,7 +381,12 @@ Built both Swift helpers and the production renderer, then packaged Electron
 44.3.0 for arm64. CUA confirmed Refract was not running before opening the package
 at `release/current-verification/Refract-darwin-arm64/Refract.app`. Its accessibility
 tree confirms the recorder route, drag handle, capture modes, camera, microphone,
-system audio, and options controls loaded. This package predates this section's
-tool-availability change. CUA screenshots remain blank even when accessibility
+system audio, and options controls loaded. After the tool-availability check passed,
+quit the idle recorder and refreshed the package. Its renderer assets and main
+process were compared byte-for-byte with the current production build. CUA screenshots remain blank even when accessibility
 works, so launch verification is not a claim of pixel equality. Full Screen Studio
 parity is still incomplete.
+
+The reference tool rail also specifies left-side tooltips. Refract currently uses
+browser title tooltips; their placement and presentation are not matched. Source
+inspection does not show an expanding text label in the rail itself.
