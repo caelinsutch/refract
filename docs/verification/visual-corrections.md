@@ -990,3 +990,9 @@ Matched the inspected playback command definitions: Command-left/right stop at t
 Explicit seek revisions now reach the video even during playback. Paused video and camera seeks use 1ms tolerance instead of 40/50ms, which previously skipped individual frame movements. Continuous camera synchronization retains its existing tolerance.
 
 Validation: build and all 183 core tests passed. The synthetic shortcut fixture verifies successive 1/60-second media positions, first/end stops, fast steps, and continued playback after an arrow seek. The split workflow still passes. These checks inspect media time and interaction state; they do not establish decoded-image parity for every source frame rate or camera source.
+
+## Editor layout modes — September 9
+
+Added the reference's four combinations of timeline/sidebar visibility. Command-menu actions toggle each independently. Preview mode hides both; toggling preview again restores both, including when preview was entered from a partially hidden layout. Command-Shift-Return follows the reference shortcut. Hiding the sidebar also hides its navigation rail. Hiding the timeline removes its visibility menu, scissors control, and zoom slider and adds the reference's bottom playback spacing.
+
+Validation: build, the complete layout-mode transition fixture, default layout/preview-size checks, and playback shortcuts passed. The preview canvas stays mounted across every layout transition. A synthetic preview-mode screenshot was visually inspected. Layout transitions are currently immediate; the reference's transition animation and direct screenshot parity remain outstanding.

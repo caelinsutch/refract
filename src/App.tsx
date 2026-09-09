@@ -491,6 +491,13 @@ export default function App() {
     handle: MaskHandle;
   } | null>(null);
 
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showTimeline, setShowTimeline] = useState(true);
+  const togglePreviewLayout = () => {
+    const restore = !showSidebar && !showTimeline;
+    setShowSidebar(restore);
+    setShowTimeline(restore);
+  };
   const [splitTool, setSplitTool] = useState(false);
   const [optionSplit, setOptionSplit] = useState(false);
   const splitMode = splitTool || optionSplit;
@@ -1236,6 +1243,11 @@ export default function App() {
         e.target instanceof HTMLSelectElement
       )
         return;
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "Enter") {
+        e.preventDefault();
+        togglePreviewLayout();
+        return;
+      }
       if (e.key === "Alt" && !e.repeat) setOptionSplit(true);
       if (e.code === "Space") {
         if (
@@ -1645,6 +1657,28 @@ export default function App() {
     }
   };
   const commands: EditorCommand[] = [
+    {
+      id: "toggle-sidebar",
+      label: showSidebar ? "Hide editor sidebar" : "Show editor sidebar",
+      group: "View",
+      run: () => setShowSidebar((value) => !value),
+    },
+    {
+      id: "toggle-timeline",
+      label: showTimeline ? "Hide editor timeline" : "Show editor timeline",
+      group: "View",
+      run: () => setShowTimeline((value) => !value),
+    },
+    {
+      id: "toggle-preview",
+      label:
+        !showSidebar && !showTimeline
+          ? "Exit preview mode"
+          : "Enter preview mode",
+      group: "View",
+      shortcut: "⇧⌘↵",
+      run: togglePreviewLayout,
+    },
     ...previewSizes.map((height) => ({
       id: `preview-size-${height}`,
       label: `Preview size: ${height}p`,
@@ -2127,47 +2161,52 @@ export default function App() {
                 </div>
               ) : null}
             </section>
-            <nav aria-label="Recording tools" {...sx.props(s.tools)}>
-              {tabs.map((t) => {
-                const active = tab === t.id && !selection;
-                const unavailable = unavailableTool(t.id, project);
-                return (
-                  <Tooltip key={t.id} label={unavailable ?? t.title}>
-                    {(descriptionId) => (
-                      <button
-                        type="button"
-                        aria-describedby={descriptionId}
-                        aria-label={t.title}
-                        aria-pressed={active}
-                        disabled={!!unavailable}
-                        data-motion="static"
-                        {...sx.props(
-                          s.tool,
-                          active && s.toolActive,
-                          !!unavailable && s.toolUnavailable,
-                        )}
-                        onClick={() => {
-                          setTab(t.id);
-                          setSelection(null);
-                        }}
-                      >
-                        <t.icon size={16} strokeWidth={1.5} />
-                        {active && !unavailable && (
-                          <span
-                            aria-hidden="true"
-                            {...sx.props(s.toolIndicator)}
-                          />
-                        )}
-                      </button>
-                    )}
-                  </Tooltip>
-                );
-              })}
-            </nav>
+            {showSidebar && (
+              <nav aria-label="Recording tools" {...sx.props(s.tools)}>
+                {tabs.map((t) => {
+                  const active = tab === t.id && !selection;
+                  const unavailable = unavailableTool(t.id, project);
+                  return (
+                    <Tooltip key={t.id} label={unavailable ?? t.title}>
+                      {(descriptionId) => (
+                        <button
+                          type="button"
+                          aria-describedby={descriptionId}
+                          aria-label={t.title}
+                          aria-pressed={active}
+                          disabled={!!unavailable}
+                          data-motion="static"
+                          {...sx.props(
+                            s.tool,
+                            active && s.toolActive,
+                            !!unavailable && s.toolUnavailable,
+                          )}
+                          onClick={() => {
+                            setTab(t.id);
+                            setSelection(null);
+                          }}
+                        >
+                          <t.icon size={16} strokeWidth={1.5} />
+                          {active && !unavailable && (
+                            <span
+                              aria-hidden="true"
+                              {...sx.props(s.toolIndicator)}
+                            />
+                          )}
+                        </button>
+                      )}
+                    </Tooltip>
+                  );
+                })}
+              </nav>
+            )}
           </div>
-          <div {...sx.props(s.transport)}>
+          <div
+            {...sx.props(s.transport)}
+            style={showTimeline ? undefined : { height: 57, paddingBottom: 12 }}
+          >
             <div {...sx.props(s.transportLeft)}>
-              {project && (
+              {project && showTimeline && (
                 <TimelineVisibility
                   tracks={timelineTracks}
                   hasCamera={!!project.source.camera}
@@ -2271,7 +2310,7 @@ export default function App() {
               </button>
             </div>
             <div {...sx.props(s.transportRight)}>
-              {project && (
+              {project && showTimeline && (
                 <>
                   <Button
                     title="Split clip (Option)"
@@ -2330,7 +2369,7 @@ export default function App() {
                 onPowerSaving={setPreviewPowerSaving}
               />
               <PlaybackSpeed value={previewSpeed} onChange={setPreviewSpeed} />
-              {project && (
+              {project && showTimeline && (
                 <input
                   aria-label="Timeline zoom"
                   type="range"
@@ -2345,1141 +2384,1162 @@ export default function App() {
             </div>
           </div>
         </div>
-        <aside {...sx.props(s.sidebar)}>
-          <div {...sx.props(s.panel)}>
-            {!project ? (
-              <>
-                <Heading>Background</Heading>
-                <Note>Your recording settings will appear here.</Note>
-              </>
-            ) : z ? (
-              <>
-                <div style={{ marginBottom: 3 }}>
-                  <Button
-                    title="Close Zoom editor"
-                    onClick={() => setSelection(null)}
-                  >
-                    <ChevronLeft size={13} />
-                    Close Zoom editor
-                  </Button>
-                </div>
-                <Heading>Zoom</Heading>
-                <div {...sx.props(s.segmented)}>
-                  {(["manual", "auto"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      {...sx.props(
-                        s.segment,
-                        z.mode === mode && s.segmentActive,
-                      )}
-                      onClick={() => zoomEdit({ mode })}
+        {showSidebar && (
+          <aside {...sx.props(s.sidebar)}>
+            <div {...sx.props(s.panel)}>
+              {!project ? (
+                <>
+                  <Heading>Background</Heading>
+                  <Note>Your recording settings will appear here.</Note>
+                </>
+              ) : z ? (
+                <>
+                  <div style={{ marginBottom: 3 }}>
+                    <Button
+                      title="Close Zoom editor"
+                      onClick={() => setSelection(null)}
                     >
-                      {mode === "auto" ? "Auto" : "Manual"}
-                    </button>
-                  ))}
-                </div>
-                <Range
-                  label="Zoom level"
-                  value={z.scale}
-                  min={1}
-                  max={5}
-                  step={0.1}
-                  unit="×"
-                  onChange={(scale) => zoomEdit({ scale })}
-                />
-                {z.mode === "manual" && (
-                  <>
-                    <Range
-                      label="Horizontal target"
-                      value={z.x * 100}
-                      onChange={(x) => zoomEdit({ x: x / 100 })}
-                      unit="%"
-                    />
-                    <Range
-                      label="Vertical target"
-                      value={z.y * 100}
-                      onChange={(y) => zoomEdit({ y: y / 100 })}
-                      unit="%"
-                    />
-                  </>
-                )}
-                <Note>
-                  {z.mode === "manual"
-                    ? "Click the preview to choose a focus point."
-                    : "Auto zoom follows recorded mouse movement. Imported videos do not include cursor metadata."}
-                </Note>
-                <Toggle
-                  label="Instant animation"
-                  value={z.instantAnimation ?? false}
-                  onChange={(instantAnimation) =>
-                    zoomEdit({ instantAnimation })
-                  }
-                />
-                <Toggle
-                  label="Enabled"
-                  value={!z.disabled}
-                  onChange={(v) => zoomEdit({ disabled: !v })}
-                />
-                {z.mode === "auto" && (
-                  <Disclosure label="Advanced">
-                    <Range
-                      label="Snap to edges"
-                      value={(z.snapToEdgesRatio ?? 0.25) * 100}
-                      min={0}
-                      max={45}
-                      step={1}
-                      unit="% of visible area"
-                      resetValue={25}
-                      onChange={(value) =>
-                        zoomEdit({ snapToEdgesRatio: value / 100 })
-                      }
-                    />
-                    <Note>
-                      Bring nearby recording edges into view as the camera
-                      follows the cursor.
-                    </Note>
-                  </Disclosure>
-                )}
-                <Divider />
-                <Button onClick={removeSelection}>
-                  <Trash2 size={13} />
-                  Remove zoom
-                </Button>
-              </>
-            ) : clip ? (
-              <>
-                <div style={{ marginBottom: 3 }}>
-                  <Button
-                    title="Close Slice editor"
-                    onClick={() => setSelection(null)}
-                  >
-                    <ChevronLeft size={13} />
-                    Close Slice editor
+                      <ChevronLeft size={13} />
+                      Close Zoom editor
+                    </Button>
+                  </div>
+                  <Heading>Zoom</Heading>
+                  <div {...sx.props(s.segmented)}>
+                    {(["manual", "auto"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        {...sx.props(
+                          s.segment,
+                          z.mode === mode && s.segmentActive,
+                        )}
+                        onClick={() => zoomEdit({ mode })}
+                      >
+                        {mode === "auto" ? "Auto" : "Manual"}
+                      </button>
+                    ))}
+                  </div>
+                  <Range
+                    label="Zoom level"
+                    value={z.scale}
+                    min={1}
+                    max={5}
+                    step={0.1}
+                    unit="×"
+                    onChange={(scale) => zoomEdit({ scale })}
+                  />
+                  {z.mode === "manual" && (
+                    <>
+                      <Range
+                        label="Horizontal target"
+                        value={z.x * 100}
+                        onChange={(x) => zoomEdit({ x: x / 100 })}
+                        unit="%"
+                      />
+                      <Range
+                        label="Vertical target"
+                        value={z.y * 100}
+                        onChange={(y) => zoomEdit({ y: y / 100 })}
+                        unit="%"
+                      />
+                    </>
+                  )}
+                  <Note>
+                    {z.mode === "manual"
+                      ? "Click the preview to choose a focus point."
+                      : "Auto zoom follows recorded mouse movement. Imported videos do not include cursor metadata."}
+                  </Note>
+                  <Toggle
+                    label="Instant animation"
+                    value={z.instantAnimation ?? false}
+                    onChange={(instantAnimation) =>
+                      zoomEdit({ instantAnimation })
+                    }
+                  />
+                  <Toggle
+                    label="Enabled"
+                    value={!z.disabled}
+                    onChange={(v) => zoomEdit({ disabled: !v })}
+                  />
+                  {z.mode === "auto" && (
+                    <Disclosure label="Advanced">
+                      <Range
+                        label="Snap to edges"
+                        value={(z.snapToEdgesRatio ?? 0.25) * 100}
+                        min={0}
+                        max={45}
+                        step={1}
+                        unit="% of visible area"
+                        resetValue={25}
+                        onChange={(value) =>
+                          zoomEdit({ snapToEdgesRatio: value / 100 })
+                        }
+                      />
+                      <Note>
+                        Bring nearby recording edges into view as the camera
+                        follows the cursor.
+                      </Note>
+                    </Disclosure>
+                  )}
+                  <Divider />
+                  <Button onClick={removeSelection}>
+                    <Trash2 size={13} />
+                    Remove zoom
                   </Button>
-                </div>
-                <Heading>Clip</Heading>
-                <Toggle
-                  label="Hide mouse cursor"
-                  value={!!clip.hideCursor}
-                  onChange={(hideCursor) =>
-                    edit({
-                      ...project,
-                      segments: project.segments.map((c) =>
-                        c.id === clip.id ? { ...c, hideCursor } : c,
-                      ),
-                    })
-                  }
-                />
-                {(project.source.hasAudio || project.microphoneAudio) && (
-                  <>
-                    <Toggle
-                      label="Mute clip audio"
-                      value={!!clip.muted}
-                      onChange={(muted) =>
-                        edit({
-                          ...project,
-                          segments: project.segments.map((c) =>
-                            c.id === clip.id ? { ...c, muted } : c,
-                          ),
-                        })
-                      }
-                    />
-                    <Range
-                      label="Clip volume"
-                      value={(clip.volume ?? 1) * 100}
-                      max={100}
-                      unit="%"
-                      resetValue={100}
-                      onChange={(volume) =>
-                        edit(
-                          {
+                </>
+              ) : clip ? (
+                <>
+                  <div style={{ marginBottom: 3 }}>
+                    <Button
+                      title="Close Slice editor"
+                      onClick={() => setSelection(null)}
+                    >
+                      <ChevronLeft size={13} />
+                      Close Slice editor
+                    </Button>
+                  </div>
+                  <Heading>Clip</Heading>
+                  <Toggle
+                    label="Hide mouse cursor"
+                    value={!!clip.hideCursor}
+                    onChange={(hideCursor) =>
+                      edit({
+                        ...project,
+                        segments: project.segments.map((c) =>
+                          c.id === clip.id ? { ...c, hideCursor } : c,
+                        ),
+                      })
+                    }
+                  />
+                  {(project.source.hasAudio || project.microphoneAudio) && (
+                    <>
+                      <Toggle
+                        label="Mute clip audio"
+                        value={!!clip.muted}
+                        onChange={(muted) =>
+                          edit({
                             ...project,
                             segments: project.segments.map((c) =>
-                              c.id === clip.id
-                                ? { ...c, volume: volume / 100 }
-                                : c,
+                              c.id === clip.id ? { ...c, muted } : c,
                             ),
-                          },
-                          `clip-volume:${clip.id}`,
-                        )
-                      }
-                    />
-                  </>
-                )}
-                <Range
-                  label="Playback speed"
-                  value={clip.speed}
-                  min={0.25}
-                  max={8}
-                  step={0.25}
-                  unit="×"
-                  onChange={(speed) =>
-                    edit({
-                      ...project,
-                      segments: project.segments.map((c) =>
-                        c.id === clip.id ? { ...c, speed } : c,
-                      ),
-                    })
-                  }
-                />
-                <Range
-                  label="Trim start"
-                  value={clip.start / 1000}
-                  min={(trimBounds?.startMin ?? 0) / 1000}
-                  max={(trimBounds?.startMax ?? clip.start) / 1000}
-                  step={0.01}
-                  unit="s"
-                  onChange={(start) => editClipTrim("start", start)}
-                />
-                <Range
-                  label="Trim end"
-                  value={clip.end / 1000}
-                  min={(trimBounds?.endMin ?? clip.end) / 1000}
-                  max={(trimBounds?.endMax ?? clip.end) / 1000}
-                  step={0.01}
-                  unit="s"
-                  onChange={(end) => editClipTrim("end", end)}
-                />
-                <Button onClick={cut}>
-                  <Scissors size={13} />
-                  Split at playhead
-                </Button>
-                <Divider />
-                <Button onClick={removeSelection}>
-                  <Trash2 size={13} />
-                  Remove clip
-                </Button>
-              </>
-            ) : mask ? (
-              <>
-                <div style={{ marginBottom: 3 }}>
-                  <Button
-                    title="Close Mask editor"
-                    onClick={() => setSelection(null)}
-                  >
-                    <ChevronLeft size={13} />
-                    Close Mask editor
-                  </Button>
-                </div>
-                <Heading>Mask & highlight</Heading>
-                <select
-                  aria-label="Mask type"
-                  value={mask.type}
-                  onChange={(e) =>
-                    maskEdit({ type: e.target.value as Mask["type"] })
-                  }
-                >
-                  <option value="blur">Blur</option>
-                  <option value="highlight">Highlight</option>
-                </select>
-                <Note>
-                  Drag the mask to move it, or drag a corner to resize it.
-                </Note>
-                <Divider />
-                {(["x", "y", "width", "height"] as const).map((k) => (
-                  <Range
-                    key={k}
-                    label={k[0].toUpperCase() + k.slice(1)}
-                    value={mask[k] * 100}
-                    min={0}
-                    max={100}
-                    unit="%"
-                    onChange={(v) => maskEdit({ [k]: v / 100 })}
-                  />
-                ))}
-                <Range
-                  label="Strength"
-                  value={mask.strength}
-                  min={1}
-                  max={100}
-                  onChange={(strength) => maskEdit({ strength })}
-                />
-                <Range
-                  label="Start"
-                  value={mask.start / 1000}
-                  min={0}
-                  max={mask.end / 1000 - 0.1}
-                  step={0.1}
-                  unit="s"
-                  onChange={(v) => maskEdit({ start: v * 1000 })}
-                />
-                <Range
-                  label="End"
-                  value={mask.end / 1000}
-                  min={mask.start / 1000 + 0.1}
-                  max={project.source.duration / 1000}
-                  step={0.1}
-                  unit="s"
-                  onChange={(v) => maskEdit({ end: v * 1000 })}
-                />
-                <Button onClick={removeSelection}>
-                  <Trash2 size={13} />
-                  Remove mask
-                </Button>
-              </>
-            ) : tab === "background" ? (
-              <>
-                <Heading>Background</Heading>
-                <div {...sx.props(s.backgroundTabs)}>
-                  {(["wallpaper", "gradient", "color", "image"] as const).map(
-                    (v) => (
-                      <button
-                        key={v}
-                        data-motion="static"
-                        aria-pressed={project.appearance.background === v}
-                        {...sx.props(
-                          s.backgroundTab,
-                          project.appearance.background === v &&
-                            s.backgroundTabSelected,
-                        )}
-                        onClick={() => appearance({ background: v })}
-                      >
-                        {v[0].toUpperCase() + v.slice(1)}
-                      </button>
-                    ),
+                          })
+                        }
+                      />
+                      <Range
+                        label="Clip volume"
+                        value={(clip.volume ?? 1) * 100}
+                        max={100}
+                        unit="%"
+                        resetValue={100}
+                        onChange={(volume) =>
+                          edit(
+                            {
+                              ...project,
+                              segments: project.segments.map((c) =>
+                                c.id === clip.id
+                                  ? { ...c, volume: volume / 100 }
+                                  : c,
+                              ),
+                            },
+                            `clip-volume:${clip.id}`,
+                          )
+                        }
+                      />
+                    </>
                   )}
-                </div>
-                {project.appearance.background === "wallpaper" ? (
-                  <>
-                    <WallpaperPicker
-                      value={project.appearance.wallpaper}
-                      onChange={(wallpaper) => appearance({ wallpaper })}
-                    />
-                    <Divider />
-                  </>
-                ) : project.appearance.background === "image" ? (
-                  <>
-                    <BackgroundImagePicker
-                      key={project.id}
-                      value={project.appearance.image}
-                      onChange={(image) =>
-                        appearance({ image, background: "image" })
-                      }
-                    />
-                    <Divider />
-                  </>
-                ) : (
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                      }}
+                  <Range
+                    label="Playback speed"
+                    value={clip.speed}
+                    min={0.25}
+                    max={8}
+                    step={0.25}
+                    unit="×"
+                    onChange={(speed) =>
+                      edit({
+                        ...project,
+                        segments: project.segments.map((c) =>
+                          c.id === clip.id ? { ...c, speed } : c,
+                        ),
+                      })
+                    }
+                  />
+                  <Range
+                    label="Trim start"
+                    value={clip.start / 1000}
+                    min={(trimBounds?.startMin ?? 0) / 1000}
+                    max={(trimBounds?.startMax ?? clip.start) / 1000}
+                    step={0.01}
+                    unit="s"
+                    onChange={(start) => editClipTrim("start", start)}
+                  />
+                  <Range
+                    label="Trim end"
+                    value={clip.end / 1000}
+                    min={(trimBounds?.endMin ?? clip.end) / 1000}
+                    max={(trimBounds?.endMax ?? clip.end) / 1000}
+                    step={0.01}
+                    unit="s"
+                    onChange={(end) => editClipTrim("end", end)}
+                  />
+                  <Button onClick={cut}>
+                    <Scissors size={13} />
+                    Split at playhead
+                  </Button>
+                  <Divider />
+                  <Button onClick={removeSelection}>
+                    <Trash2 size={13} />
+                    Remove clip
+                  </Button>
+                </>
+              ) : mask ? (
+                <>
+                  <div style={{ marginBottom: 3 }}>
+                    <Button
+                      title="Close Mask editor"
+                      onClick={() => setSelection(null)}
                     >
-                      <span>
-                        {project.appearance.background === "color"
-                          ? "Background Color"
-                          : "Background Gradient"}
-                      </span>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <input
-                          aria-label="Background color"
-                          type="color"
-                          value={project.appearance.color}
-                          onChange={(e) =>
-                            appearance({
-                              color: e.target.value,
-                              gradientStops: undefined,
-                            })
-                          }
-                        />
-                        {project.appearance.background === "gradient" ? (
+                      <ChevronLeft size={13} />
+                      Close Mask editor
+                    </Button>
+                  </div>
+                  <Heading>Mask & highlight</Heading>
+                  <select
+                    aria-label="Mask type"
+                    value={mask.type}
+                    onChange={(e) =>
+                      maskEdit({ type: e.target.value as Mask["type"] })
+                    }
+                  >
+                    <option value="blur">Blur</option>
+                    <option value="highlight">Highlight</option>
+                  </select>
+                  <Note>
+                    Drag the mask to move it, or drag a corner to resize it.
+                  </Note>
+                  <Divider />
+                  {(["x", "y", "width", "height"] as const).map((k) => (
+                    <Range
+                      key={k}
+                      label={k[0].toUpperCase() + k.slice(1)}
+                      value={mask[k] * 100}
+                      min={0}
+                      max={100}
+                      unit="%"
+                      onChange={(v) => maskEdit({ [k]: v / 100 })}
+                    />
+                  ))}
+                  <Range
+                    label="Strength"
+                    value={mask.strength}
+                    min={1}
+                    max={100}
+                    onChange={(strength) => maskEdit({ strength })}
+                  />
+                  <Range
+                    label="Start"
+                    value={mask.start / 1000}
+                    min={0}
+                    max={mask.end / 1000 - 0.1}
+                    step={0.1}
+                    unit="s"
+                    onChange={(v) => maskEdit({ start: v * 1000 })}
+                  />
+                  <Range
+                    label="End"
+                    value={mask.end / 1000}
+                    min={mask.start / 1000 + 0.1}
+                    max={project.source.duration / 1000}
+                    step={0.1}
+                    unit="s"
+                    onChange={(v) => maskEdit({ end: v * 1000 })}
+                  />
+                  <Button onClick={removeSelection}>
+                    <Trash2 size={13} />
+                    Remove mask
+                  </Button>
+                </>
+              ) : tab === "background" ? (
+                <>
+                  <Heading>Background</Heading>
+                  <div {...sx.props(s.backgroundTabs)}>
+                    {(["wallpaper", "gradient", "color", "image"] as const).map(
+                      (v) => (
+                        <button
+                          key={v}
+                          data-motion="static"
+                          aria-pressed={project.appearance.background === v}
+                          {...sx.props(
+                            s.backgroundTab,
+                            project.appearance.background === v &&
+                              s.backgroundTabSelected,
+                          )}
+                          onClick={() => appearance({ background: v })}
+                        >
+                          {v[0].toUpperCase() + v.slice(1)}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                  {project.appearance.background === "wallpaper" ? (
+                    <>
+                      <WallpaperPicker
+                        value={project.appearance.wallpaper}
+                        onChange={(wallpaper) => appearance({ wallpaper })}
+                      />
+                      <Divider />
+                    </>
+                  ) : project.appearance.background === "image" ? (
+                    <>
+                      <BackgroundImagePicker
+                        key={project.id}
+                        value={project.appearance.image}
+                        onChange={(image) =>
+                          appearance({ image, background: "image" })
+                        }
+                      />
+                      <Divider />
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        <span>
+                          {project.appearance.background === "color"
+                            ? "Background Color"
+                            : "Background Gradient"}
+                        </span>
+                        <div style={{ display: "flex", gap: 8 }}>
                           <input
-                            aria-label="Gradient second color"
+                            aria-label="Background color"
                             type="color"
-                            value={project.appearance.color2}
+                            value={project.appearance.color}
                             onChange={(e) =>
                               appearance({
-                                color2: e.target.value,
+                                color: e.target.value,
                                 gradientStops: undefined,
                               })
                             }
                           />
-                        ) : null}
+                          {project.appearance.background === "gradient" ? (
+                            <input
+                              aria-label="Gradient second color"
+                              type="color"
+                              value={project.appearance.color2}
+                              onChange={(e) =>
+                                appearance({
+                                  color2: e.target.value,
+                                  gradientStops: undefined,
+                                })
+                              }
+                            />
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
-                    {project.appearance.background === "gradient" && (
-                      <Disclosure label="Gradient presets" defaultOpen>
-                        <GradientPresets
-                          appearance={project.appearance}
-                          onChange={(colors) =>
-                            appearance({
-                              color: colors[0],
-                              color2: colors[colors.length - 1],
-                              gradientStops: [...colors],
-                            })
-                          }
-                        />
-                      </Disclosure>
-                    )}
-                    <Divider />
-                  </>
-                )}
-                {(project.appearance.background === "wallpaper" ||
-                  project.appearance.background === "image") && (
+                      {project.appearance.background === "gradient" && (
+                        <Disclosure label="Gradient presets" defaultOpen>
+                          <GradientPresets
+                            appearance={project.appearance}
+                            onChange={(colors) =>
+                              appearance({
+                                color: colors[0],
+                                color2: colors[colors.length - 1],
+                                gradientStops: [...colors],
+                              })
+                            }
+                          />
+                        </Disclosure>
+                      )}
+                      <Divider />
+                    </>
+                  )}
+                  {(project.appearance.background === "wallpaper" ||
+                    project.appearance.background === "image") && (
+                    <Range
+                      label="Background blur"
+                      preview={false}
+                      value={project.appearance.blur}
+                      max={100}
+                      onChange={(blur) => appearance({ blur })}
+                    />
+                  )}
                   <Range
-                    label="Background blur"
-                    preview={false}
-                    value={project.appearance.blur}
-                    max={100}
-                    onChange={(blur) => appearance({ blur })}
+                    label="Padding"
+                    step={0.001}
+                    formatValue={(value) => `${value.toFixed(1)}%`}
+                    resetValue={defaults.padding}
+                    value={project.appearance.padding}
+                    max={35}
+                    unit="%"
+                    onChange={(padding) => appearance({ padding })}
                   />
-                )}
-                <Range
-                  label="Padding"
-                  step={0.001}
-                  formatValue={(value) => `${value.toFixed(1)}%`}
-                  resetValue={defaults.padding}
-                  value={project.appearance.padding}
-                  max={35}
-                  unit="%"
-                  onChange={(padding) => appearance({ padding })}
-                />
-                <Range
-                  label="Rounded corners"
-                  resetValue={defaults.radius}
-                  value={screenCorners(project.appearance).outer}
-                  max={200}
-                  onChange={(outerRadius) => appearance({ outerRadius })}
-                />
-                <Range
-                  label="Inset"
-                  resetValue={defaults.inset}
-                  value={project.appearance.inset}
-                  max={60}
-                  step={0.001}
-                  formatValue={(value) => value.toFixed(0)}
-                  onChange={(inset) => appearance(insetAppearance(inset))}
-                />
-                {project.appearance.inset ? (
-                  <InsetColors
-                    video={video}
-                    crop={
-                      project.crop ?? {
-                        x: 0,
-                        y: 0,
-                        width: project.source.width,
-                        height: project.source.height,
+                  <Range
+                    label="Rounded corners"
+                    resetValue={defaults.radius}
+                    value={screenCorners(project.appearance).outer}
+                    max={200}
+                    onChange={(outerRadius) => appearance({ outerRadius })}
+                  />
+                  <Range
+                    label="Inset"
+                    resetValue={defaults.inset}
+                    value={project.appearance.inset}
+                    max={60}
+                    step={0.001}
+                    formatValue={(value) => value.toFixed(0)}
+                    onChange={(inset) => appearance(insetAppearance(inset))}
+                  />
+                  {project.appearance.inset ? (
+                    <InsetColors
+                      video={video}
+                      crop={
+                        project.crop ?? {
+                          x: 0,
+                          y: 0,
+                          width: project.source.width,
+                          height: project.source.height,
+                        }
                       }
-                    }
-                    source={url}
-                    playing={playing}
-                    value={project.appearance.insetColor}
-                    onChange={(insetColor) => appearance({ insetColor })}
-                  />
-                ) : null}
-                {project.appearance.inset > 0 && (
+                      source={url}
+                      playing={playing}
+                      value={project.appearance.insetColor}
+                      onChange={(insetColor) => appearance({ insetColor })}
+                    />
+                  ) : null}
+                  {project.appearance.inset > 0 && (
+                    <Range
+                      label="Inset opacity"
+                      value={project.appearance.insetOpacity ?? 1}
+                      min={0}
+                      max={1}
+                      step={0.001}
+                      preview={false}
+                      onChange={(insetOpacity) => appearance({ insetOpacity })}
+                    />
+                  )}
+                  {project.appearance.inset > 0 && (
+                    <Disclosure label="Inset balance">
+                      <InsetBalance
+                        value={project.appearance.insetBalance}
+                        onChange={(insetBalance) =>
+                          appearance({ insetBalance })
+                        }
+                      />
+                    </Disclosure>
+                  )}
                   <Range
-                    label="Inset opacity"
-                    value={project.appearance.insetOpacity ?? 1}
+                    label="Shadow"
+                    preview={false}
+                    resetValue={defaults.shadow}
+                    value={project.appearance.shadow}
                     min={0}
                     max={1}
                     step={0.001}
-                    preview={false}
-                    onChange={(insetOpacity) => appearance({ insetOpacity })}
+                    onChange={(shadow) => appearance({ shadow })}
                   />
-                )}
-                {project.appearance.inset > 0 && (
-                  <Disclosure label="Inset balance">
-                    <InsetBalance
-                      value={project.appearance.insetBalance}
-                      onChange={(insetBalance) => appearance({ insetBalance })}
+                  <Disclosure label="Advanced shadow settings">
+                    <Toggle
+                      label="Directional shadow"
+                      disabled={
+                        !supportsDirectionalShadow(
+                          project.source.width,
+                          project.source.height,
+                        )
+                      }
+                      value={project.appearance.shadowDirectional}
+                      onChange={(shadowDirectional) =>
+                        appearance({
+                          shadowDirectional,
+                          shadow: shadowDirectional ? 0.4 : defaults.shadow,
+                        })
+                      }
+                    />
+                    {!supportsDirectionalShadow(
+                      project.source.width,
+                      project.source.height,
+                    ) && (
+                      <Note>
+                        Directional shadow is disabled for recordings on large
+                        screens.
+                      </Note>
+                    )}
+                    <Range
+                      label="Shadow Distance"
+                      preview={false}
+                      value={project.appearance.shadowDistance}
+                      max={100}
+                      resetValue={defaults.shadowDistance}
+                      onChange={(shadowDistance) =>
+                        appearance({ shadowDistance })
+                      }
+                    />
+                    <Range
+                      label="Shadow Angle"
+                      value={project.appearance.shadowAngle}
+                      max={180}
+                      unit="°"
+                      resetValue={defaults.shadowAngle}
+                      onChange={(shadowAngle) => appearance({ shadowAngle })}
+                    />
+                    <Range
+                      label="Shadow Blur"
+                      preview={false}
+                      value={project.appearance.shadowBlur}
+                      min={5}
+                      max={30}
+                      resetValue={defaults.shadowBlur}
+                      onChange={(shadowBlur) => appearance({ shadowBlur })}
                     />
                   </Disclosure>
-                )}
-                <Range
-                  label="Shadow"
-                  preview={false}
-                  resetValue={defaults.shadow}
-                  value={project.appearance.shadow}
-                  min={0}
-                  max={1}
-                  step={0.001}
-                  onChange={(shadow) => appearance({ shadow })}
-                />
-                <Disclosure label="Advanced shadow settings">
-                  <Toggle
-                    label="Directional shadow"
-                    disabled={
-                      !supportsDirectionalShadow(
-                        project.source.width,
-                        project.source.height,
-                      )
-                    }
-                    value={project.appearance.shadowDirectional}
-                    onChange={(shadowDirectional) =>
-                      appearance({
-                        shadowDirectional,
-                        shadow: shadowDirectional ? 0.4 : defaults.shadow,
-                      })
-                    }
-                  />
-                  {!supportsDirectionalShadow(
-                    project.source.width,
-                    project.source.height,
-                  ) && (
-                    <Note>
-                      Directional shadow is disabled for recordings on large
-                      screens.
-                    </Note>
-                  )}
-                  <Range
-                    label="Shadow Distance"
-                    preview={false}
-                    value={project.appearance.shadowDistance}
-                    max={100}
-                    resetValue={defaults.shadowDistance}
-                    onChange={(shadowDistance) =>
-                      appearance({ shadowDistance })
-                    }
-                  />
-                  <Range
-                    label="Shadow Angle"
-                    value={project.appearance.shadowAngle}
-                    max={180}
-                    unit="°"
-                    resetValue={defaults.shadowAngle}
-                    onChange={(shadowAngle) => appearance({ shadowAngle })}
-                  />
-                  <Range
-                    label="Shadow Blur"
-                    preview={false}
-                    value={project.appearance.shadowBlur}
-                    min={5}
-                    max={30}
-                    resetValue={defaults.shadowBlur}
-                    onChange={(shadowBlur) => appearance({ shadowBlur })}
-                  />
-                </Disclosure>
-              </>
-            ) : tab === "cursor" ? (
-              <>
-                <Heading>Cursor</Heading>
-                {sourceAt(project, time)?.segment.hideCursor && (
-                  <>
-                    <Note>
-                      The cursor is hidden in this clip. Change its clip setting
-                      to see cursor adjustments here.
-                    </Note>
-                    <Button
-                      onClick={() => {
-                        const segment = sourceAt(project, time)?.segment;
-                        if (segment)
-                          setSelection({ type: "clip", id: segment.id });
-                      }}
-                    >
-                      Open clip settings
-                    </Button>
-                    <Divider />
-                  </>
-                )}
-                {!project.cursor.length ? (
-                  <Note>
-                    This imported video has no separate cursor track. Cursor
-                    controls become available for recordings that include input
-                    metadata.
-                  </Note>
-                ) : (
-                  <>
-                    <Toggle
-                      label="Hide cursor"
-                      value={project.appearance.hideCursor}
-                      onChange={(hideCursor) => appearance({ hideCursor })}
-                    />
-                    <Range
-                      label="Cursor size"
-                      value={project.appearance.cursorSize}
-                      min={0.5}
-                      max={4}
-                      step={0.1}
-                      unit="×"
-                      onChange={(cursorSize) => appearance({ cursorSize })}
-                    />
-                    <Toggle
-                      label="Smooth movement"
-                      value={project.appearance.cursorSmooth}
-                      onChange={(cursorSmooth) =>
-                        appearance({
-                          cursorSmooth,
-                          cursorAnimation:
-                            cursorSmooth &&
-                            project.appearance.cursorAnimation === "none"
-                              ? "smooth"
-                              : project.appearance.cursorAnimation,
-                        })
-                      }
-                    />
-                    <Toggle
-                      label="Loop cursor position"
-                      value={project.appearance.cursorLoopMs !== null}
-                      onChange={(enabled) =>
-                        appearance({ cursorLoopMs: enabled ? 1000 : null })
-                      }
-                    />
-                    <Note>
-                      Near the end of the video, the cursor returns to its
-                      starting position.
-                    </Note>
-                    {project.appearance.cursorLoopMs !== null && (
-                      <Range
-                        label="Loop cursor position duration"
-                        value={project.appearance.cursorLoopMs / 1000}
-                        min={1}
-                        max={4}
-                        step={0.1}
-                        unit="s"
-                        onChange={(seconds) =>
-                          appearance({
-                            cursorLoopMs: Math.round(seconds * 1000),
-                          })
-                        }
-                      />
-                    )}
-                    <Row>
-                      <label htmlFor="click-effect">Click effect</label>
-                      <select
-                        id="click-effect"
-                        value={project.appearance.clickEffect}
-                        onChange={(e) =>
-                          appearance({
-                            clickEffect: e.target
-                              .value as Appearance["clickEffect"],
-                          })
-                        }
-                      >
-                        <option value="none">None</option>
-                        <option value="circle">Circle</option>
-                        <option value="ripple">Ripple</option>
-                      </select>
-                    </Row>
-                    <Row>
-                      <label htmlFor="click-sound">Click sound</label>
-                      <select
-                        id="click-sound"
-                        value={project.appearance.clickSound ?? "none"}
-                        onChange={(e) => {
-                          const value = e.target.value as
-                            "none" | "soft" | "mechanical";
-                          appearance({ clickSound: value });
-                          if (value !== "none") void auditionClick(value);
+                </>
+              ) : tab === "cursor" ? (
+                <>
+                  <Heading>Cursor</Heading>
+                  {sourceAt(project, time)?.segment.hideCursor && (
+                    <>
+                      <Note>
+                        The cursor is hidden in this clip. Change its clip
+                        setting to see cursor adjustments here.
+                      </Note>
+                      <Button
+                        onClick={() => {
+                          const segment = sourceAt(project, time)?.segment;
+                          if (segment)
+                            setSelection({ type: "clip", id: segment.id });
                         }}
                       >
-                        <option value="none">None</option>
-                        <option value="soft">Soft</option>
-                        <option value="mechanical">Mechanical</option>
-                      </select>
-                    </Row>
-                    {project.appearance.clickSound &&
-                      project.appearance.clickSound !== "none" && (
-                        <>
-                          <Range
-                            label="Click sound volume"
-                            value={
-                              (project.appearance.clickSoundVolume ?? 0.25) *
-                              100
-                            }
-                            min={0}
-                            max={100}
-                            step={5}
-                            unit="%"
-                            resetValue={25}
-                            onChange={(value) => {
-                              appearance({ clickSoundVolume: value / 100 });
-                              void auditionClick(
-                                project.appearance.clickSound as
-                                  "soft" | "mechanical",
-                                value / 100,
-                              );
-                            }}
-                          />
-                          <Button
-                            onClick={() =>
-                              void auditionClick(
-                                project.appearance.clickSound as
-                                  "soft" | "mechanical",
-                              )
-                            }
-                          >
-                            Play click sound preview
-                          </Button>
-                        </>
-                      )}
-                    <Divider />
-                    <Toggle
-                      label="Hide cursor if not moving"
-                      value={project.appearance.cursorIdleMs !== null}
-                      onChange={(enabled) =>
-                        appearance({ cursorIdleMs: enabled ? 2000 : null })
-                      }
-                    />
-                    {project.appearance.cursorIdleMs !== null && (
+                        Open clip settings
+                      </Button>
+                      <Divider />
+                    </>
+                  )}
+                  {!project.cursor.length ? (
+                    <Note>
+                      This imported video has no separate cursor track. Cursor
+                      controls become available for recordings that include
+                      input metadata.
+                    </Note>
+                  ) : (
+                    <>
+                      <Toggle
+                        label="Hide cursor"
+                        value={project.appearance.hideCursor}
+                        onChange={(hideCursor) => appearance({ hideCursor })}
+                      />
                       <Range
-                        label="Hide not moving cursor after"
-                        value={project.appearance.cursorIdleMs / 1000}
+                        label="Cursor size"
+                        value={project.appearance.cursorSize}
                         min={0.5}
-                        max={5}
+                        max={4}
                         step={0.1}
-                        unit="s"
-                        onChange={(seconds) =>
+                        unit="×"
+                        onChange={(cursorSize) => appearance({ cursorSize })}
+                      />
+                      <Toggle
+                        label="Smooth movement"
+                        value={project.appearance.cursorSmooth}
+                        onChange={(cursorSmooth) =>
                           appearance({
-                            cursorIdleMs: Math.round(seconds * 1000),
+                            cursorSmooth,
+                            cursorAnimation:
+                              cursorSmooth &&
+                              project.appearance.cursorAnimation === "none"
+                                ? "smooth"
+                                : project.appearance.cursorAnimation,
                           })
                         }
                       />
-                    )}
-                  </>
-                )}
-              </>
-            ) : tab === "audio" ? (
-              <>
-                {project.microphoneAudio && (
-                  <>
-                    <Heading>Microphone</Heading>
-                    <Toggle
-                      label="Mute microphone"
-                      value={project.microphoneAudio.muted}
-                      onChange={(muted) =>
-                        edit({
-                          ...project,
-                          microphoneAudio: {
-                            ...project.microphoneAudio!,
-                            muted,
-                          },
-                        })
-                      }
-                    />
-                    {!project.microphoneAudio.muted && (
-                      <Range
-                        label="Microphone volume"
-                        value={project.microphoneAudio.volume * 100}
-                        max={100}
-                        resetValue={100}
-                        unit="%"
-                        onChange={(volume) =>
-                          edit(
-                            {
-                              ...project,
-                              microphoneAudio: {
-                                ...project.microphoneAudio!,
-                                volume: volume / 100,
-                              },
-                            },
-                            "microphone-volume",
-                          )
+                      <Toggle
+                        label="Loop cursor position"
+                        value={project.appearance.cursorLoopMs !== null}
+                        onChange={(enabled) =>
+                          appearance({ cursorLoopMs: enabled ? 1000 : null })
                         }
                       />
-                    )}
-                    <Divider />
-                  </>
-                )}
-                {project.source.hasAudio && (
-                  <>
-                    <Heading>
-                      {project.microphoneAudio ? "System audio" : "Audio"}
-                    </Heading>
-                    <Toggle
-                      label="Mute source audio"
-                      value={project.appearance.muted}
-                      onChange={(muted) => appearance({ muted })}
-                    />
-                    <Range
-                      label="Volume"
-                      value={project.appearance.volume * 100}
-                      max={100}
-                      unit="%"
-                      onChange={(v) => appearance({ volume: v / 100 })}
-                    />
-                    <Divider />
-                  </>
-                )}
-                <Heading>Background audio</Heading>
-                <AudioLibrary
-                  disabled={musicBusy || !window.refract}
-                  onSelect={importBackgroundAudio}
-                />
-                {project.backgroundAudio ? (
-                  <>
-                    <Button
-                      disabled={!audioPreview.ready}
-                      title={`${audioPreview.playing ? "Stop" : "Play"} ${project.backgroundAudio.name}`}
-                      onClick={() => {
-                        pausePreview();
-                        audioPreview.toggle();
-                      }}
-                    >
-                      {audioPreview.playing ? (
-                        <CircleStop size={14} style={{ flexShrink: 0 }} />
-                      ) : (
-                        <CirclePlay size={14} style={{ flexShrink: 0 }} />
+                      <Note>
+                        Near the end of the video, the cursor returns to its
+                        starting position.
+                      </Note>
+                      {project.appearance.cursorLoopMs !== null && (
+                        <Range
+                          label="Loop cursor position duration"
+                          value={project.appearance.cursorLoopMs / 1000}
+                          min={1}
+                          max={4}
+                          step={0.1}
+                          unit="s"
+                          onChange={(seconds) =>
+                            appearance({
+                              cursorLoopMs: Math.round(seconds * 1000),
+                            })
+                          }
+                        />
                       )}
-                      <span {...sx.props(s.audioTrackName)}>
-                        {audioPreview.playing ? "Stop" : "Play"}{" "}
-                        {project.backgroundAudio.name}
-                      </span>
-                    </Button>
-                    <Toggle
-                      label="Mute background audio"
-                      value={project.backgroundAudio.muted}
-                      onChange={(muted) =>
-                        edit({
-                          ...project,
-                          backgroundAudio: {
-                            ...project.backgroundAudio!,
-                            muted,
-                          },
-                        })
-                      }
-                    />
-                    {!project.backgroundAudio.muted && (
-                      <Range
-                        label="Background audio volume"
-                        value={project.backgroundAudio.volume * 100}
-                        max={100}
-                        resetValue={5}
-                        unit="%"
-                        onChange={(volume) =>
-                          edit(
-                            {
-                              ...project,
-                              backgroundAudio: {
-                                ...project.backgroundAudio!,
-                                volume: volume / 100,
-                              },
-                            },
-                            "background-audio-volume",
-                          )
+                      <Row>
+                        <label htmlFor="click-effect">Click effect</label>
+                        <select
+                          id="click-effect"
+                          value={project.appearance.clickEffect}
+                          onChange={(e) =>
+                            appearance({
+                              clickEffect: e.target
+                                .value as Appearance["clickEffect"],
+                            })
+                          }
+                        >
+                          <option value="none">None</option>
+                          <option value="circle">Circle</option>
+                          <option value="ripple">Ripple</option>
+                        </select>
+                      </Row>
+                      <Row>
+                        <label htmlFor="click-sound">Click sound</label>
+                        <select
+                          id="click-sound"
+                          value={project.appearance.clickSound ?? "none"}
+                          onChange={(e) => {
+                            const value = e.target.value as
+                              "none" | "soft" | "mechanical";
+                            appearance({ clickSound: value });
+                            if (value !== "none") void auditionClick(value);
+                          }}
+                        >
+                          <option value="none">None</option>
+                          <option value="soft">Soft</option>
+                          <option value="mechanical">Mechanical</option>
+                        </select>
+                      </Row>
+                      {project.appearance.clickSound &&
+                        project.appearance.clickSound !== "none" && (
+                          <>
+                            <Range
+                              label="Click sound volume"
+                              value={
+                                (project.appearance.clickSoundVolume ?? 0.25) *
+                                100
+                              }
+                              min={0}
+                              max={100}
+                              step={5}
+                              unit="%"
+                              resetValue={25}
+                              onChange={(value) => {
+                                appearance({ clickSoundVolume: value / 100 });
+                                void auditionClick(
+                                  project.appearance.clickSound as
+                                    "soft" | "mechanical",
+                                  value / 100,
+                                );
+                              }}
+                            />
+                            <Button
+                              onClick={() =>
+                                void auditionClick(
+                                  project.appearance.clickSound as
+                                    "soft" | "mechanical",
+                                )
+                              }
+                            >
+                              Play click sound preview
+                            </Button>
+                          </>
+                        )}
+                      <Divider />
+                      <Toggle
+                        label="Hide cursor if not moving"
+                        value={project.appearance.cursorIdleMs !== null}
+                        onChange={(enabled) =>
+                          appearance({ cursorIdleMs: enabled ? 2000 : null })
                         }
                       />
-                    )}
-                    <Button
-                      onClick={() =>
-                        edit({ ...project, backgroundAudio: undefined })
-                      }
-                    >
-                      Remove background audio
-                    </Button>
-                  </>
-                ) : null}
-                <Button
-                  disabled={musicBusy || !window.refract}
-                  onClick={() => void importBackgroundAudio()}
-                >
-                  {musicBusy
-                    ? "Adding audio…"
-                    : project.backgroundAudio
-                      ? "Replace background audio…"
-                      : "Add background audio…"}
-                </Button>
-              </>
-            ) : tab === "animations" ? (
-              <>
-                <Heading>Animations</Heading>
-                <span>Screen animation</span>
-                <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
-                  {(["smooth", "focused", "instant"] as const).map((v) => (
-                    <button
-                      key={v}
-                      {...sx.props(
-                        s.segment,
-                        !project.appearance.screenSpring &&
-                          project.appearance.animation === v &&
-                          s.segmentActive,
+                      {project.appearance.cursorIdleMs !== null && (
+                        <Range
+                          label="Hide not moving cursor after"
+                          value={project.appearance.cursorIdleMs / 1000}
+                          min={0.5}
+                          max={5}
+                          step={0.1}
+                          unit="s"
+                          onChange={(seconds) =>
+                            appearance({
+                              cursorIdleMs: Math.round(seconds * 1000),
+                            })
+                          }
+                        />
                       )}
-                      onClick={() =>
-                        appearance({ animation: v, screenSpring: undefined })
-                      }
-                    >
-                      {v[0].toUpperCase() + v.slice(1)}
-                    </button>
-                  ))}
-                </div>
-                <Note>
-                  Choose how screen movement settles between zooms. Preview and
-                  export use the same motion.
-                </Note>
-                {project.appearance.animation !== "instant" && (
-                  <SpringControls
-                    target="screen"
-                    value={
-                      project.appearance.screenSpring ??
-                      screenPresets[project.appearance.animation]
-                    }
-                    onChange={(screenSpring) => appearance({ screenSpring })}
-                    onReset={() => appearance({ screenSpring: undefined })}
+                    </>
+                  )}
+                </>
+              ) : tab === "audio" ? (
+                <>
+                  {project.microphoneAudio && (
+                    <>
+                      <Heading>Microphone</Heading>
+                      <Toggle
+                        label="Mute microphone"
+                        value={project.microphoneAudio.muted}
+                        onChange={(muted) =>
+                          edit({
+                            ...project,
+                            microphoneAudio: {
+                              ...project.microphoneAudio!,
+                              muted,
+                            },
+                          })
+                        }
+                      />
+                      {!project.microphoneAudio.muted && (
+                        <Range
+                          label="Microphone volume"
+                          value={project.microphoneAudio.volume * 100}
+                          max={100}
+                          resetValue={100}
+                          unit="%"
+                          onChange={(volume) =>
+                            edit(
+                              {
+                                ...project,
+                                microphoneAudio: {
+                                  ...project.microphoneAudio!,
+                                  volume: volume / 100,
+                                },
+                              },
+                              "microphone-volume",
+                            )
+                          }
+                        />
+                      )}
+                      <Divider />
+                    </>
+                  )}
+                  {project.source.hasAudio && (
+                    <>
+                      <Heading>
+                        {project.microphoneAudio ? "System audio" : "Audio"}
+                      </Heading>
+                      <Toggle
+                        label="Mute source audio"
+                        value={project.appearance.muted}
+                        onChange={(muted) => appearance({ muted })}
+                      />
+                      <Range
+                        label="Volume"
+                        value={project.appearance.volume * 100}
+                        max={100}
+                        unit="%"
+                        onChange={(v) => appearance({ volume: v / 100 })}
+                      />
+                      <Divider />
+                    </>
+                  )}
+                  <Heading>Background audio</Heading>
+                  <AudioLibrary
+                    disabled={musicBusy || !window.refract}
+                    onSelect={importBackgroundAudio}
                   />
-                )}
-                <Divider />
-                <span>Cursor animation style</span>
-                <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
-                  {(["smooth", "medium", "rapid", "none"] as const).map(
-                    (style) => (
+                  {project.backgroundAudio ? (
+                    <>
+                      <Button
+                        disabled={!audioPreview.ready}
+                        title={`${audioPreview.playing ? "Stop" : "Play"} ${project.backgroundAudio.name}`}
+                        onClick={() => {
+                          pausePreview();
+                          audioPreview.toggle();
+                        }}
+                      >
+                        {audioPreview.playing ? (
+                          <CircleStop size={14} style={{ flexShrink: 0 }} />
+                        ) : (
+                          <CirclePlay size={14} style={{ flexShrink: 0 }} />
+                        )}
+                        <span {...sx.props(s.audioTrackName)}>
+                          {audioPreview.playing ? "Stop" : "Play"}{" "}
+                          {project.backgroundAudio.name}
+                        </span>
+                      </Button>
+                      <Toggle
+                        label="Mute background audio"
+                        value={project.backgroundAudio.muted}
+                        onChange={(muted) =>
+                          edit({
+                            ...project,
+                            backgroundAudio: {
+                              ...project.backgroundAudio!,
+                              muted,
+                            },
+                          })
+                        }
+                      />
+                      {!project.backgroundAudio.muted && (
+                        <Range
+                          label="Background audio volume"
+                          value={project.backgroundAudio.volume * 100}
+                          max={100}
+                          resetValue={5}
+                          unit="%"
+                          onChange={(volume) =>
+                            edit(
+                              {
+                                ...project,
+                                backgroundAudio: {
+                                  ...project.backgroundAudio!,
+                                  volume: volume / 100,
+                                },
+                              },
+                              "background-audio-volume",
+                            )
+                          }
+                        />
+                      )}
+                      <Button
+                        onClick={() =>
+                          edit({ ...project, backgroundAudio: undefined })
+                        }
+                      >
+                        Remove background audio
+                      </Button>
+                    </>
+                  ) : null}
+                  <Button
+                    disabled={musicBusy || !window.refract}
+                    onClick={() => void importBackgroundAudio()}
+                  >
+                    {musicBusy
+                      ? "Adding audio…"
+                      : project.backgroundAudio
+                        ? "Replace background audio…"
+                        : "Add background audio…"}
+                  </Button>
+                </>
+              ) : tab === "animations" ? (
+                <>
+                  <Heading>Animations</Heading>
+                  <span>Screen animation</span>
+                  <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
+                    {(["smooth", "focused", "instant"] as const).map((v) => (
                       <button
-                        key={style}
+                        key={v}
                         {...sx.props(
                           s.segment,
-                          !project.appearance.cursorSpring &&
-                            (project.appearance.cursorSmooth
-                              ? project.appearance.cursorAnimation
-                              : "none") === style &&
+                          !project.appearance.screenSpring &&
+                            project.appearance.animation === v &&
                             s.segmentActive,
                         )}
                         onClick={() =>
-                          appearance({
-                            cursorSpring: undefined,
-                            cursorAnimation: style,
-                            cursorSmooth: style !== "none",
-                          })
+                          appearance({ animation: v, screenSpring: undefined })
                         }
                       >
-                        {style[0].toUpperCase() + style.slice(1)}
+                        {v[0].toUpperCase() + v.slice(1)}
                       </button>
-                    ),
-                  )}
-                </div>
-                <Note>
-                  Choose how the cursor settles into each new position.
-                </Note>
-                {project.appearance.cursorSmooth &&
-                  project.appearance.cursorAnimation !== "none" && (
+                    ))}
+                  </div>
+                  <Note>
+                    Choose how screen movement settles between zooms. Preview
+                    and export use the same motion.
+                  </Note>
+                  {project.appearance.animation !== "instant" && (
                     <SpringControls
-                      target="cursor"
-                      value={cursorSpring}
-                      onChange={(cursorSpring) => appearance({ cursorSpring })}
-                      onReset={() => appearance({ cursorSpring: undefined })}
+                      target="screen"
+                      value={
+                        project.appearance.screenSpring ??
+                        screenPresets[project.appearance.animation]
+                      }
+                      onChange={(screenSpring) => appearance({ screenSpring })}
+                      onReset={() => appearance({ screenSpring: undefined })}
                     />
                   )}
-                <Divider />
-                <Range
-                  label="Motion blur"
-                  value={(project.appearance.motionBlurAmount ?? 0) * 100}
-                  min={0}
-                  max={100}
-                  step={1}
-                  unit="%"
-                  onChange={(value) =>
-                    appearance({ motionBlurAmount: value / 100 })
-                  }
-                />
-                <Note>Add motion blur while the cursor or screen moves.</Note>
-                <Disclosure label="Advanced motion blur settings">
+                  <Divider />
+                  <span>Cursor animation style</span>
+                  <div {...sx.props(s.segmented)} style={{ marginTop: 12 }}>
+                    {(["smooth", "medium", "rapid", "none"] as const).map(
+                      (style) => (
+                        <button
+                          key={style}
+                          {...sx.props(
+                            s.segment,
+                            !project.appearance.cursorSpring &&
+                              (project.appearance.cursorSmooth
+                                ? project.appearance.cursorAnimation
+                                : "none") === style &&
+                              s.segmentActive,
+                          )}
+                          onClick={() =>
+                            appearance({
+                              cursorSpring: undefined,
+                              cursorAnimation: style,
+                              cursorSmooth: style !== "none",
+                            })
+                          }
+                        >
+                          {style[0].toUpperCase() + style.slice(1)}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                  <Note>
+                    Choose how the cursor settles into each new position.
+                  </Note>
+                  {project.appearance.cursorSmooth &&
+                    project.appearance.cursorAnimation !== "none" && (
+                      <SpringControls
+                        target="cursor"
+                        value={cursorSpring}
+                        onChange={(cursorSpring) =>
+                          appearance({ cursorSpring })
+                        }
+                        onReset={() => appearance({ cursorSpring: undefined })}
+                      />
+                    )}
+                  <Divider />
                   <Range
-                    label="Screen movement blur"
-                    value={(project.appearance.screenMoveBlur ?? 0) * 100}
+                    label="Motion blur"
+                    value={(project.appearance.motionBlurAmount ?? 0) * 100}
                     min={0}
                     max={100}
                     step={1}
                     unit="%"
                     onChange={(value) =>
-                      appearance({ screenMoveBlur: value / 100 })
+                      appearance({ motionBlurAmount: value / 100 })
                     }
                   />
-                  <Range
-                    label="Screen zoom blur"
-                    value={(project.appearance.screenZoomBlur ?? 0) * 100}
-                    min={0}
-                    max={100}
-                    step={1}
-                    unit="%"
-                    onChange={(value) =>
-                      appearance({ screenZoomBlur: value / 100 })
+                  <Note>Add motion blur while the cursor or screen moves.</Note>
+                  <Disclosure label="Advanced motion blur settings">
+                    <Range
+                      label="Screen movement blur"
+                      value={(project.appearance.screenMoveBlur ?? 0) * 100}
+                      min={0}
+                      max={100}
+                      step={1}
+                      unit="%"
+                      onChange={(value) =>
+                        appearance({ screenMoveBlur: value / 100 })
+                      }
+                    />
+                    <Range
+                      label="Screen zoom blur"
+                      value={(project.appearance.screenZoomBlur ?? 0) * 100}
+                      min={0}
+                      max={100}
+                      step={1}
+                      unit="%"
+                      onChange={(value) =>
+                        appearance({ screenZoomBlur: value / 100 })
+                      }
+                    />
+                    <Range
+                      label="Cursor motion blur"
+                      value={(project.appearance.cursorMotionBlur ?? 0) * 100}
+                      min={0}
+                      max={100}
+                      step={1}
+                      unit="%"
+                      onChange={(value) =>
+                        appearance({ cursorMotionBlur: value / 100 })
+                      }
+                    />
+                  </Disclosure>
+                </>
+              ) : tab === "captions" ? (
+                <>
+                  <Heading>Captions</Heading>
+                  <Row>
+                    <span>Language</span>
+                    <select
+                      aria-label="Caption language"
+                      value={captionLocale}
+                      disabled={captionBusy}
+                      onChange={(e) => setCaptionLocale(e.target.value)}
+                    >
+                      {[
+                        ["en-US", "English (US)"],
+                        ["en-GB", "English (UK)"],
+                        ["es-ES", "Spanish"],
+                        ["fr-FR", "French"],
+                        ["de-DE", "German"],
+                        ["it-IT", "Italian"],
+                        ["pt-BR", "Portuguese"],
+                        ["ja-JP", "Japanese"],
+                      ].map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </Row>
+                  <Button
+                    primary
+                    disabled={
+                      captionBusy ||
+                      (!project.source.hasAudio && !project.microphoneAudio) ||
+                      !window.refract
                     }
-                  />
-                  <Range
-                    label="Cursor motion blur"
-                    value={(project.appearance.cursorMotionBlur ?? 0) * 100}
-                    min={0}
-                    max={100}
-                    step={1}
-                    unit="%"
-                    onChange={(value) =>
-                      appearance({ cursorMotionBlur: value / 100 })
-                    }
-                  />
-                </Disclosure>
-              </>
-            ) : tab === "captions" ? (
-              <>
-                <Heading>Captions</Heading>
-                <Row>
-                  <span>Language</span>
-                  <select
-                    aria-label="Caption language"
-                    value={captionLocale}
-                    disabled={captionBusy}
-                    onChange={(e) => setCaptionLocale(e.target.value)}
+                    onClick={generateCaptions}
                   >
-                    {[
-                      ["en-US", "English (US)"],
-                      ["en-GB", "English (UK)"],
-                      ["es-ES", "Spanish"],
-                      ["fr-FR", "French"],
-                      ["de-DE", "German"],
-                      ["it-IT", "Italian"],
-                      ["pt-BR", "Portuguese"],
-                      ["ja-JP", "Japanese"],
-                    ].map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </Row>
-                <Button
-                  primary
-                  disabled={
-                    captionBusy ||
-                    (!project.source.hasAudio && !project.microphoneAudio) ||
-                    !window.refract
-                  }
-                  onClick={generateCaptions}
-                >
-                  {captionBusy
-                    ? "Generating captions…"
-                    : project.captions.length
-                      ? "Regenerate captions locally"
-                      : "Generate captions locally"}
-                </Button>
-                {captionBusy && (
-                  <Button onClick={() => void window.refract?.cancelCaptions()}>
-                    Cancel generation
+                    {captionBusy
+                      ? "Generating captions…"
+                      : project.captions.length
+                        ? "Regenerate captions locally"
+                        : "Generate captions locally"}
                   </Button>
-                )}
-                <Note>
-                  Speech is processed on this Mac. A language model may download
-                  from Apple the first time. Captions follow your cuts and speed
-                  changes.
-                </Note>
-                {!project.source.hasAudio && !project.microphoneAudio && (
-                  <Note>This video has no audio track.</Note>
-                )}
-                <Divider />
-                <Button onClick={() => captionInput.current?.click()}>
-                  <Upload size={13} />
-                  Import SRT captions
-                </Button>
-                <Divider />
-                {project.captions.map((c, i) => (
-                  <div key={c.id} {...sx.props(s.box)}>
-                    <Row>
-                      <span {...sx.props(s.muted)}>
-                        {formatTime(c.start, true)} → {formatTime(c.end, true)}
-                      </span>
-                      <Button
-                        icon
-                        title="Delete caption"
-                        onClick={() =>
+                  {captionBusy && (
+                    <Button
+                      onClick={() => void window.refract?.cancelCaptions()}
+                    >
+                      Cancel generation
+                    </Button>
+                  )}
+                  <Note>
+                    Speech is processed on this Mac. A language model may
+                    download from Apple the first time. Captions follow your
+                    cuts and speed changes.
+                  </Note>
+                  {!project.source.hasAudio && !project.microphoneAudio && (
+                    <Note>This video has no audio track.</Note>
+                  )}
+                  <Divider />
+                  <Button onClick={() => captionInput.current?.click()}>
+                    <Upload size={13} />
+                    Import SRT captions
+                  </Button>
+                  <Divider />
+                  {project.captions.map((c, i) => (
+                    <div key={c.id} {...sx.props(s.box)}>
+                      <Row>
+                        <span {...sx.props(s.muted)}>
+                          {formatTime(c.start, true)} →{" "}
+                          {formatTime(c.end, true)}
+                        </span>
+                        <Button
+                          icon
+                          title="Delete caption"
+                          onClick={() =>
+                            edit({
+                              ...project,
+                              captions: project.captions.filter(
+                                (v) => v.id !== c.id,
+                              ),
+                            })
+                          }
+                        >
+                          <X size={12} />
+                        </Button>
+                      </Row>
+                      <textarea
+                        aria-label={`Caption ${i + 1}`}
+                        value={c.text}
+                        onChange={(e) =>
                           edit({
                             ...project,
-                            captions: project.captions.filter(
-                              (v) => v.id !== c.id,
+                            captions: project.captions.map((v) =>
+                              v.id === c.id
+                                ? { ...v, text: e.target.value }
+                                : v,
                             ),
                           })
                         }
-                      >
-                        <X size={12} />
-                      </Button>
-                    </Row>
-                    <textarea
-                      aria-label={`Caption ${i + 1}`}
-                      value={c.text}
-                      onChange={(e) =>
-                        edit({
-                          ...project,
-                          captions: project.captions.map((v) =>
-                            v.id === c.id ? { ...v, text: e.target.value } : v,
-                          ),
-                        })
-                      }
-                    />
-                  </div>
-                ))}
-                <Note>
-                  Captions stay aligned to the original recording through cuts
-                  and speed changes. Edit the generated text above to correct
-                  any transcription errors.
-                </Note>
-              </>
-            ) : tab === "camera" ? (
-              <>
-                <Heading>Camera</Heading>
-                {!project.source.camera ? (
+                      />
+                    </div>
+                  ))}
                   <Note>
-                    No camera track is attached. Choose a camera in the
-                    recording bar for your next recording.
+                    Captions stay aligned to the original recording through cuts
+                    and speed changes. Edit the generated text above to correct
+                    any transcription errors.
                   </Note>
-                ) : (
-                  <>
-                    <Toggle
-                      label="Hide camera"
-                      value={project.appearance.cameraHidden}
-                      onChange={(cameraHidden) => appearance({ cameraHidden })}
-                    />
-                    <Toggle
-                      label="Mirror camera"
-                      value={project.appearance.cameraMirror}
-                      onChange={(cameraMirror) => appearance({ cameraMirror })}
-                    />
-                    <Range
-                      label="Camera size"
-                      value={project.appearance.cameraSize * 100}
-                      min={10}
-                      max={80}
-                      unit="%"
-                      onChange={(v) => appearance({ cameraSize: v / 100 })}
-                    />
-                    <Range
-                      label="Roundness"
-                      value={project.appearance.cameraRoundness * 100}
-                      min={0}
-                      max={50}
-                      unit="%"
-                      onChange={(v) => appearance({ cameraRoundness: v / 100 })}
-                    />
-                    <Range
-                      label="Horizontal position"
-                      value={project.appearance.cameraX * 100}
-                      unit="%"
-                      onChange={(v) => appearance({ cameraX: v / 100 })}
-                    />
-                    <Range
-                      label="Vertical position"
-                      value={project.appearance.cameraY * 100}
-                      unit="%"
-                      onChange={(v) => appearance({ cameraY: v / 100 })}
-                    />
-                    <Range
-                      label="Size during zoom"
-                      value={project.appearance.cameraZoomScale * 100}
-                      min={30}
-                      max={100}
-                      unit="%"
-                      onChange={(v) => appearance({ cameraZoomScale: v / 100 })}
-                    />
-                    <CameraLayouts
-                      selectedId={
-                        selection?.type === "camera" ? selection.id : undefined
-                      }
-                      onReveal={() =>
-                        setTimelineTracks((v) => ({ ...v, camera: true }))
-                      }
-                      project={project}
-                      time={time}
-                      edit={edit}
-                      seek={seek}
-                    />
-                  </>
-                )}
-              </>
-            ) : project ? (
-              <ShortcutSettings project={project} edit={edit} seek={seek} />
-            ) : (
-              <Note>Open a recording to edit its shortcuts.</Note>
-            )}
-          </div>
-        </aside>
+                </>
+              ) : tab === "camera" ? (
+                <>
+                  <Heading>Camera</Heading>
+                  {!project.source.camera ? (
+                    <Note>
+                      No camera track is attached. Choose a camera in the
+                      recording bar for your next recording.
+                    </Note>
+                  ) : (
+                    <>
+                      <Toggle
+                        label="Hide camera"
+                        value={project.appearance.cameraHidden}
+                        onChange={(cameraHidden) =>
+                          appearance({ cameraHidden })
+                        }
+                      />
+                      <Toggle
+                        label="Mirror camera"
+                        value={project.appearance.cameraMirror}
+                        onChange={(cameraMirror) =>
+                          appearance({ cameraMirror })
+                        }
+                      />
+                      <Range
+                        label="Camera size"
+                        value={project.appearance.cameraSize * 100}
+                        min={10}
+                        max={80}
+                        unit="%"
+                        onChange={(v) => appearance({ cameraSize: v / 100 })}
+                      />
+                      <Range
+                        label="Roundness"
+                        value={project.appearance.cameraRoundness * 100}
+                        min={0}
+                        max={50}
+                        unit="%"
+                        onChange={(v) =>
+                          appearance({ cameraRoundness: v / 100 })
+                        }
+                      />
+                      <Range
+                        label="Horizontal position"
+                        value={project.appearance.cameraX * 100}
+                        unit="%"
+                        onChange={(v) => appearance({ cameraX: v / 100 })}
+                      />
+                      <Range
+                        label="Vertical position"
+                        value={project.appearance.cameraY * 100}
+                        unit="%"
+                        onChange={(v) => appearance({ cameraY: v / 100 })}
+                      />
+                      <Range
+                        label="Size during zoom"
+                        value={project.appearance.cameraZoomScale * 100}
+                        min={30}
+                        max={100}
+                        unit="%"
+                        onChange={(v) =>
+                          appearance({ cameraZoomScale: v / 100 })
+                        }
+                      />
+                      <CameraLayouts
+                        selectedId={
+                          selection?.type === "camera"
+                            ? selection.id
+                            : undefined
+                        }
+                        onReveal={() =>
+                          setTimelineTracks((v) => ({ ...v, camera: true }))
+                        }
+                        project={project}
+                        time={time}
+                        edit={edit}
+                        seek={seek}
+                      />
+                    </>
+                  )}
+                </>
+              ) : project ? (
+                <ShortcutSettings project={project} edit={edit} seek={seek} />
+              ) : (
+                <Note>Open a recording to edit its shortcuts.</Note>
+              )}
+            </div>
+          </aside>
+        )}
       </main>
-      {project ? (
+      {project && showTimeline ? (
         <Timeline
           tracks={timelineTracks}
           project={project}
@@ -3495,7 +3555,7 @@ export default function App() {
           splitMode={splitMode}
           splitAt={cutAt}
         />
-      ) : (
+      ) : !project ? (
         <div
           style={{
             height: 192,
@@ -3505,7 +3565,7 @@ export default function App() {
             background: "var(--surface-app)",
           }}
         />
-      )}
+      ) : null}
       <video
         crossOrigin="anonymous"
         ref={cameraVideo}
