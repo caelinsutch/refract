@@ -1,5 +1,5 @@
 import * as sx from "@stylexjs/stylex";
-import { useId, type ReactNode } from "react";
+import { useId, useRef, useState, useCallback, type ReactNode } from "react";
 const s = sx.create({
   button: {
     minWidth: 0,
@@ -156,6 +156,29 @@ export function Range({
   unit?: string;
   resetValue?: number;
 }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const active = useRef(false);
+  const readout = useRef<HTMLButtonElement>(null);
+  const focusInput = useCallback((node: HTMLInputElement | null) => {
+    if (node) {
+      node.focus({ preventScroll: true });
+      node.select();
+    }
+  }, []);
+  const finish = (commit: boolean, restoreFocus = false) => {
+    if (!active.current) return;
+    active.current = false;
+    const next = draft?.trim() ? Number(draft) : NaN;
+    if (commit && Number.isFinite(next)) {
+      const clamped = Math.max(min, Math.min(max, next));
+      if (clamped !== value) onChange(clamped);
+    }
+    setDraft(null);
+    if (restoreFocus)
+      requestAnimationFrame(() =>
+        readout.current?.focus({ preventScroll: true }),
+      );
+  };
   return (
     <div {...sx.props(s.field)}>
       <span {...sx.props(s.row)}>
@@ -179,10 +202,52 @@ export function Range({
               Reset
             </button>
           )}
-          <span {...sx.props(s.value)}>
-            {Number(value.toFixed(2))}
-            {unit}
-          </span>
+          {draft === null ? (
+            <button
+              ref={readout}
+              type="button"
+              aria-label={`Edit ${label}`}
+              title={`Enter ${label.toLowerCase()}`}
+              {...sx.props(s.value)}
+              style={{
+                background: "transparent",
+                border: 0,
+                padding: 0,
+                fontVariantNumeric: "tabular-nums",
+              }}
+              onClick={() => {
+                active.current = true;
+                setDraft(String(Number(value.toFixed(2))));
+              }}
+            >
+              {Number(value.toFixed(2))}
+              {unit}
+            </button>
+          ) : (
+            <input
+              ref={focusInput}
+              aria-label={`${label} value`}
+              type="text"
+              inputMode="decimal"
+              value={draft}
+              style={{
+                width: 68,
+                textAlign: "right",
+                padding: "2px 4px",
+                fontVariantNumeric: "tabular-nums",
+              }}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={() => finish(true)}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === "Enter" || e.key === "Escape") {
+                  e.preventDefault();
+                  finish(e.key === "Enter", true);
+                }
+              }}
+            />
+          )}
         </span>
       </span>
       <input

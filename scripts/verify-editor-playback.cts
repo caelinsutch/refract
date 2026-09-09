@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { app, BrowserWindow } from "electron";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
@@ -226,6 +227,38 @@ app.whenReady().then(async () => {
     window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
     window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
     await waitForCropClose();
+    const originalTrim = await window.webContents.executeJavaScript(
+      `document.querySelector('input[aria-label="Trim start"]').getAttribute("value")`,
+    );
+    await window.webContents.executeJavaScript(
+      `document.querySelector('button[aria-label="Edit Trim start"]').click()`,
+    );
+    for (const digit of ["0", ".", "7", "5"])
+      await window.webContents.insertText(digit);
+    assert.equal(
+      await window.webContents.executeJavaScript(
+        `document.querySelector('input[aria-label="Trim start"]').getAttribute("value")`,
+      ),
+      originalTrim,
+      "Typing committed a partial trim",
+    );
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await window.webContents.executeJavaScript(`(async () => {
+      const deadline=performance.now()+3000;
+      while(Number(document.querySelector('input[aria-label="Trim start"]').getAttribute("value"))!==0.75) {
+        if(performance.now()>deadline) throw Error('Exact trim entry did not commit: '+document.querySelector('input[aria-label="Trim start"]').outerHTML+' draft='+document.querySelector('input[aria-label="Trim start value"]')?.value);
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+      document.querySelector('button[aria-label="Edit Trim start"]').click();
+    })()`);
+    await window.webContents.insertText("0.9");
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    await window.webContents.executeJavaScript(`(async () => {
+      await new Promise(resolve=>setTimeout(resolve,30));
+      if(Number(document.querySelector('input[aria-label="Trim start"]').getAttribute("value"))!==0.75) throw Error('Escape changed trim');
+    })()`);
     console.log(
       JSON.stringify({
         ...result,
@@ -234,6 +267,7 @@ app.whenReady().then(async () => {
         presetEnterEscapeFocus: "passed",
         modalTabContainment: "passed",
         cropKeyboard: "passed",
+        exactTrimEntry: "passed",
       }),
     );
   } catch (error) {

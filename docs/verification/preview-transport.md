@@ -53,3 +53,9 @@ Pause now freezes the video immediately, maps its current source time through th
 Opening Crop during playback after a 120 ms renderer stall reproduced the same stale-frame rewind: source time moved from 432.899 ms to 295.106 ms. A shared `pausePreview` now freezes/samples active media and publishes its edited position. Play/Pause, Crop, export UI/start, command-menu opening, clip trimming, mask drag start, and music audition use this helper. Explicit timeline seeks, project loads, and media-end publication retain their own target positions.
 
 The full-editor crop-opening regression now passes with a <30 ms source-position change, followed by the existing crop confirmation/cancellation and keyboard checks. Build and 121 core tests pass. Crop opening and ordinary Pause were exercised with actual media; other callers are covered by the shared implementation and compilation but have not individually undergone the artificial-stall check.
+
+## Exact numeric trim entry
+
+Shared slider readouts are now editable. Activating the value opens a selected numeric text draft; Enter or blur commits a finite value clamped to that control's bounds, Escape discards it, and empty/invalid drafts leave the value unchanged. Enter/Escape restore focus to the readout. Draft keystrokes do not mutate the project. This enables exact trim times as well as exact values for other existing slider controls.
+
+The full-editor verifier types 0.75 into Trim start one character at a time and checks that the committed value remains unchanged until Enter. It then verifies an exact 0.75 result and that Escape discards a replacement. The assertion reads React's committed value attribute because native range value properties can round to a step grid anchored at a fractional clip boundary. All full-editor checks, the production build, and 123 core tests pass. Exact visual comparison of the editable readout with the reference remains pending.
