@@ -10,6 +10,7 @@ import { exportArgs } from "../src/core/export";
 import { clickSoundCues } from "../src/core/click-sounds";
 import { clickSoundBank, clickAudioChunk } from "../src/core/click-audio";
 import {
+  completeEncoderInputs,
   writeEncoderFrame,
   waitForEncoderFinalization,
 } from "../src/core/export-process";
@@ -52,7 +53,7 @@ const audio = pipeline(
   child.stdio[3] as Writable,
 );
 void audio.catch(() => {});
-const done = Promise.all([encoded, audio]).then(() => {});
+const done = completeEncoderInputs(child, encoded, [audio]);
 void done.catch(() => {});
 const canvas = createCanvas(64, 64);
 canvas.getContext("2d").fillRect(0, 0, 64, 64);

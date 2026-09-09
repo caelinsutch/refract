@@ -17,7 +17,7 @@ test(
       await once(child.stdout, "data");
       const write = writeEncoderFrame(child, Buffer.alloc(8 * 1024 * 1024));
       await Promise.all([
-        assert.rejects(write, /closed|destroyed|stopped|EPIPE|ECANCELED/i),
+        assert.rejects(write, /close|destroyed|stopped|EPIPE|ECANCELED/i),
         stopEncoder(child, 100),
       ]);
       assert.equal(child.signalCode, "SIGKILL");
@@ -82,3 +82,77 @@ test(
     }
   },
 );
+
+for (const cancel of [false, true]) {
+  test(
+    cancel
+      ? "cancelling releases a blocked auxiliary audio pipe before output cleanup"
+      : "audio generation failure terminates the encoder before output cleanup",
+    { timeout: 5000 },
+    async () => {
+      const { Readable } = await import("node:stream");
+      const { pipeline } = await import("node:stream/promises");
+      const fs = await import("node:fs/promises");
+      const os = await import("node:os");
+      const path = await import("node:path");
+      const { completeEncoderInputs } = await import("./export-process");
+      const { finishExport } = await import("./export-job");
+      const directory = await fs.mkdtemp(
+        path.join(os.tmpdir(), "refract-input-"),
+      );
+      const temp = path.join(directory, "pending.mp4");
+      const dest = path.join(directory, "video.mp4");
+      await fs.writeFile(dest, "existing video");
+      const child = spawn(
+        process.execPath,
+        [
+          "-e",
+          `
+        require('fs').writeFileSync(process.argv[1], 'partial');
+        process.on('SIGTERM', () => {});
+        setInterval(() => {}, 1000);
+        process.stdout.write('ready');
+      `,
+          temp,
+        ],
+        { stdio: ["pipe", "pipe", "pipe", "pipe"] },
+      );
+      const encoderDone = new Promise<void>((resolve, reject) => {
+        child.once("error", reject);
+        child.once("close", (code) =>
+          code === 0 ? resolve() : reject(Error("encoder stopped")),
+        );
+      });
+      void encoderDone.catch(() => {});
+      try {
+        await once(child.stdout!, "data");
+        const source = Readable.from(
+          (function* () {
+            if (!cancel) throw Error("click synthesis failed");
+            while (true) yield Buffer.alloc(1024 * 1024);
+          })(),
+        );
+        const pipe = child.stdio[3] as import("node:stream").Writable;
+        const audioDone = pipeline(source, pipe);
+        const done = completeEncoderInputs(child, encoderDone, [audioDone]);
+        const output = { temp, dest, done, cancelled: cancel };
+        const rejected = assert.rejects(
+          finishExport(output),
+          cancel
+            ? /close|destroyed|stopped|EPIPE|ECANCELED/i
+            : /click synthesis failed/,
+        );
+        if (cancel) await stopEncoder(child, 100);
+        await rejected;
+        assert.equal(child.signalCode, "SIGKILL");
+        assert.equal(source.destroyed, true);
+        assert.equal(pipe.destroyed, true);
+        assert.equal(await fs.readFile(dest, "utf8"), "existing video");
+        await assert.rejects(fs.stat(temp), { code: "ENOENT" });
+      } finally {
+        child.kill("SIGKILL");
+        await fs.rm(directory, { recursive: true, force: true });
+      }
+    },
+  );
+}

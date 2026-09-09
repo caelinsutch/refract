@@ -574,6 +574,8 @@ handle(
     if (pick.canceled) return null;
     const temp = pick.filePath! + "." + crypto.randomUUID() + ".tmp." + format;
     const { exportArgs } = await import("../src/core/export.js");
+    const { completeEncoderInputs } =
+      await import("../src/core/export-process.js");
     const args = exportArgs(
       project,
       inside(projectDir, project.source.file),
@@ -640,7 +642,7 @@ handle(
         }
         await pipeline(Readable.from(chunks()), clickPipe);
       })();
-      current.done = Promise.all([current.done, audioDone]).then(() => {});
+      current.done = completeEncoderInputs(child, current.done, [audioDone]);
     } else clickPipe.end();
     current.done.catch(() => {});
     // A failed/cancelled pipe must not become an uncaught main-process error.
@@ -748,6 +750,7 @@ handle("export-cancel", async () => {
   current.cancelled = true;
   const { stopEncoder } = await import("../src/core/export-process.js");
   await stopEncoder(current.child);
+  await current.done.catch(() => {});
   await fs.rm(current.temp, { force: true });
   if (job === current) job = null;
 });

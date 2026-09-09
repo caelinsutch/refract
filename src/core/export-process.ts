@@ -7,12 +7,29 @@ export async function stopEncoder(child: ChildProcess, graceMs = 1000) {
     return;
   const closed = new Promise<void>((resolve) => child.once("close", resolve));
   child.stdin?.destroy();
+  for (const input of child.stdio.slice(3)) input?.destroy();
   child.kill("SIGTERM");
   const force = setTimeout(() => child.kill("SIGKILL"), graceMs);
   try {
     await closed;
   } finally {
     clearTimeout(force);
+  }
+}
+
+/** A failed input must stop the encoder before callers clean up its output. */
+export async function completeEncoderInputs(
+  child: ChildProcess,
+  encoderDone: Promise<void>,
+  inputs: Promise<void>[],
+) {
+  const pending = [encoderDone, ...inputs];
+  try {
+    await Promise.all(pending);
+  } catch (error) {
+    await stopEncoder(child);
+    await Promise.allSettled(pending);
+    throw error;
   }
 }
 
