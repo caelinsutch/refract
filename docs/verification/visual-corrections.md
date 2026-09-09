@@ -448,3 +448,18 @@ a fixture menu response and checks all toolbar controls retain their x positions
 and widths and remain within the window. Inspected its captured toolbar image.
 This establishes stable renderer geometry; reference material, SF Symbols, and
 live native compositing remain unverified.
+
+## Camera resolution menu — 2026-09-09
+
+The reference camera picker includes a native “Max camera resolution” submenu.
+Moved Refract's existing 720p/1080p/4K preference into that menu and removed the
+duplicate segmented control from general recording settings. A resolution choice
+returns a distinct typed result, preserving the selected camera rather than
+treating the resolution as a device ID. The preference uses the existing saved
+setting and capture configuration.
+
+`verify-recorder-menus.cts --camera` opens the native menu through the production
+bridge, invokes the 4K submenu callback, verifies persisted 2160, verifies camera
+selection is unchanged, and checks toolbar identity and zero native resizes.
+This verifies menu integration; it does not prove a physical camera delivered
+4K frames. Reference camera-preview visibility controls remain missing.

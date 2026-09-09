@@ -151,18 +151,6 @@ const s = sx.create({
     margin: "0 0 12px",
     color: "var(--text-primary)",
   },
-  cameraLimits: { display: "flex", gap: 2, marginLeft: "auto", flexShrink: 0 },
-  cameraLimit: {
-    borderWidth: 0,
-    borderRadius: 6,
-    padding: "6px 8px",
-    color: "var(--text-secondary)",
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a0d)" },
-  },
-  cameraLimitSelected: {
-    backgroundColor: "var(--surface-control)",
-    color: "var(--text-primary)",
-  },
   item: {
     width: "100%",
     display: "flex",
@@ -568,10 +556,23 @@ export default function Recorder() {
       const result = await api.recorderInputMenu({
         kind,
         selected,
+        cameraResolution,
         x: rect.left,
         y: rect.top,
       });
       if (!result) return;
+      if ("cameraResolution" in result) {
+        setCameraResolution(result.cameraResolution);
+        try {
+          localStorage.setItem(
+            "refract.recorder.cameraResolution",
+            String(result.cameraResolution),
+          );
+        } catch {
+          /* Retain the current session setting. */
+        }
+        return;
+      }
       if (kind === "audio") setSystemAudio(result.value === "all");
       else {
         setInputNames((names) => ({
@@ -950,40 +951,6 @@ export default function Recorder() {
                   <span {...sx.props(s.itemDetail)}>Change directory…</span>
                 </span>
               </button>
-              <div {...sx.props(s.item)}>
-                <Video size={17} />
-                <span>Maximum camera resolution</span>
-                <div
-                  {...sx.props(s.cameraLimits)}
-                  role="group"
-                  aria-label="Maximum camera resolution"
-                >
-                  {([720, 1080, 2160] as const).map((value) => (
-                    <button
-                      type="button"
-                      key={value}
-                      aria-pressed={cameraResolution === value}
-                      {...sx.props(
-                        s.cameraLimit,
-                        cameraResolution === value && s.cameraLimitSelected,
-                      )}
-                      onClick={() => {
-                        setCameraResolution(value);
-                        try {
-                          localStorage.setItem(
-                            "refract.recorder.cameraResolution",
-                            String(value),
-                          );
-                        } catch {
-                          /* Keep the current session choice. */
-                        }
-                      }}
-                    >
-                      {value === 2160 ? "4K" : `${value}p`}
-                    </button>
-                  ))}
-                </div>
-              </div>
               <button
                 {...sx.props(s.item)}
                 aria-pressed={automaticZooms}

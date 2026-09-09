@@ -6,11 +6,18 @@ app.setPath(
   "userData",
   path.resolve(`work/recorder-menus/profile-${process.pid}`),
 );
+const cameraMode = process.argv.includes("--camera");
 const buildMenu = Menu.buildFromTemplate.bind(Menu);
 let inputMenu: Menu | undefined;
 Menu.buildFromTemplate = (template) => {
   const menu = buildMenu(template);
-  if (template.some((item) => item.label === "Don't record system audio"))
+  if (
+    template.some(
+      (item) =>
+        item.label ===
+        (cameraMode ? "Max camera resolution" : "Don't record system audio"),
+    )
+  )
     inputMenu = menu;
   return menu;
 };
@@ -53,7 +60,7 @@ void app.whenReady().then(async () => {
       inputMenu = undefined;
       bar!.focus();
       const point = await contents.executeJavaScript(`(() => {
-        const rect = window.originalControls.find(button => /system audio/i.test(button.textContent)).getBoundingClientRect();
+        const rect = window.originalControls.find(button => ${cameraMode ? "/camera/i" : "/system audio/i"}.test(button.textContent)).getBoundingClientRect();
         return {x: Math.round(rect.x + rect.width/2), y: Math.round(rect.y + rect.height/2)};
       })()`);
       contents.sendInputEvent({ type: "mouseMove", ...point });
@@ -76,11 +83,22 @@ void app.whenReady().then(async () => {
         bounds,
         "Opening menu moved/resized the recorder",
       );
-      assert.equal(
-        inputMenu!.items[0].label,
-        "Record system audio from all apps",
-      );
-      if (select) inputMenu!.items[0].click();
+      if (cameraMode) {
+        const choices = inputMenu!.items.find(
+          (item) => item.label === "Max camera resolution",
+        )!.submenu!.items;
+        assert.deepEqual(
+          choices.map((item) => item.label),
+          ["720p", "1080p", "4K"],
+        );
+        if (select) choices[2].click();
+      } else {
+        assert.equal(
+          inputMenu!.items[0].label,
+          "Record system audio from all apps",
+        );
+        if (select) inputMenu!.items[0].click();
+      }
       inputMenu!.closePopup(bar!);
       await until(
         () =>
@@ -103,14 +121,30 @@ void app.whenReady().then(async () => {
       await wait(1200);
     }
     assert.equal(resizes, 0, "Input selection triggered a native resize");
-    const label = await contents.executeJavaScript(
-      "window.originalControls.find(button => /system audio/i.test(button.textContent)).textContent",
-    );
-    assert.equal(
-      label,
-      "System audio",
-      "Native selection did not update the renderer",
-    );
+    if (cameraMode) {
+      assert.equal(
+        await contents.executeJavaScript(
+          "localStorage.getItem('refract.recorder.cameraResolution')",
+        ),
+        "2160",
+      );
+      assert.equal(
+        await contents.executeJavaScript(
+          "window.originalControls.some(button => button.textContent === 'No camera')",
+        ),
+        true,
+        "Resolution selection changed the camera input",
+      );
+    } else {
+      const label = await contents.executeJavaScript(
+        "window.originalControls.find(button => /system audio/i.test(button.textContent)).textContent",
+      );
+      assert.equal(
+        label,
+        "System audio",
+        "Native selection did not update the renderer",
+      );
+    }
     console.log(
       JSON.stringify({
         nativeMenu: "passed",

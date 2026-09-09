@@ -8,10 +8,13 @@ export type CaptureSource = {
 export type RecorderInputMenu = {
   kind: "camera" | "microphone" | "audio";
   selected: string | null;
+  cameraResolution?: 720 | 1080 | 2160;
   x: number;
   y: number;
 };
-export type RecorderInputSelection = { value: string | null; label: string };
+export type RecorderInputSelection =
+  | { value: string | null; label: string }
+  | { cameraResolution: 720 | 1080 | 2160 };
 export type CaptureSources = {
   keyboardPermission?: "granted" | "required";
   permission: "granted" | "required";

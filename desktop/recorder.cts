@@ -397,6 +397,28 @@ export function setupRecorder(
             },
           })),
           ...(inputs.length ? [{ type: "separator" as const }] : []),
+          ...(request.kind === "camera"
+            ? [
+                {
+                  label: "Max camera resolution",
+                  submenu: ([720, 1080, 2160] as const).map(
+                    (cameraResolution) => ({
+                      label:
+                        cameraResolution === 2160
+                          ? "4K"
+                          : `${cameraResolution}p`,
+                      type: "checkbox" as const,
+                      checked:
+                        cameraResolution === (request.cameraResolution ?? 720),
+                      click: () => {
+                        selection = { cameraResolution };
+                      },
+                    }),
+                  ),
+                },
+                { type: "separator" as const },
+              ]
+            : []),
           {
             label: offLabel,
             type: "checkbox",
