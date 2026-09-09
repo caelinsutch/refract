@@ -54,9 +54,13 @@ app.whenReady().then(async () => {
       await until(() => video()?.readyState >= 2 && !button('Play')?.disabled, 'Video did not load');
       button('Play').click();
       await until(() => video().currentTime > 0.35, 'Play did not advance media');
+      const renderBlockEnds=performance.now()+120;
+      while(performance.now()<renderBlockEnds) {}
+      const beforePause=video().currentTime;
       button('Pause').click();
       await until(() => video().paused, 'Pause did not reach media');
       const paused = video().currentTime;
+      check(Math.abs(paused-beforePause)<0.03, 'Pause moved media from '+beforePause+' to '+paused);
       await wait(150);
       check(Math.abs(video().currentTime - paused) < 0.01, 'Media moved while paused');
       document.dispatchEvent(new KeyboardEvent('keydown', {key:'c',code:'KeyC',bubbles:true}));

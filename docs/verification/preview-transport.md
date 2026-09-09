@@ -41,3 +41,9 @@ npx tsc scripts/verify-editor-playback.cts --target ES2022 --module Node16 --mod
 The full-editor verifier now focuses the End button and sends real Electron keyDown/keyUp Space events. Before the fix, the global playback shortcut prevented native button activation and started playback; the verifier failed with `Focused button Space also started playback`. Space now preserves activation for buttons and links, and ignores modified/repeated playback shortcuts. The global handler also ignores IME composition, editable content, and active dialogs/command menus.
 
 The corrected full-editor check passes: focused End seeks to the end and remains paused. Additional dispatched repeated, composing, and Command-Space events do not start playback. These latter events validate renderer routing rather than OS shortcut interception. All 121 tests and production build pass. Full Enter/Escape testing across every modal remains outstanding.
+
+## Pause precision after a slow render
+
+The full-editor verifier now deliberately blocks renderer JavaScript for 120 ms during playback, then clicks Pause and compares actual media time immediately before and after. The original implementation failed: video moved from 472.399 ms to 344.343 ms because Pause published the last animation-frame position, and paused synchronization sought backward to it.
+
+Pause now freezes the video immediately, maps its current source time through the production transport, updates the shared clock, and stops animation advancement before publishing paused state. The corrected real-editor check passes with a <30 ms position-change bound, followed by a stationary paused-media check. The complete crop, keyboard, and modal verifier still passes, as do the production build and 121 core tests. The artificial stall exercises delayed animation updates; it is not a benchmark of sustained 4K preview performance.

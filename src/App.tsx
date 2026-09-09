@@ -685,7 +685,24 @@ export default function App() {
       timeRef.current = 0;
       setTime(0);
     } else if (playing) {
-      // Publish the media position before handing the clock back to paused UI.
+      // The video can advance while a costly canvas frame blocks animation
+      // updates. Freeze and sample it now instead of rewinding to the last draw.
+      const media = video.current;
+      if (media) {
+        media.pause();
+        timeRef.current = previewTransport(
+          project,
+          timeRef.current,
+          {
+            time: media.currentTime * 1000,
+            seeking: media.seeking,
+            ready: media.readyState >= 2,
+            ended: media.ended,
+          },
+          false,
+        ).position;
+      }
+      playingRef.current = false;
       setTime(timeRef.current);
     }
     setPlaying((value) => !value);
