@@ -28,6 +28,11 @@ document.addEventListener(
 );
 if (location.hash === "#recorder" || location.hash === "#area")
   document.documentElement.classList.add("recorder-surface");
+if (
+  location.hash === "#recorder" &&
+  new URLSearchParams(location.search).get("nativeGlass") === "1"
+)
+  document.documentElement.classList.add("native-recorder-glass");
 if (location.hash === "#crop")
   document.documentElement.classList.add("native-window");
 createRoot(document.getElementById("root")!).render(

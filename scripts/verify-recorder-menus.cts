@@ -64,6 +64,13 @@ void app.whenReady().then(async () => {
       "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null))))",
     );
     const bounds = bar!.getBounds();
+    assert.equal(
+      await contents.executeJavaScript(
+        "document.documentElement.classList.contains('native-recorder-glass') && getComputedStyle(document.querySelector('[data-recorder-bar]')).backdropFilter === 'none'",
+      ),
+      true,
+      "Swift material was not installed, or CSS still obscures it",
+    );
     let resizes = 0;
     bar!.on("resize", () => resizes++);
     await contents.executeJavaScript(`window.originalBar = document.querySelector('[data-recorder-bar]');

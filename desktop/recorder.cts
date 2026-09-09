@@ -1,4 +1,5 @@
 import { countdownDuration, countdownRemaining } from "./countdown.cjs";
+import { installRecorderGlass } from "./recorder-glass.cjs";
 import {
   readRecordingDestination,
   saveRecordingDestination,
@@ -124,12 +125,21 @@ export function setupRecorder(
     lastBounds = bar.getBounds();
     positioning = false;
   }
-  function loadWindow(window: BrowserWindow, hash: string) {
+  function loadWindow(
+    window: BrowserWindow,
+    hash: string,
+    nativeGlass = false,
+  ) {
     if (process.env.REFRACT_DEV_URL)
-      void window.loadURL(process.env.REFRACT_DEV_URL + "/#" + hash);
+      void window.loadURL(
+        process.env.REFRACT_DEV_URL +
+          (nativeGlass ? "/?nativeGlass=1#" : "/#") +
+          hash,
+      );
     else
       void window.loadFile(path.join(__dirname, "../../dist/index.html"), {
         hash,
+        query: nativeGlass ? { nativeGlass: "1" } : undefined,
       });
   }
   function show() {
@@ -183,7 +193,7 @@ export function setupRecorder(
       bar.on("closed", () => {
         bar = null;
       });
-      loadWindow(bar, "recorder");
+      loadWindow(bar, "recorder", installRecorderGlass(bar));
     }
     // React retains the open panel when this existing window is shown again.
     resize(expanded);

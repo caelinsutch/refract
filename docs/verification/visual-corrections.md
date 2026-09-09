@@ -543,3 +543,38 @@ the compact bar. The reference recording bar is also visible again: its close
 button placement, group spacing, and SF Symbol shapes still differ. It rendered
 dark while Refract followed the system's light theme. Full visual parity is not
 claimed, and the user's earlier deliberate theme/accent preferences still apply.
+
+## Recorder spacing scale and native Swift glass — 2026-09-09
+
+Corrected the reference layout-helper interpretation: its spacing scale is
+`4 * 2^n`, rounded to a tenth of a point. Thus the mode/input group gap is 4px,
+the outer groups use 8px, and the mode icon/label gap is 6.7px. Earlier notes
+calling that last gap 0.75px were incorrect. Removed the extra visible drag grip;
+the remaining bar surface keeps its native drag region. The production renderer
+check passes with long camera/microphone names and unchanged control geometry.
+
+After the user confirmed the redraw issue was resolved, they requested a less
+see-through, properly blurred native background. CSS backdrop-filter cannot
+sample the desktop outside an Electron window. Added an original Swift Node-API
+addon that places an AppKit material behind the HTML controls: regular
+`NSGlassEffectView` on macOS 26+, with `NSVisualEffectView` behind-window material
+on older supported macOS. The material is installed once, pinned to the bottom
+64px through window expansion, and does not intercept clicks or dragging.
+System appearance is inherited. HTML transparency is enabled only after a
+successful native install; its simulated blur, gradient, border, and shadow are
+then removed so they do not obscure the native material.
+
+References: Apple's [NSGlassEffectView content contract](https://developer.apple.com/documentation/appkit/nsglasseffectview/contentview)
+and Electron's [native window handle API](https://www.electronjs.org/docs/latest/api/base-window).
+The Swift bridge compiles against the installed AppKit SDK, and uses the stable
+Node-API C ABI without a V8/Electron-version-specific native dependency.
+
+Application build and native settings-menu regression pass with the Swift addon
+loaded and CSS backdrop-filter disabled. Repeated native menu opening, selection,
+and cancellation preserve toolbar/control DOM identity with zero window resizes.
+The older-macOS material branch still requires testing on that OS version.
+
+Opened the rebuilt package and visually inspected the toolbar. Its live renderer
+URL contains `nativeGlass=1`; the old visible grip is absent and the native light
+material sits behind the controls. All 150 core tests pass. This confirms the
+current macOS 26 integration, not full Screen Studio visual parity.

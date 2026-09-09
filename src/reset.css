@@ -121,6 +121,12 @@
     -webkit-app-region: drag;
     user-select: none;
   }
+  .native-recorder-glass [data-recorder-bar] {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
   [data-recorder-bar] button,
   [data-recorder-bar] button * {
     -webkit-app-region: no-drag;

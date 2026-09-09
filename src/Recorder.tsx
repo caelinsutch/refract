@@ -32,7 +32,6 @@ import {
   RefreshCw,
   Keyboard,
   KeyboardOff,
-  GripVertical,
 } from "lucide-react";
 import type {
   CaptureSources,
@@ -57,7 +56,7 @@ const s = sx.create({
     display: "flex",
     alignItems: "center",
     paddingInline: 10,
-    gap: 0,
+    gap: 8,
     borderRadius: 19,
     backgroundColor: "var(--surface-recorder)",
     backgroundImage:
@@ -77,7 +76,7 @@ const s = sx.create({
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 0.75,
+    gap: 6.7,
     padding: 0,
     borderWidth: 0,
     borderRadius: "var(--radius-item)",
@@ -86,6 +85,14 @@ const s = sx.create({
     fontSize: 10,
   },
   active: { backgroundColor: "var(--white-a17)" },
+  modes: { display: "flex", alignItems: "center", gap: 4, flexShrink: 0 },
+  inputs: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    flex: 1,
+    minWidth: 0,
+  },
   modeLabel: { lineHeight: 1, marginBottom: -2 },
   cameraChoice: { width: 126 },
   microphoneChoice: { width: 146 },
@@ -1139,12 +1146,6 @@ export default function Recorder() {
         </section>
       ) : null}
       <div {...sx.props(s.bar)} data-recorder-bar>
-        <span
-          title="Drag to move recording controls"
-          style={{ display: "flex", flexShrink: 0, color: "var(--text-muted)" }}
-        >
-          <GripVertical size={14} aria-label="Move recording controls" />
-        </span>
         {busy ? (
           <>
             <div {...sx.props(s.status)}>
@@ -1247,102 +1248,109 @@ export default function Recorder() {
               <X size={18} />
             </button>
             <div {...sx.props(s.line)} />
-            {[
-              { id: "display", label: "Display", icon: Monitor },
-              { id: "window", label: "Window", icon: AppWindow },
-              { id: "area", label: "Area", icon: Scan },
-              { id: "device", label: "Device", icon: Smartphone },
-            ].map((m) => (
-              <button
-                key={m.id}
-                data-motion="static"
-                {...sx.props(s.mode, panel === m.id && s.active)}
-                onClick={() => pick(m.id)}
-              >
-                <m.icon size={22} strokeWidth={1.5} />
-                <span {...sx.props(s.modeLabel)}>{m.label}</span>
-              </button>
-            ))}
+            <div {...sx.props(s.modes)}>
+              {[
+                { id: "display", label: "Display", icon: Monitor },
+                { id: "window", label: "Window", icon: AppWindow },
+                { id: "area", label: "Area", icon: Scan },
+                { id: "device", label: "Device", icon: Smartphone },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  data-motion="static"
+                  {...sx.props(s.mode, panel === m.id && s.active)}
+                  onClick={() => pick(m.id)}
+                >
+                  <m.icon size={22} strokeWidth={1.5} />
+                  <span {...sx.props(s.modeLabel)}>{m.label}</span>
+                </button>
+              ))}
+            </div>
             <div {...sx.props(s.line)} />
-            <button
-              aria-haspopup="menu"
-              aria-expanded={inputMenu === "camera"}
-              data-motion="static"
-              {...sx.props(
-                s.choice,
-                s.cameraChoice,
-                !camera && s.inputInactive,
-              )}
-              onClick={(event) => void pickInput("camera", event.currentTarget)}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                void pickInput("camera", event.currentTarget);
-              }}
-              onKeyDown={(event) => inputMenuKey(event, "camera")}
-            >
-              {camera ? (
-                <Video size={16} style={{ flexShrink: 0 }} />
-              ) : (
-                <VideoOff size={16} style={{ flexShrink: 0 }} />
-              )}
-              <span {...sx.props(s.inputLabel)}>
-                {camera
-                  ? inputNames.camera ||
-                    sources?.cameras?.find((c) => c.id === camera)?.name ||
-                    "Camera"
-                  : "No camera"}
-              </span>
-            </button>
-            <button
-              aria-haspopup="menu"
-              aria-expanded={inputMenu === "microphone"}
-              data-motion="static"
-              {...sx.props(
-                s.choice,
-                s.microphoneChoice,
-                !microphone && s.inputInactive,
-              )}
-              onClick={(event) =>
-                void pickInput("microphone", event.currentTarget)
-              }
-              onContextMenu={(event) => {
-                event.preventDefault();
-                void pickInput("microphone", event.currentTarget);
-              }}
-              onKeyDown={(event) => inputMenuKey(event, "microphone")}
-            >
-              {microphone ? (
-                <Mic size={16} style={{ flexShrink: 0 }} />
-              ) : (
-                <MicOff size={16} style={{ flexShrink: 0 }} />
-              )}
-              <span {...sx.props(s.inputLabel)}>
-                {microphone
-                  ? inputNames.microphone || micName
-                  : "No microphone"}
-              </span>
-            </button>
-            <button
-              aria-haspopup="menu"
-              aria-expanded={inputMenu === "audio"}
-              data-motion="static"
-              {...sx.props(s.choice, !systemAudio && s.inputInactive)}
-              onClick={(event) => void pickInput("audio", event.currentTarget)}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                void pickInput("audio", event.currentTarget);
-              }}
-              onKeyDown={(event) => inputMenuKey(event, "audio")}
-            >
-              <StateIcon
-                active={systemAudio}
-                size={16}
-                on={<Volume2 size={16} />}
-                off={<VolumeX size={16} />}
-              />
-              <span>{systemAudio ? "System audio" : "No system audio"}</span>
-            </button>
-            <div style={{ flex: 1 }} />
+            <div {...sx.props(s.inputs)}>
+              <button
+                aria-haspopup="menu"
+                aria-expanded={inputMenu === "camera"}
+                data-motion="static"
+                {...sx.props(
+                  s.choice,
+                  s.cameraChoice,
+                  !camera && s.inputInactive,
+                )}
+                onClick={(event) =>
+                  void pickInput("camera", event.currentTarget)
+                }
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  void pickInput("camera", event.currentTarget);
+                }}
+                onKeyDown={(event) => inputMenuKey(event, "camera")}
+              >
+                {camera ? (
+                  <Video size={16} style={{ flexShrink: 0 }} />
+                ) : (
+                  <VideoOff size={16} style={{ flexShrink: 0 }} />
+                )}
+                <span {...sx.props(s.inputLabel)}>
+                  {camera
+                    ? inputNames.camera ||
+                      sources?.cameras?.find((c) => c.id === camera)?.name ||
+                      "Camera"
+                    : "No camera"}
+                </span>
+              </button>
+              <button
+                aria-haspopup="menu"
+                aria-expanded={inputMenu === "microphone"}
+                data-motion="static"
+                {...sx.props(
+                  s.choice,
+                  s.microphoneChoice,
+                  !microphone && s.inputInactive,
+                )}
+                onClick={(event) =>
+                  void pickInput("microphone", event.currentTarget)
+                }
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  void pickInput("microphone", event.currentTarget);
+                }}
+                onKeyDown={(event) => inputMenuKey(event, "microphone")}
+              >
+                {microphone ? (
+                  <Mic size={16} style={{ flexShrink: 0 }} />
+                ) : (
+                  <MicOff size={16} style={{ flexShrink: 0 }} />
+                )}
+                <span {...sx.props(s.inputLabel)}>
+                  {microphone
+                    ? inputNames.microphone || micName
+                    : "No microphone"}
+                </span>
+              </button>
+              <button
+                aria-haspopup="menu"
+                aria-expanded={inputMenu === "audio"}
+                data-motion="static"
+                {...sx.props(s.choice, !systemAudio && s.inputInactive)}
+                onClick={(event) =>
+                  void pickInput("audio", event.currentTarget)
+                }
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  void pickInput("audio", event.currentTarget);
+                }}
+                onKeyDown={(event) => inputMenuKey(event, "audio")}
+              >
+                <StateIcon
+                  active={systemAudio}
+                  size={16}
+                  on={<Volume2 size={16} />}
+                  off={<VolumeX size={16} />}
+                />
+                <span>{systemAudio ? "System audio" : "No system audio"}</span>
+              </button>
+            </div>
             <div {...sx.props(s.line)} />
             <button
               aria-label="Recording options"
