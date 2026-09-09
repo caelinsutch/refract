@@ -72,6 +72,13 @@ app.whenReady().then(async () => {
         `(() => {const field=document.querySelector('[aria-label="Crop width"]');field.focus();field.select();})()`,
       );
       if (action === "confirm") {
+        await child.webContents.executeJavaScript(`(() => {
+          const select=document.querySelector('[aria-label="Crop aspect ratio"]');
+          select.value='1'; select.dispatchEvent(new Event('change',{bubbles:true}));
+        })()`);
+        await child.webContents.executeJavaScript(
+          `(() => {const field=document.querySelector('[aria-label="Crop width"]');field.focus();field.select();})()`,
+        );
         await child.webContents.insertText("199");
         const invalid = await child.webContents.executeJavaScript(
           `({disabled:document.querySelector('[data-dialog-default]').disabled,warning:document.querySelector('[role="status"]')?.textContent})`,
@@ -117,7 +124,11 @@ app.whenReady().then(async () => {
       })()`);
       if (action === "confirm") {
         assert.equal(result.width, 1000);
-        assert.equal(result.height, 1080);
+        assert.equal(
+          result.height,
+          1000,
+          "Square ratio was lost during numeric entry",
+        );
         saved = result;
       } else assert.equal(result, null);
       assert.ok(child.isDestroyed(), "Native child remained open");

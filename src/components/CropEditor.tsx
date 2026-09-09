@@ -134,6 +134,7 @@ export default function CropEditor({
   const [rect, setRect] = useState<CropRect>(
     initial ?? { x: 0, y: 0, width, height },
   );
+  const [ratio, setRatio] = useState<number | null>(null);
   const [fieldDraft, setFieldDraft] = useState<{
     key: keyof CropRect;
     value: string;
@@ -166,7 +167,7 @@ export default function CropEditor({
       c.drawImage(video, 0, 0, width, height);
   }, [video, width, height]);
   const update = (key: keyof CropRect, value: string) => {
-    setRect((r) => editCropField(r, key, value, width, height));
+    setRect((r) => editCropField(r, key, value, width, height, ratio));
   };
   function drag(e: PointerEvent, edge: string) {
     e.preventDefault();
@@ -185,6 +186,7 @@ export default function CropEditor({
           ((ev.clientY - y) * height) / size.height,
           width,
           height,
+          ratio,
         ),
       );
     const end = () => {
@@ -206,7 +208,7 @@ export default function CropEditor({
     if (dx || dy) {
       e.preventDefault();
       e.stopPropagation();
-      setRect((r) => resizeCrop(r, edge, dx, dy, width, height));
+      setRect((r) => resizeCrop(r, edge, dx, dy, width, height, ratio));
     }
   }
   return (
@@ -241,28 +243,22 @@ export default function CropEditor({
         ))}
         <select
           aria-label="Crop aspect ratio"
-          defaultValue=""
+          value={ratio ?? ""}
           onChange={(e) => {
-            if (!e.target.value) return;
-            const ratio = Number(e.target.value);
-            let w = rect.width,
-              h = w / ratio;
-            if (h > height) {
-              h = height;
-              w = h * ratio;
-            }
-            setRect(
-              clampCrop(
-                {
-                  x: rect.x + (rect.width - w) / 2,
-                  y: rect.y + (rect.height - h) / 2,
-                  width: w,
-                  height: h,
-                },
-                width,
-                height,
-              ),
-            );
+            const value = e.target.value ? Number(e.target.value) : null;
+            setRatio(value);
+            setFieldDraft(null);
+            if (value)
+              setRect(
+                editCropField(
+                  rect,
+                  "width",
+                  String(width),
+                  width,
+                  height,
+                  value,
+                ),
+              );
           }}
         >
           <option value="">Select…</option>
@@ -287,7 +283,17 @@ export default function CropEditor({
             }}
           />
         ))}
-        <Button onClick={() => setRect({ x: 0, y: 0, width, height })}>
+        <Button
+          onClick={() => {
+            const original = initial ?? { x: 0, y: 0, width, height };
+            const changed = (["x", "y", "width", "height"] as const).some(
+              (key) => rect[key] !== original[key],
+            );
+            setRatio(null);
+            setFieldDraft(null);
+            setRect(changed ? original : { x: 0, y: 0, width, height });
+          }}
+        >
           Reset
         </Button>
       </div>

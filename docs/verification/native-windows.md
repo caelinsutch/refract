@@ -79,3 +79,11 @@ Read-only inspection of the installed Screen Studio editor bundle (`BCjI4y2S.js`
 Refract's shared crop editor now declares 200 as the size-input minimum and displays a centered minimum-size message while either dimension is below 200. Confirmation is disabled during such drafts, including Enter through the shared default action. Existing project data and rendering are unaffected; this is new-crop confirmation behavior.
 
 The real native-window verifier enters width 199, checks the disabled confirmation and warning, sends Enter, and confirms that crop IPC remains pending. It then replaces the value with 1000 digit by digit and confirms successfully. Escape and native-close cancellation still pass. The full-editor fixture was increased from 320×180 to 320×240 to exercise valid crops under this reference constraint; its complete keyboard/crop sequence passes. Production build passes. Exact spacing/material fidelity remains unverified because the reference editor screenshot is still white.
+
+## Persistent crop aspect ratio
+
+The installed crop-window module keeps a selected ratio in state and passes it to its crop editor; Reset clears that ratio and restores the opening crop before a subsequent reset returns to the full recording. Refract previously applied a ratio once and left the selector visually selected while subsequent edits ignored it.
+
+The shared crop editor now holds ratio state, applies it to width/height entry and pointer/keyboard resize handles, and fits the result inside the source. Corner resizing retains the opposite corner; single-edge resizing centers the paired dimension. Pixel rounding permits a one-pixel ratio tolerance. Clearing the selector unlocks resizing. Reset clears numeric drafts and ratio state, restores changed geometry to the opening crop, then resets to the full frame when already at that opening crop.
+
+Two new geometry tests cover paired dimensions, source limits, anchors, all eight handles, and incomplete text. All 123 tests and production build pass. The native-window verifier selects 1:1, types 1000 one digit at a time, and receives a 1000×1000 crop through production IPC; undersize rejection and both cancellation paths still pass. Pointer-motion feel and exact reference handle appearance remain unverified.
