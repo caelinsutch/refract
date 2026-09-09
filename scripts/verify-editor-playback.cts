@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, nativeTheme } from "electron";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -411,6 +411,28 @@ app.whenReady().then(async () => {
       const width=document.querySelector('[aria-label="Zoom timeline"] [role="button"]').getBoundingClientRect().width;
       if (Math.abs(width-158)>3) throw Error('Zoom used click duration instead of release distance: '+width);
     })()`);
+    await window.webContents.executeJavaScript(`(async () => {
+      const status=document.querySelector('[role="status"]');
+      const timeline=document.querySelector('[data-timeline]');
+      if (!status || status.getBoundingClientRect().bottom > timeline.getBoundingClientRect().top)
+        throw Error('Status message overlaps timeline');
+    })()`);
+    for (const theme of ["dark", "light"] as const) {
+      nativeTheme.themeSource = theme;
+      await window.webContents.executeJavaScript(`(async () => {
+        const deadline=performance.now()+3000;
+        while(getComputedStyle(document.documentElement).colorScheme!==${JSON.stringify(theme)}) {
+          if(performance.now()>deadline) throw Error('Editor theme did not change');
+          await new Promise(resolve=>setTimeout(resolve,20));
+        }
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        await Promise.allSettled(document.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished));
+      })()`);
+      await fs.writeFile(
+        path.join(directory, theme + ".png"),
+        (await window.webContents.capturePage()).toPNG(),
+      );
+    }
     console.log(
       JSON.stringify({
         ...result,
@@ -428,6 +450,7 @@ app.whenReady().then(async () => {
     console.error(error);
     process.exitCode = 1;
   } finally {
+    nativeTheme.themeSource = "system";
     window?.destroy();
     app.exit(Number(process.exitCode ?? 0));
   }

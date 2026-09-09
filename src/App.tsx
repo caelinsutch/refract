@@ -326,9 +326,9 @@ const s = sx.create({
   modalTitle: { fontSize: 17, fontWeight: 600, margin: "0 0 23px" },
   status: {
     pointerEvents: "none",
-    position: "fixed",
-    bottom: 20,
-    left: 20,
+    position: "absolute",
+    bottom: 12,
+    left: 12,
     padding: "11px 16px",
     backgroundColor: "var(--surface-control)",
     borderWidth: 1,
@@ -337,7 +337,7 @@ const s = sx.create({
     borderRadius: "var(--radius-panel)",
     boxShadow: "0 5px 20px var(--black-a55)",
     zIndex: 50,
-    maxWidth: 520,
+    maxWidth: "min(520px, calc(100% - 24px))",
     color: "var(--text-primary)",
     fontSize: 12,
   },
@@ -1798,6 +1798,11 @@ export default function App() {
                 </div>
               )}
             </div>
+            {status ? (
+              <div role="status" {...sx.props(s.status)}>
+                {status}
+              </div>
+            ) : null}
           </section>
           <div {...sx.props(s.transport)}>
             {project && (
@@ -3237,11 +3242,6 @@ export default function App() {
             </>
           )}
         </Modal>
-      ) : null}
-      {status ? (
-        <div role="status" {...sx.props(s.status)}>
-          {status}
-        </div>
       ) : null}
     </div>
   );

@@ -87,3 +87,11 @@ The installed crop-window module keeps a selected ratio in state and passes it t
 The shared crop editor now holds ratio state, applies it to width/height entry and pointer/keyboard resize handles, and fits the result inside the source. Corner resizing retains the opposite corner; single-edge resizing centers the paired dimension. Pixel rounding permits a one-pixel ratio tolerance. Clearing the selector unlocks resizing. Reset clears numeric drafts and ratio state, restores changed geometry to the opening crop, then resets to the full frame when already at that opening crop.
 
 Two new geometry tests cover paired dimensions, source limits, anchors, all eight handles, and incomplete text. All 123 tests and production build pass. The native-window verifier selects 1:1, types 1000 one digit at a time, and receives a 1000×1000 crop through production IPC; undersize rejection and both cancellation paths still pass. Pointer-motion feel and exact reference handle appearance remain unverified.
+
+## Settled-theme editor inspection and status placement
+
+The full-editor verifier now captures light/dark renderer screenshots after finite CSS animations and transitions settle. Initial captures taken immediately after a theme switch showed intermediate control colors; waiting for active transitions established that the settled controls use their intended theme colors.
+
+Visual inspection found that the status message still obscured the selected zoom label even though it no longer intercepted clicks. Status is now positioned within the preview stage above the transport/timeline, with width constrained to that stage. The updated light-theme screenshot shows unobstructed zoom/clip labels and controls. A layout assertion checks that status ends above the timeline. Full-editor interaction checks and production build pass. These captures use a synthetic video and do not establish reference visual parity; Screen Studio's editor capture remains white.
+
+Screenshots are generated at `work/editor-playback/light.png` and `dark.png` by the existing full-editor verifier. Process-local theme overrides are reset to system on exit, and the user's running session is not changed.
