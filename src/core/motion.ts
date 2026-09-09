@@ -1,3 +1,4 @@
+import { initialZoomScale } from "./framing.js";
 import { autoZoomTargets } from "./auto-zoom.js";
 import type { Project } from "./project.js";
 import { springState, type SpringConfig } from "./spring.js";
@@ -43,10 +44,11 @@ function advance(
 
 /** Spring checkpoints make zoom boundaries and retargets independent of playback order. */
 export function screenMotionAt(p: Project, time: number): Target {
+  const initialScale = initialZoomScale(p);
   const config =
     p.appearance.screenSpring ??
     screenPresets[p.appearance.animation === "smooth" ? "smooth" : "focused"];
-  const key = `${p.appearance.animation}/${config.stiffness}/${config.damping}/${config.mass}/${p.crop?.width}/${p.crop?.height}/${p.source.width}/${p.source.height}`;
+  const key = `${p.appearance.animation}/${config.stiffness}/${config.damping}/${config.mass}/${p.crop?.width}/${p.crop?.height}/${p.source.width}/${p.source.height}/${p.appearance.ratio}/${p.appearance.padding}`;
   let entry = cache.get(p);
   if (
     !entry ||
@@ -87,7 +89,7 @@ export function screenMotionAt(p: Project, time: number): Target {
         const { z, targets } = active;
         const targetPoint = targets.findLast((c) => c.time <= t) ?? targets[0];
         target = {
-          scale: z.scale,
+          scale: z.scale * initialScale,
           x: targetPoint?.x ?? z.x,
           y: targetPoint?.y ?? z.y,
         };
@@ -110,7 +112,7 @@ export function screenMotionAt(p: Project, time: number): Target {
     p.appearance.animation === "instant"
       ? point.target
       : advance(point, time, config).position;
-  const scale = Math.max(1, Math.min(8, value.scale)),
+  const scale = Math.max(1, Math.min(8 * initialScale, value.scale)),
     limit = 0.5 / scale;
   return {
     scale,

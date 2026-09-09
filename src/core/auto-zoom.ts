@@ -1,3 +1,4 @@
+import { initialZoomScale } from "./framing.js";
 import type { Project, Zoom } from "./project.js";
 export type AutoZoomTarget = { time: number; x: number; y: number };
 /** Group consecutive cursor samples until their bounds exceed the visible-area allowance. */
@@ -18,8 +19,9 @@ export function autoZoomTargets(
     width: project.source.width,
     height: project.source.height,
   };
-  const width = (crop.width / project.source.width / zoom.scale) * 0.5;
-  const height = (crop.height / project.source.height / zoom.scale) * 0.7;
+  const scale = zoom.scale * initialZoomScale(project);
+  const width = (crop.width / project.source.width / scale) * 0.5;
+  const height = (crop.height / project.source.height / scale) * 0.7;
   const targets: AutoZoomTarget[] = [];
   let left = 0,
     right = 0,

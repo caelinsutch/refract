@@ -122,3 +122,20 @@ Remaining difference: the allowance must also include the reference's initial
 fill scale once the size resolver is integrated. Edge snapping and the special
 cursor-target override are not implemented. This improves automatic tracking but
 does not establish identical framing trajectories to Screen Studio.
+
+## Initial fill scale — 2026-09-09
+
+A shared initial-framing calculation now determines the scale from fitted screen
+to filled content. Active zoom targets include it for vertical output and for
+zero-padding output; padded horizontal output retains baseline 1. Neutral gaps
+remain fitted. The factor is part of spring targets, so entering/leaving a zoom
+uses the same continuous evolution rather than applying a discontinuous render
+multiplier. Automatic grouping also accounts for this narrower visible area.
+Ratio and padding changes invalidate motion checkpoints.
+
+Four new tests cover portrait body bounds, the padded-horizontal/zero-padding
+rule, neutral gaps, ratio/cache changes, group allowances, and boundary/seek
+continuity. All 138 tests pass; the encoded H.264 landmark fixture still passes.
+The current calculation follows Refract's existing crop/padding normalization;
+exact reference inset and output-size normalization still need comparison. The
+hidden system-gap ranges and vertical picker toggle are not implemented yet.
