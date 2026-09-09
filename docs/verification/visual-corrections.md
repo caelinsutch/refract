@@ -199,3 +199,9 @@ The preview loop now schedules continuous frames only during playback. Project/t
 Live regression checks: End seeks to the decoded source frame at 5.400 seconds; Start returns to the first frame; playback advances; pause holds at 2.70 seconds; resume progresses from that position without including paused wall-clock time. Mute/Unmute updates its label and pressed state. Production build and 47 core tests pass. No quantitative GPU benchmark or slow-motion animation capture is claimed.
 
 A live playback completion check initially exposed a throttled-state boundary issue. The boundary now publishes immediately, and the repeat run stopped at exactly `0:05.44 / 0:05.44` with Play available.
+
+## Background panel reference pass — September 9
+
+The user reaffirmed that UI matching must be one-to-one. Functional tests are not visual parity evidence. The installed editor still yields blank screenshots, including after raising the window. The official [Background guide](https://screen.studio/guide/background) provides a usable screenshot: bordered background-type controls with an active underline, compact square wallpaper thumbnails, and the random-selection action above those thumbnails. The live installed AX tree independently confirms the random-action ordering. The guide's vertical navigation differs from the installed bundle's horizontal navigation, so it is not treated as an exact current-version full-window target.
+
+Refract's background panel now uses the bordered/underlined treatment, 32px square thumbnails and the correct random-action order. Teal remains the user-requested accent. The actual light renderer screenshot was inspected after the final build; a dark screenshot was captured as well. The production editor interaction verifier passes. Wallpaper assets/categories, complete layout, native controls/materials, and exact current-version visual comparison remain open. This pass is not a one-to-one completion claim.

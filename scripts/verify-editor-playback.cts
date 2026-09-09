@@ -521,6 +521,9 @@ app.whenReady().then(async () => {
       if (!status || status.getBoundingClientRect().bottom > timeline.getBoundingClientRect().top)
         throw Error('Status message overlaps timeline');
     })()`);
+    await window.webContents.executeJavaScript(
+      `document.querySelector('button[title="Background & screen"]').click()`,
+    );
     for (const theme of ["dark", "light"] as const) {
       nativeTheme.themeSource = theme;
       await window.webContents.executeJavaScript(`(async () => {

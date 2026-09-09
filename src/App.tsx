@@ -263,15 +263,44 @@ const s = sx.create({
     backgroundColor: "var(--white-a24)",
     boxShadow: "0 1px 4px var(--black-a44)",
   },
+  backgroundTabs: {
+    display: "flex",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "var(--white-a0a)",
+    borderRadius: 6,
+    overflow: "hidden",
+    marginBottom: 20,
+  },
+  backgroundTab: {
+    flex: 1,
+    height: 34,
+    paddingInline: 8,
+    borderWidth: 0,
+    borderRightWidth: 1,
+    borderRightStyle: "solid",
+    borderRightColor: "var(--white-a06)",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "transparent",
+    borderRadius: 0,
+    fontSize: 12,
+    color: "var(--text-primary)",
+    backgroundColor: { default: "transparent", ":hover": "var(--white-a05)" },
+  },
+  backgroundTabSelected: {
+    color: "var(--accent)",
+    borderBottomColor: "var(--accent)",
+  },
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fill, 32px)",
     gap: 7,
     marginTop: 13,
     marginBottom: 22,
   },
   swatch: (a: string, b: string, c: string) => ({
-    height: 45,
+    height: 32,
     borderRadius: "var(--radius-control)",
     borderWidth: 1,
     borderStyle: "solid",
@@ -1984,13 +2013,13 @@ export default function App() {
                     <X size={13} />
                   </Button>
                 </Row>
-                <div {...sx.props(s.segmented)}>
+                <div {...sx.props(s.backgroundTabs)}>
                   {(["manual", "auto"] as const).map((mode) => (
                     <button
                       key={mode}
                       {...sx.props(
-                        s.segment,
-                        z.mode === mode && s.segmentActive,
+                        s.backgroundTab,
+                        z.mode === mode && s.backgroundTabSelected,
                       )}
                       onClick={() => zoomEdit({ mode })}
                     >
@@ -2209,15 +2238,17 @@ export default function App() {
             ) : tab === "background" ? (
               <>
                 <Heading>Background</Heading>
-                <div {...sx.props(s.segmented)}>
+                <div {...sx.props(s.backgroundTabs)}>
                   {(["wallpaper", "gradient", "color", "image"] as const).map(
                     (v) => (
                       <button
                         key={v}
+                        data-motion="static"
+                        aria-pressed={project.appearance.background === v}
                         {...sx.props(
-                          s.segment,
+                          s.backgroundTab,
                           project.appearance.background === v &&
-                            s.segmentActive,
+                            s.backgroundTabSelected,
                         )}
                         onClick={() => appearance({ background: v })}
                       >
@@ -2232,6 +2263,27 @@ export default function App() {
                       <span>Wallpaper</span>
                       <span {...sx.props(s.muted)}>Refract collection</span>
                     </Row>
+                    <button
+                      style={{
+                        width: "100%",
+                        height: 32,
+                        borderRadius: 6,
+                        border: "1px solid var(--white-a06)",
+                        background: "var(--white-a05)",
+                        color: "var(--text-primary)",
+                        justifyContent: "center",
+                        marginTop: 12,
+                      }}
+                      onClick={() =>
+                        appearance({
+                          wallpaper: Math.floor(
+                            Math.random() * wallpapers.length,
+                          ),
+                        })
+                      }
+                    >
+                      Pick random wallpaper
+                    </button>
                     <div {...sx.props(s.grid)}>
                       {wallpapers.map((colors, i) => (
                         <button
@@ -2246,17 +2298,6 @@ export default function App() {
                         />
                       ))}
                     </div>
-                    <Button
-                      onClick={() =>
-                        appearance({
-                          wallpaper: Math.floor(
-                            Math.random() * wallpapers.length,
-                          ),
-                        })
-                      }
-                    >
-                      Pick random wallpaper
-                    </Button>
                     <Divider />
                   </>
                 ) : project.appearance.background === "image" ? (
