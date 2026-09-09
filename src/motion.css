@@ -263,3 +263,20 @@ dialog[data-native-window="true"]::backdrop {
 [data-window-toolbar] :is(button, input, select) {
   -webkit-app-region: no-drag;
 }
+
+/* The reference thumbnail edge blends with its artwork rather than tinting it. */
+[data-wallpaper-swatch] {
+  transition-property: outline-color;
+}
+[data-wallpaper-swatch]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--sample-edge);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+[data-wallpaper-swatch][aria-pressed="true"] {
+  outline-color: var(--sample-selected);
+}

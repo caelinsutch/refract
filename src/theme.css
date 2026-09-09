@@ -19,6 +19,9 @@
   --primary-text: #ffffff;
   --accent: #72d5dd;
   --focus: #b6becb;
+  --sample-edge: #fff8;
+  --sample-hover: color-mix(in srgb, var(--text-primary) 40%, transparent);
+  --sample-selected: color-mix(in srgb, var(--text-primary) 80%, transparent);
   --selection-ring: #82919f;
   --primary-subtle: color-mix(in srgb, var(--primary) 10%, transparent);
   --primary-border: color-mix(in srgb, var(--primary) 40%, transparent);

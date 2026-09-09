@@ -302,14 +302,18 @@ const s = sx.create({
   },
   swatch: (a: string, b: string, c: string) => ({
     height: 32,
+    position: "relative",
+    overflow: "hidden",
     borderRadius: "var(--radius-control)",
-    borderWidth: 1,
-    borderStyle: "solid",
-    borderColor: "var(--white-a14)",
+    borderWidth: 0,
+    outlineWidth: 1,
+    outlineStyle: "solid",
+    outlineColor: { default: "transparent", ":hover": "var(--sample-hover)" },
+    outlineOffset: 1,
     backgroundImage: `linear-gradient(125deg, ${a}, ${b} 56%, ${c})`,
-    cursor: "pointer",
+    cursor: "default",
   }),
-  chosen: { outline: "2px solid var(--selection-ring)", outlineOffset: 0 },
+  chosen: { outlineColor: "var(--sample-selected)" },
   empty: {
     display: "flex",
     flexDirection: "column",
@@ -2289,13 +2293,19 @@ export default function App() {
                       {wallpapers.map((colors, i) => (
                         <button
                           key={i}
+                          data-wallpaper-swatch
+                          data-motion="static"
+                          aria-pressed={project.appearance.wallpaper === i}
                           title={`Wallpaper ${i + 1}`}
                           aria-label={`Wallpaper ${i + 1}`}
                           {...sx.props(
                             s.swatch(colors[0], colors[1], colors[2]),
                             project.appearance.wallpaper === i && s.chosen,
                           )}
-                          onClick={() => appearance({ wallpaper: i })}
+                          onClick={() => {
+                            if (project.appearance.wallpaper !== i)
+                              appearance({ wallpaper: i });
+                          }}
                         />
                       ))}
                     </div>

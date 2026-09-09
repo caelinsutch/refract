@@ -217,3 +217,9 @@ Those differences are now corrected through shared tokens and Button styling. Ex
 The installed `SidebarNavigation` render branch puts a labeled Close Zoom/Mask/Slice editor control before selected-item content. Its opened-item group uses a 3px gap. Refract's zoom, mask and clip panes instead had a small X beside the heading. They now use a labeled close row before the pane heading, retaining the current root settings panel when the selection closes.
 
 The production editor verifier exercises closing the zoom pane, confirms the background panel returns and the zoom remains on the timeline. The other interaction checks and production build pass. This establishes navigation behavior, not exact reference icon styling or full-pane visual parity. The same pass restores the zoom-mode selector's original styles after discovering the prior background-selector change had unintentionally reached that branch as well.
+
+## Wallpaper sample states from current component
+
+The installed `Du1ndVwJ.js.decoded` contains `PictureSample__UIHolder`: its size expression resolves to 32px, with a 1px outline at 1px offset, 40% text-color hover outline, 80% selected outline, and a white 1px border blended over the image. This confirms the earlier size choice independently of the guide image. Refract now uses that edge/outline structure and suppresses scale-on-press for these fixed-size samples. The selected sample carries aria-pressed and clicking it does not generate another edit. Theme-aware semantic tokens provide outline colors.
+
+The resulting dark editor capture was inspected; production editor interaction checks and build passed. Categories, favourites, wallpaper artwork and a same-state reference pixel comparison remain incomplete. This change addresses sample chrome only.
