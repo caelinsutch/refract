@@ -19,19 +19,29 @@ export function createPickerOptions(onSettings: () => void) {
         let selection: {
           settings?: "quick-export";
           automaticZooms?: boolean;
-          completionAction?: "create-project" | "export-file";
+          completionAction?:
+            "create-project" | "export-file" | "export-clipboard";
         } | null = null;
         const menu = Menu.buildFromTemplate([
           { label: "After recording:", enabled: false },
           {
             label: "Create project",
             type: "checkbox",
-            checked: request.completionAction !== "export-file",
+            checked:
+              !request.completionAction ||
+              request.completionAction === "create-project",
             click: () => {
               selection = { completionAction: "create-project" };
             },
           },
-          { label: "Export and copy to clipboard", enabled: false },
+          {
+            label: "Export and copy to clipboard",
+            type: "checkbox",
+            checked: request.completionAction === "export-clipboard",
+            click: () => {
+              selection = { completionAction: "export-clipboard" };
+            },
+          },
           { label: "Export and create shareable link", enabled: false },
           {
             label: "Export and save to file",

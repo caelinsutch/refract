@@ -26,6 +26,7 @@ import type { Project } from "../src/core/project.js" with {
 };
 import fs from "node:fs/promises";
 import path from "node:path";
+import { copyExportFile } from "./export-clipboard.cjs";
 import crypto from "node:crypto";
 import {
   spawn,
@@ -43,6 +44,7 @@ type ExportJob = {
   child: ReturnType<typeof spawn>;
   temp: string;
   dest: string;
+  destination: "file" | "clipboard";
   error: string;
   cancelled: boolean;
   done: Promise<void>;
@@ -553,13 +555,17 @@ handle(
     height,
     fps,
     format,
+    destination = "file",
   }: {
     project: Project;
     width: number;
     height: number;
     fps: number;
     format: string;
+    destination?: "file" | "clipboard";
   }) => {
+    if (destination !== "file" && destination !== "clipboard")
+      throw Error("Invalid export destination.");
     if (job) throw Error("An export is already running.");
     if (!projectDir) throw Error("Import a video first.");
     if (
@@ -568,12 +574,25 @@ handle(
       ![width, height].every((n) => Number.isInteger(n) && n > 0 && n <= 4096)
     )
       throw Error("Invalid export settings.");
-    const pick = await dialog.showSaveDialog(win, {
-      defaultPath: project.title + "." + format,
-      filters: [{ name: format.toUpperCase(), extensions: [format] }],
-    });
-    if (pick.canceled) return null;
-    const temp = pick.filePath! + "." + crypto.randomUUID() + ".tmp." + format;
+    let dest: string;
+    if (destination === "clipboard") {
+      const directory = path.join(app.getPath("userData"), "Clipboard Exports");
+      await fs.mkdir(directory, { recursive: true });
+      const title =
+        project.title
+          .replace(/[\x00-\x1f/\\:]/g, "_")
+          .trim()
+          .slice(0, 40) || "Recording";
+      dest = path.join(directory, `${title}-${crypto.randomUUID()}.${format}`);
+    } else {
+      const pick = await dialog.showSaveDialog(win, {
+        defaultPath: project.title + "." + format,
+        filters: [{ name: format.toUpperCase(), extensions: [format] }],
+      });
+      if (pick.canceled) return null;
+      dest = pick.filePath!;
+    }
+    const temp = dest + "." + crypto.randomUUID() + ".tmp." + format;
     const { exportArgs } = await import("../src/core/export.js");
     const { completeEncoderInputs } =
       await import("../src/core/export-process.js");
@@ -598,7 +617,8 @@ handle(
       id: crypto.randomUUID(),
       child,
       temp,
-      dest: pick.filePath!,
+      dest,
+      destination,
       error: "",
       cancelled: false,
       done: Promise.resolve(),
@@ -737,10 +757,14 @@ handle("export-finish", async (id: string) => {
     const { finishExport } = await import("../src/core/export-job.js");
     const { waitForEncoderFinalization } =
       await import("../src/core/export-process.js");
-    return await finishExport(
+    const dest = await finishExport(
       current,
       waitForEncoderFinalization(current.child, current.done, current.temp),
     );
+    if (current.destination === "clipboard") {
+      await copyExportFile(dest);
+    }
+    return dest;
   } finally {
     if (job === current) job = null;
   }

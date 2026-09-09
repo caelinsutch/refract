@@ -1,12 +1,15 @@
 export type RecordingCompletion = {
-  action: "create-project" | "export-file";
+  action: "create-project" | "export-file" | "export-clipboard";
   resolution: number;
   fps: number;
 };
 export function recordingCompletion(value: unknown): RecordingCompletion {
   const v = value as Partial<RecordingCompletion> | null;
   return {
-    action: v?.action === "export-file" ? "export-file" : "create-project",
+    action:
+      v?.action === "export-file" || v?.action === "export-clipboard"
+        ? v.action
+        : "create-project",
     resolution: [720, 1080, 1920, 2560, 3840].includes(v?.resolution ?? 0)
       ? v!.resolution!
       : 1920,

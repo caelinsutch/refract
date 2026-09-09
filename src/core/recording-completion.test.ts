@@ -19,6 +19,16 @@ test("completion settings normalize stale or invalid persisted values", () => {
     { action: "export-file", resolution: 3840, fps: 60 },
   );
 });
+test("clipboard completion retains its quick export settings", () => {
+  assert.deepEqual(
+    recordingCompletion({
+      action: "export-clipboard",
+      resolution: 1080,
+      fps: 60,
+    }),
+    { action: "export-clipboard", resolution: 1080, fps: 60 },
+  );
+});
 test("each completed recording is accepted once even with interleaved redelivery", () => {
   const completed = new RecordingCompletions();
   assert.equal(completed.accept("first"), true);

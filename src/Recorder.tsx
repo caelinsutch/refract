@@ -1319,10 +1319,13 @@ export default function Recorder() {
                     }
                   >
                     <option value="create-project">Create project</option>
+                    <option value="export-clipboard">
+                      Export and copy to clipboard
+                    </option>
                     <option value="export-file">Export and save to file</option>
                   </select>
                 </label>
-                {completion.action === "export-file" && quickExportControls}
+                {completion.action !== "create-project" && quickExportControls}
                 <button
                   {...sx.props(s.item)}
                   disabled={choosingDirectory}

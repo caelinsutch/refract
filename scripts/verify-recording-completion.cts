@@ -158,6 +158,8 @@ app.whenReady().then(async () => {
         frames.length = 0;
         output = path.join(directory, `completed-${resolution}-${fps}.mp4`);
         const basename = path.basename(output);
+        const action =
+          resolution === 720 && fps === 24 ? "export-clipboard" : "export-file";
         window.webContents.send("recording-finished", {
           ...result,
           project: {
@@ -171,16 +173,20 @@ app.whenReady().then(async () => {
             },
             segments: [{ id: "short", start: 0, end: 250, speed: 1 }],
           },
-          completion: { action: "export-file", resolution, fps },
+          completion: { action, resolution, fps },
           url: pathToFileURL(source).href,
         });
         await window.webContents.executeJavaScript(`(async()=>{
           const deadline=performance.now()+30000;
-          while(!document.querySelector('[role="status"]')?.textContent.includes(${JSON.stringify("Exported " + basename)})) {
+          while(!document.querySelector('[role="status"]')?.textContent.includes(${JSON.stringify(action === "export-clipboard" ? "Video copied to clipboard." : "Exported " + basename)})) {
             if(performance.now()>deadline) throw Error('Completion export did not finish: '+document.body.textContent.slice(-500));
             await new Promise(resolve=>setTimeout(resolve,20));
           }
         })()`);
+        assert.equal(
+          requests.at(-1).destination,
+          action === "export-clipboard" ? "clipboard" : "file",
+        );
         const probe = JSON.parse(
           execFileSync(
             "/opt/homebrew/bin/ffprobe",
@@ -213,6 +219,7 @@ app.whenReady().then(async () => {
             0.002,
         );
         matrix.push({
+          action,
           resolution,
           fps,
           width: video.width,

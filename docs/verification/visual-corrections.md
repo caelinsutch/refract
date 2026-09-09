@@ -926,3 +926,11 @@ Exact exported pixel parity remains unverified: the installed reference requires
 Replaced the Gaussian shadow fallback with independent software diagonal bilinear passes. Black shadows filter only alpha, retain fractional precision between the two axes, and quantize after each full pass. The cached result still survives zoom and intensity changes. This removes a different blur profile when WebGL is unavailable.
 
 Actual Electron GPU comparisons use an opaque shape with a cutout, translucent overlap, and texture-edge coverage. Blur settings 0, 5, 15, and 30, plus every individual pass of setting 15, differ by at most 1/255 alpha on this Mac; the largest mean error is 0.118/255. The comparison caught and fixed float64 half-texel boundary handling by matching float32 shader offsets. This evidence covers the sampling fallback, not complete reference export parity or software performance at large source sizes.
+
+## Export and copy after recording — September 9
+
+Enabled the installed reference's “Export and copy to clipboard” action in the recorder settings and native source-picker menus. The completion event uses the selected resolution/FPS, exports without a save dialog, and publishes a macOS file URL only after encoder finalization and atomic file publication. A failed clipboard write reports failure. Completed clipboard exports remain in Refract's application-data “Clipboard Exports” folder so pasted references survive app shutdown. Shareable-link export remains unavailable.
+
+Validation: build and 181 core tests passed. The synthetic recording-completion fixture passed all 15 resolution/FPS combinations, including clipboard dispatch, actual MP4 encoding, frame counts, durations, duplicate suppression, create-project behavior, and save cancellation. The production clipboard helper passed payload and failure-propagation checks. AppKit read the resulting URL from a separate named test pasteboard, including spaces, Unicode, and a hash in the path; the general clipboard was untouched. This does not yet prove a real recording followed by a paste into a third-party app.
+
+API reference: https://www.electronjs.org/docs/latest/api/clipboard (Electron raw platform format payloads).

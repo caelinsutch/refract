@@ -110,6 +110,7 @@ contextBridge.exposeInMainWorld("refract", {
     width: number;
     height: number;
     fps: number;
+    destination?: "file" | "clipboard";
     format: string;
   }) => ipcRenderer.invoke("export-start", options),
   exportFrame: (id: string, data: ArrayBuffer) =>

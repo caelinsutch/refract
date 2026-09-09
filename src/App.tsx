@@ -1287,6 +1287,10 @@ export default function App() {
         ...size,
         fps: exportFps,
         format: exportFormat,
+        destination:
+          recording?.completion.action === "export-clipboard"
+            ? "clipboard"
+            : "file",
       });
       if (!id) {
         if (recording) setModal(null);
@@ -1343,7 +1347,11 @@ export default function App() {
       setProgress(97);
       const dest = await api.exportFinish(id);
       setProgress(100);
-      tell(`Exported ${dest.split("/").pop()}`);
+      tell(
+        recording?.completion.action === "export-clipboard"
+          ? "Video copied to clipboard."
+          : `Exported ${dest.split("/").pop()}`,
+      );
       setModal(null);
     } catch (e) {
       await api.exportCancel();
@@ -1384,7 +1392,7 @@ export default function App() {
         if (!completedRecordings.current.accept(next.id)) return;
         load(next, result.url, result.cameraUrl);
         const completion = recordingCompletion(result.completion);
-        if (completion.action === "export-file") {
+        if (completion.action !== "create-project") {
           setModal("export");
           setResolution(completion.resolution);
           setFps(completion.fps);

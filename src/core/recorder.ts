@@ -27,7 +27,7 @@ export type RecorderInputMenu = {
   countdownSeconds?: 0 | 3 | 5 | 10;
   automaticZooms?: boolean;
   hideDesktopIcons?: boolean;
-  completionAction?: "create-project" | "export-file";
+  completionAction?: "create-project" | "export-file" | "export-clipboard";
   x: number;
   y: number;
 };
@@ -37,7 +37,7 @@ export type RecorderInputSelection =
   | { countdownSeconds: 0 | 3 | 5 | 10 }
   | { automaticZooms: boolean }
   | { hideDesktopIcons: boolean }
-  | { completionAction: "create-project" | "export-file" }
+  | { completionAction: "create-project" | "export-file" | "export-clipboard" }
   | { settings: "advanced" };
 export type CaptureSources = {
   keyboardPermission?: "granted" | "required";

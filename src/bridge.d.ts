@@ -48,21 +48,23 @@ declare global {
       showRecorder(): Promise<void>;
       windowPickerOptions(request: {
         automaticZooms: boolean;
-        completionAction: "create-project" | "export-file";
+        completionAction: "create-project" | "export-file" | "export-clipboard";
         x: number;
         y: number;
       }): Promise<{
         automaticZooms?: boolean;
-        completionAction?: "create-project" | "export-file";
+        completionAction?:
+          "create-project" | "export-file" | "export-clipboard";
       } | null>;
       displayPickerOptions(request: {
         automaticZooms: boolean;
-        completionAction: "create-project" | "export-file";
+        completionAction: "create-project" | "export-file" | "export-clipboard";
         x: number;
         y: number;
       }): Promise<{
         automaticZooms?: boolean;
-        completionAction?: "create-project" | "export-file";
+        completionAction?:
+          "create-project" | "export-file" | "export-clipboard";
       } | null>;
       countdownCancel(): Promise<void>;
       onCountdownTick(cb: (seconds: number) => void): () => void;
@@ -137,6 +139,7 @@ declare global {
         width: number;
         height: number;
         fps: number;
+        destination?: "file" | "clipboard";
         format: "mp4" | "gif";
       }): Promise<string | null>;
       exportFrame(id: string, data: ArrayBuffer): Promise<void>;
