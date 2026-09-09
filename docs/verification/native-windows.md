@@ -57,3 +57,17 @@ The isolated production-renderer verifier now opens the shared CropEditor from t
 The verifier then replaces width with 123, dismisses with real Escape events, and reopens. Width remains 256, confirming that Escape discards the draft rather than modifying the saved project crop. The complete full-editor verification passes alongside the earlier playback, focused-button, preset, and modal focus checks.
 
 This closes the earlier uncertainty about multi-digit input for the shared React crop component. It runs in browser-import mode using the in-editor modal; separate native window IPC, native material appearance, and native-window focus restoration remain distinct verification work. No user project or running application was changed.
+
+## Production native crop host and IPC verification
+
+`scripts/verify-native-crop.cts` creates an isolated parent window with the production sandboxed preload, installs the production crop host, and opens the actual crop route through `cropOpen`. The child uses the production generic editor-window shell and renderer, not a reimplementation of their IPC.
+
+All three paths passed: entering `1000` as four separate native text-input operations and pressing Enter returned `{x:0,y:0,width:1000,height:1080}`; reopening with that returned crop restored width 1000; changing the draft to 800 and using Escape returned null; changing it to 800 and closing the native BrowserWindow also returned null. Each completion destroyed the child and restored parent visibility. The native title was checked as `Crop recording`. The open native crop renderer also followed process-local dark/light theme changes, with the system policy restored afterward.
+
+```sh
+npm run build
+npx tsc scripts/verify-native-crop.cts --target ES2022 --module Node16 --moduleResolution Node16 --esModuleInterop --skipLibCheck --strict --outDir work/native-crop-runner
+./node_modules/.bin/electron work/native-crop-runner/verify-native-crop.cjs
+```
+
+The run uses a generated 1920×1080 frame and its own profile. It does not modify the running Refract session or the system appearance. This closes the native-host numeric-entry and result/cancellation gaps. Parent DOM focus restoration, dragging, visual material comparison, and undo after accepting a native result in the real editor remain separate checks.
