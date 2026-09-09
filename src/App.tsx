@@ -2409,9 +2409,14 @@ export default function App() {
                             step={5}
                             unit="%"
                             resetValue={25}
-                            onChange={(value) =>
-                              appearance({ clickSoundVolume: value / 100 })
-                            }
+                            onChange={(value) => {
+                              appearance({ clickSoundVolume: value / 100 });
+                              void auditionClick(
+                                project.appearance.clickSound as
+                                  "soft" | "mechanical",
+                                value / 100,
+                              );
+                            }}
                           />
                           <Button
                             onClick={() =>

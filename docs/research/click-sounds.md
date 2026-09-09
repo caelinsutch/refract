@@ -43,3 +43,9 @@ The Cursor inspector now offers None, Soft, and Mechanical. Enabled sounds expos
 The preview hook uses the same sample bank and cue planner as export. A short lookahead schedules normal-pitch Web Audio sources against edited playback time. Pause, profile/project changes, and unmount stop queued sources. Backward time and large discontinuities clear scheduled cues for loop/seek handling. Late scheduling within a sample begins at the elapsed offset instead of replaying the whole transient. Volume updates use a shared gain node; audition does not move the video playhead.
 
 Production compilation and all 110 existing tests pass. The tests establish core sample/timeline/export behavior, not live Web Audio scheduling. Picker interaction, audible preview synchronization, seek/loop behavior, and volume parity with encoded output still need runtime verification. The synthesized profiles remain approximations rather than recordings matching the reference mouse sets.
+
+## Volume audition and asynchronous cleanup
+
+Changing click volume now auditions the selected profile at the new gain, including the 25% reset. Auditions use a single controller: a newer request stops the prior source, pending Web Audio resume requests cannot play stale selections, and leaving a project or choosing None cancels the audition. Ended sources disconnect their gain and source nodes. Stale resume failures after cancellation do not show an unrelated error in a new project.
+
+Three asynchronous regression tests cover out-of-order resume completion, project departure with successful/failed pending resume, and volume replacement with node cleanup. All 115 core tests and the production build pass. These use a controlled AudioContext substitute; actual audible playback and continuous timeline seek/loop synchronization still need runtime verification. The original synthesized profiles still do not establish acoustic parity with Screen Studio.

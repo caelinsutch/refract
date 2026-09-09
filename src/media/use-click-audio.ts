@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type { Project } from "../core/project";
 import { clickSoundCues } from "../core/click-sounds";
 import { clickSoundBank, type ClickSoundProfile } from "../core/click-audio";
+import { ClickAudition } from "../core/click-audition";
 export function useClickAudio(
   project: Project | null,
   time: number,
@@ -10,6 +11,11 @@ export function useClickAudio(
   report: (message: string) => void,
 ) {
   const context = useRef<AudioContext | null>(null);
+  const audition = useRef(new ClickAudition());
+  useEffect(() => () => audition.current.stop(), [project?.id]);
+  useEffect(() => {
+    if (project?.appearance.clickSound === "none") audition.current.stop();
+  }, [project?.appearance.clickSound]);
   const latest = useRef({
     time,
     volume: project?.appearance.clickSoundVolume ?? 0.25,
@@ -117,22 +123,7 @@ export function useClickAudio(
   }, [playing, profile, speed, cues, project?.id]);
   return async (choice: ClickSoundProfile, volume = latest.current.volume) => {
     try {
-      const ctx = getContext();
-      await ctx.resume();
-      const samples = clickSoundBank(choice, ctx.sampleRate).click,
-        buffer = ctx.createBuffer(1, samples.length, ctx.sampleRate);
-      buffer.getChannelData(0).set(samples);
-      const node = ctx.createBufferSource(),
-        gain = ctx.createGain();
-      node.buffer = buffer;
-      gain.gain.value = volume;
-      node.connect(gain);
-      gain.connect(ctx.destination);
-      node.onended = () => {
-        node.disconnect();
-        gain.disconnect();
-      };
-      node.start();
+      await audition.current.play(getContext(), choice, volume);
     } catch (error) {
       latest.current.report(
         `Click sound preview could not play: ${String(error)}`,
