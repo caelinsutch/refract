@@ -1,3 +1,4 @@
+import { previewTransport } from "./core/preview-transport";
 import { useClickAudio } from "./media/use-click-audio";
 import {
   dragMask,
@@ -464,7 +465,9 @@ export default function App() {
   projectRef.current = project;
   selectionRef.current = selection;
   dirtyRef.current = dirty;
-  timeRef.current = time;
+  // During playback the media clock owns this ref; unrelated React renders
+  // must not overwrite it with the throttled timeline display value.
+  if (!playing) timeRef.current = time;
   playingRef.current = playing;
   useEffect(() => {
     if (project?.cameraLayouts?.length)
@@ -784,7 +787,11 @@ export default function App() {
       Math.max(0, v.duration - 0.02),
       source.time / 1000,
     );
-    if (Number.isFinite(desired) && Math.abs(v.currentTime - desired) > 0.04)
+    if (
+      (!playing || v.paused) &&
+      Number.isFinite(desired) &&
+      Math.abs(v.currentTime - desired) > 0.04
+    )
       v.currentTime = desired;
     if (playing) {
       v.playbackRate = source.segment.speed * previewSpeed;
@@ -810,8 +817,7 @@ export default function App() {
   }, [project, time, playing, previewSpeed, cameraUrl]);
   useEffect(() => {
     let id: number | undefined,
-      last = performance.now(),
-      lastState = last;
+      lastState = performance.now();
     const tick = (now: number) => {
       id = undefined;
       const p = projectRef.current,
@@ -876,29 +882,39 @@ export default function App() {
             );
         }
       }
-      if (playingRef.current && p) {
-        let next = timeRef.current + (now - last) * previewSpeed;
-        if (next >= duration(p)) {
-          next = loop ? 0 : duration(p);
-          if (!loop) setPlaying(false);
-          // Always publish the boundary; the throttled update below may not
-          // run again once playback stops.
-          setTime(next);
-          lastState = now;
+      if (playingRef.current && p && v) {
+        const next = previewTransport(
+          p,
+          timeRef.current,
+          {
+            time: v.currentTime * 1000,
+            seeking: v.seeking,
+            ready: v.readyState >= 2,
+            ended: v.ended,
+          },
+          loop,
+        );
+        timeRef.current = next.position;
+        if (next.seek !== undefined) {
+          v.currentTime = next.seek / 1000;
+          const source = sourceAt(p, next.position);
+          if (source) v.playbackRate = source.segment.speed * previewSpeed;
+          void v.play().catch(() => setPlaying(false));
         }
-        timeRef.current = next;
-        if (now - lastState > 30) {
-          setTime(next);
+        if (next.ended) {
+          playingRef.current = false;
+          setPlaying(false);
+          v.pause();
+        }
+        if (next.ended || next.seek !== undefined || now - lastState > 30) {
+          setTime(next.position);
           lastState = now;
         }
       }
-      last = now;
       if (playingRef.current) id = requestAnimationFrame(tick);
     };
     const invalidate = () => {
       if (id !== undefined) return;
-      // A new playback run starts now, not at the last frame before pausing.
-      last = performance.now();
       id = requestAnimationFrame(tick);
     };
     requestPreview.current = invalidate;
@@ -1766,7 +1782,10 @@ export default function App() {
               title={playing ? "Pause" : "Play"}
               disabled={!project}
               onClick={() => {
-                if (project && time >= duration(project)) setTime(0);
+                if (project && time >= duration(project)) {
+                  timeRef.current = 0;
+                  setTime(0);
+                }
                 setPlaying((p) => !p);
               }}
             >

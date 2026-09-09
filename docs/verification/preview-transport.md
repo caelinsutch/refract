@@ -1,0 +1,9 @@
+# Media-clock preview transport
+
+The editor now derives edited playback position from the source video's current time within the active retained clip. Previously the animation loop advanced an independent wall clock, while a React effect repeatedly sought the video when it differed by more than 40 ms. That could let timeline overlays and click audio run ahead of stalled media and introduce corrective seeks during normal playback.
+
+The new transport holds position while seeking or lacking current media data. A stationary media clock does not advance the timeline. At a clip boundary it publishes the exact edited boundary, seeks the next retained source start, and applies that clip's speed multiplied by preview speed. The final boundary either stops at exact edited duration or seeks the first retained source start for looping. Source time already incorporates playback speed, so the mapping divides only by clip speed rather than multiplying by preview speed again.
+
+The source synchronization effect now seeks only while paused or starting playback; it does not correct every running frame against a throttled React value. During playback the shared time ref belongs to the media transport, preventing unrelated React renders from replacing it with an older timeline display value. The Play button explicitly resets that ref when restarting from the end.
+
+Three core tests cover stationary media, buffering/seeking, invalid media time, removed source footage, 2× clip mapping, exact end, and looping to a trimmed source start. All 121 core tests and the production TypeScript/Vite build pass. Actual Electron video playback, camera and auxiliary-audio alignment during stalls, and visual inspection remain unverified for this change. These tests validate transport decisions, not decoder behavior or full reference parity.
