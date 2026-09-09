@@ -1,4 +1,4 @@
-import { isExportFrameRate } from "./export-settings.js";
+import { exportHeight, isExportFrameRate } from "./export-settings.js";
 export type RecordingCompletion = {
   action: "create-project" | "export-file" | "export-clipboard";
   resolution: number;
@@ -11,10 +11,15 @@ export function recordingCompletion(value: unknown): RecordingCompletion {
       v?.action === "export-file" || v?.action === "export-clipboard"
         ? v.action
         : "create-project",
-    resolution: [720, 1080, 1920, 2560, 3840].includes(v?.resolution ?? 0)
-      ? v!.resolution!
-      : 1920,
-    fps: isExportFrameRate("mp4", v?.fps) ? v!.fps! : 30,
+    resolution: exportHeight(
+      "mp4",
+      typeof v?.resolution === "number" &&
+        Number.isFinite(v.resolution) &&
+        v.resolution <= 3840
+        ? v.resolution
+        : 720,
+    ),
+    fps: isExportFrameRate("mp4", v?.fps) ? v!.fps! : 60,
   };
 }
 /** Completion events may be redelivered; project reopen never enters this path. */

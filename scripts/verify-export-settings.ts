@@ -1,4 +1,4 @@
-import { exportFrameRates } from "../src/core/export-settings";
+import { exportFrameRates, exportHeights } from "../src/core/export-settings";
 import { createCanvas } from "@napi-rs/canvas";
 import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -6,7 +6,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import assert from "node:assert/strict";
 import { createProject } from "../src/core/project";
-import { dimensions, drawFrame } from "../src/core/compositor";
+import { exportDimensions, drawFrame } from "../src/core/compositor";
 import { exportArgs } from "../src/core/export";
 
 const exec = promisify(execFile);
@@ -17,7 +17,7 @@ await fs.mkdir(dir, { recursive: true });
 const results: object[] = [];
 // Short moving fixtures exercise every UI encoder setting without retaining many 4K frames.
 for (const format of ["mp4", "gif"] as const) {
-  for (const max of [1280, 1920, 3840]) {
+  for (const max of exportHeights[format]) {
     for (const fps of exportFrameRates[format]) {
       const p = createProject({
         file: "unused",
@@ -28,7 +28,7 @@ for (const format of ["mp4", "gif"] as const) {
       });
       p.appearance.background = "color";
       p.appearance.color = "#192030";
-      const size = dimensions(p, max);
+      const size = exportDimensions(p, max);
       const output = createCanvas(size.width, size.height),
         context = output.getContext("2d");
       const source = createCanvas(320, 180),

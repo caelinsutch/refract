@@ -937,9 +937,9 @@ export default function Recorder() {
             })
           }
         >
-          {[720, 1080, 1920, 2560, 3840].map((n) => (
+          {[720, 1080, 2160].map((n) => (
             <option key={n} value={n}>
-              {n}px
+              {n}p
             </option>
           ))}
         </select>

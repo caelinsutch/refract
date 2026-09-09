@@ -156,7 +156,7 @@ app.whenReady().then(async () => {
     assert.equal(requests.length, 1, "Duplicate event exported twice");
     assert.equal(requests[0].fps, 24);
     assert.equal(requests[0].format, "mp4");
-    assert.equal(Math.max(requests[0].width, requests[0].height), 720);
+    assert.equal(requests[0].height, 720);
     assert.equal(
       await window.webContents.executeJavaScript(
         `document.querySelectorAll('dialog[open]').length`,
@@ -177,7 +177,7 @@ app.whenReady().then(async () => {
     encode = true;
     for (const resolution of process.env.REFRACT_EXPORT_DIALOG_ONLY
       ? [720]
-      : [720, 1080, 1920, 2560, 3840]) {
+      : [720, 1080, 2160]) {
       for (const fps of process.env.REFRACT_EXPORT_DIALOG_ONLY
         ? [24]
         : [24, 30, 60]) {
@@ -239,7 +239,7 @@ app.whenReady().then(async () => {
         assert.equal(Number(video.nb_read_frames), Math.ceil(fps / 4));
         assert.equal(frames.length, Math.ceil(fps / 4));
         assert.equal(video.r_frame_rate, `${fps}/1`);
-        assert.equal(Math.max(video.width, video.height), resolution);
+        assert.equal(video.height, resolution);
         assert.ok(
           Math.abs(Number(probe.format.duration) - Math.ceil(fps / 4) / fps) <
             0.002,
@@ -253,7 +253,7 @@ app.whenReady().then(async () => {
           frames: frames.length,
           duration: Number(probe.format.duration),
         });
-        console.log(`Verified ${resolution}px / ${fps} fps`);
+        console.log(`Verified ${resolution}p / ${fps} fps`);
       }
     }
     output = path.join(directory, "manual-clipboard.gif");
@@ -269,7 +269,7 @@ app.whenReady().then(async () => {
       };
       change('Export destination','clipboard');await wait();
       change('Export format','gif');await wait();
-      change('Output size','1280');await wait();
+      change('Output size','720');await wait();
       change('Frame rate','20');await wait();
       const button=document.querySelector('[data-dialog-default]');
       if(button.textContent.trim()!=='Export to clipboard') throw Error('Wrong default export action');
@@ -310,7 +310,7 @@ app.whenReady().then(async () => {
       ),
     );
     assert.equal(manualProbe.streams[0].codec_name, "gif");
-    assert.equal(manualProbe.streams[0].width, 1280);
+    assert.equal(manualProbe.streams[0].width, 960);
     assert.equal(Number(manualProbe.streams[0].nb_read_frames), 5);
     window.webContents.send("menu-action", "commands");
     await window.webContents.executeJavaScript(`(async()=>{
@@ -344,7 +344,7 @@ app.whenReady().then(async () => {
     );
     assert.equal(requests.at(-1).destination, "clipboard");
     assert.equal(requests.at(-1).fps, 30);
-    assert.equal(requests.at(-1).width, 1080);
+    assert.equal(requests.at(-1).height, 1080);
     assert.equal(frames.length, 8);
     encode = false;
     window.webContents.send("menu-action", "quick-export-file");
@@ -369,7 +369,7 @@ app.whenReady().then(async () => {
       "Quick export changed editor settings",
     );
     assert.equal(requests.at(-1).fps, 20);
-    assert.equal(requests.at(-1).width, 1280);
+    assert.equal(requests.at(-1).width, 960);
     assert.equal(availability[0], false, "Empty editor enabled exports");
     assert.ok(
       availability.includes(true),

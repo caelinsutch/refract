@@ -7,8 +7,8 @@ import {
 test("completion settings normalize stale or invalid persisted values", () => {
   assert.deepEqual(recordingCompletion(null), {
     action: "create-project",
-    resolution: 1920,
-    fps: 30,
+    resolution: 720,
+    fps: 60,
   });
   assert.deepEqual(
     recordingCompletion({ action: "share", resolution: 99999, fps: 120 }),
@@ -16,7 +16,7 @@ test("completion settings normalize stale or invalid persisted values", () => {
   );
   assert.deepEqual(
     recordingCompletion({ action: "export-file", resolution: 3840, fps: 60 }),
-    { action: "export-file", resolution: 3840, fps: 60 },
+    { action: "export-file", resolution: 2160, fps: 60 },
   );
 });
 test("clipboard completion retains its quick export settings", () => {

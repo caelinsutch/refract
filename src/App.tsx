@@ -1,4 +1,9 @@
-import { exportFrameRate, exportFrameRates } from "./core/export-settings";
+import {
+  exportHeight,
+  exportHeights,
+  exportFrameRate,
+  exportFrameRates,
+} from "./core/export-settings";
 import { supportsDirectionalShadow } from "./core/shadow-layer";
 import { WallpaperPicker } from "./components/WallpaperPicker";
 import { BackgroundImagePicker } from "./components/BackgroundImagePicker";
@@ -104,7 +109,7 @@ import {
   validateProject,
 } from "./core/project";
 import {
-  dimensions,
+  exportDimensions,
   previewDimensions,
   drawFrame,
   sourcePointAt,
@@ -558,8 +563,8 @@ export default function App() {
     [exporting, setExporting] = useState(false),
     [exportError, setExportError] = useState(""),
     [progress, setProgress] = useState(0),
-    [fps, setFps] = useState(30),
-    [resolution, setResolution] = useState(1920),
+    [fps, setFps] = useState(60),
+    [resolution, setResolution] = useState(720),
     [format, setFormat] = useState<"mp4" | "gif">("mp4"),
     [exportDestination, setExportDestination] = useState<"file" | "clipboard">(
       "file",
@@ -1444,7 +1449,7 @@ export default function App() {
     }
     const api = window.refract,
       p = structuredClone(exportProject),
-      size = dimensions(p, exportResolution);
+      size = exportDimensions(p, exportResolution);
     exportBusy.current = true;
     pausePreview();
     cancelExport.current = false;
@@ -3702,6 +3707,7 @@ export default function App() {
                       onChange={(e) => {
                         const next = e.target.value as "mp4" | "gif";
                         setFormat(next);
+                        setResolution((current) => exportHeight(next, current));
                         setFps((current) => exportFrameRate(next, current));
                       }}
                     >
@@ -3717,9 +3723,11 @@ export default function App() {
                       value={resolution}
                       onChange={(e) => setResolution(Number(e.target.value))}
                     >
-                      <option value={1280}>HD · 1280</option>
-                      <option value={1920}>Full HD · 1920</option>
-                      <option value={3840}>4K · 3840</option>
+                      {exportHeights[format].map((height) => (
+                        <option key={height} value={height}>
+                          {height}p
+                        </option>
+                      ))}
                     </select>
                   </Row>
                   <Divider />
@@ -3740,7 +3748,7 @@ export default function App() {
                   <Divider />
                   <Note>
                     {project
-                      ? `${dimensions(project, resolution).width} × ${dimensions(project, resolution).height} · ${formatTime(duration(project), true)}`
+                      ? `${exportDimensions(project, resolution).width} × ${exportDimensions(project, resolution).height} · ${formatTime(duration(project), true)}`
                       : ""}
                     <br />
                     {format === "gif"

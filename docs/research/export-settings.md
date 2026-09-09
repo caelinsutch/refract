@@ -11,6 +11,6 @@ Inspected September 9, 2026 using the installed Screen Studio renderer bundle. T
 
 The reference resolves an unsupported frame rate to the largest supported rate no greater than the request; requests below the minimum use the minimum. It retains separate settings for each format and separate settings for ordinary and quick exports. Web quality modes exclude heights above 1080. GIF settings include a disable-loop option.
 
-Refract now uses the observed frame-rate lists throughout the encoder, editor controls, and quick-export normalization. Remaining gaps include quality-to-encoder mapping, output-height semantics (Refract currently sizes the longest edge), format-specific defaults/persistence, and GIF loop selection. Do not treat the frame-rate correction as proof of complete export-settings parity.
+Refract now uses the observed frame-rate and output-height lists throughout editor controls and quick-export normalization. Exports size by height, cap width at 3840, and floor both dimensions to even pixels. MP4 and quick-export defaults are 720p/60 fps. Remaining gaps include quality-to-encoder mapping, GIF-specific defaults, per-format settings persistence, and GIF loop selection. Do not treat the frame-rate correction as proof of complete export-settings parity.
 
 The reference requires activation to export, so direct comparison of its encoded outputs remains unavailable.

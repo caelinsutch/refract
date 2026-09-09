@@ -19,3 +19,14 @@ export function exportFrameRate(
   const rates = exportFrameRates[format];
   return rates.find((rate) => rate <= requested) ?? rates[rates.length - 1];
 }
+
+export const exportHeights: Record<"mp4" | "gif", readonly number[]> = {
+  mp4: [720, 1080, 2160],
+  gif: [480, 720, 1080],
+};
+export function exportHeight(format: "mp4" | "gif", requested: number): number {
+  const heights = exportHeights[format];
+  return (
+    [...heights].reverse().find((height) => height <= requested) ?? heights[0]
+  );
+}

@@ -47,6 +47,24 @@ export function dimensions(p: Project, max = 1280) {
     ? { width: max, height: Math.round(max / ratio / 2) * 2 }
     : { width: Math.round((max * ratio) / 2) * 2, height: max };
 }
+/** Export sizes are output heights; very wide compositions cap at 3840px. */
+export function exportDimensions(p: Project, height: number) {
+  if (!Number.isFinite(height) || height <= 0)
+    throw Error("Invalid export height");
+  const [w, h] =
+    p.appearance.ratio === "Auto"
+      ? [p.crop?.width ?? p.source.width, p.crop?.height ?? p.source.height]
+      : p.appearance.ratio.split(":").map(Number);
+  let width = (height * w) / h;
+  if (width > 3840) {
+    height = Math.floor((height * 3840) / width);
+    width = 3840;
+  }
+  return {
+    width: Math.max(2, Math.floor(width / 2) * 2),
+    height: Math.max(2, Math.floor(height / 2) * 2),
+  };
+}
 /** Fit the preview in CSS pixels, then rasterize vectors at display resolution. */
 export function previewDimensions(
   p: Project,
