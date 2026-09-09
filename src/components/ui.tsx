@@ -2,6 +2,8 @@ import * as sx from "@stylexjs/stylex";
 import { useId, type ReactNode } from "react";
 const s = sx.create({
   button: {
+    minWidth: 0,
+    maxWidth: "100%",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",

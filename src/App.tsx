@@ -37,7 +37,8 @@ import {
   Captions,
   Play,
   Pause,
-  Square,
+  CircleStop,
+  CirclePlay,
   SkipBack,
   SkipForward,
   Repeat2,
@@ -193,6 +194,12 @@ const s = sx.create({
     fontVariantNumeric: "tabular-nums",
     color: "var(--text-secondary)",
     width: 119,
+  },
+  audioTrackName: {
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   sidebar: {
     width: "var(--sidebar-width)",
@@ -2254,18 +2261,21 @@ export default function App() {
                   <>
                     <Button
                       disabled={!audioPreview.ready}
+                      title={`${audioPreview.playing ? "Stop" : "Play"} ${project.backgroundAudio.name}`}
                       onClick={() => {
                         setPlaying(false);
                         audioPreview.toggle();
                       }}
                     >
                       {audioPreview.playing ? (
-                        <Square size={14} />
+                        <CircleStop size={14} style={{ flexShrink: 0 }} />
                       ) : (
-                        <Play size={14} />
+                        <CirclePlay size={14} style={{ flexShrink: 0 }} />
                       )}
-                      {audioPreview.playing ? "Stop" : "Play"}{" "}
-                      {project.backgroundAudio.name}
+                      <span {...sx.props(s.audioTrackName)}>
+                        {audioPreview.playing ? "Stop" : "Play"}{" "}
+                        {project.backgroundAudio.name}
+                      </span>
                     </Button>
                     <Toggle
                       label="Mute background audio"
@@ -2280,37 +2290,27 @@ export default function App() {
                         })
                       }
                     />
-                    <Range
-                      label="Background audio volume"
-                      value={project.backgroundAudio.volume * 100}
-                      max={100}
-                      unit="%"
-                      onChange={(volume) =>
-                        edit(
-                          {
-                            ...project,
-                            backgroundAudio: {
-                              ...project.backgroundAudio!,
-                              volume: volume / 100,
+                    {!project.backgroundAudio.muted && (
+                      <Range
+                        label="Background audio volume"
+                        value={project.backgroundAudio.volume * 100}
+                        max={100}
+                        resetValue={5}
+                        unit="%"
+                        onChange={(volume) =>
+                          edit(
+                            {
+                              ...project,
+                              backgroundAudio: {
+                                ...project.backgroundAudio!,
+                                volume: volume / 100,
+                              },
                             },
-                          },
-                          "background-audio-volume",
-                        )
-                      }
-                    />
-                    <Button
-                      onClick={() =>
-                        edit({
-                          ...project,
-                          backgroundAudio: {
-                            ...project.backgroundAudio!,
-                            volume: 0.05,
-                          },
-                        })
-                      }
-                    >
-                      Reset volume
-                    </Button>
+                            "background-audio-volume",
+                          )
+                        }
+                      />
+                    )}
                     <Button
                       onClick={() =>
                         edit({ ...project, backgroundAudio: undefined })
