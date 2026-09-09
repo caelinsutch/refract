@@ -41,3 +41,11 @@ npx tsc scripts/verify-theme.cts --target ES2022 --module Node16 --moduleResolut
 ```
 
 Production TypeScript/Vite build passed. Electron requires macOS window-server access; the sandbox-only launch aborted before running the check, and the launch with window-server access passed.
+
+## Full-editor modal keyboard verification
+
+The isolated production-renderer verifier now opens Presets, checks initial name-field focus, types through Electron's text input, saves with real Enter key events, dismisses with Escape, and confirms focus returns to the Presets trigger. The saved name and reset input are checked; background video stays paused.
+
+A forward-Tab check initially failed on the first key: Chromium placed focus on BODY after the name field while Save was disabled. The shared Modal now wraps Tab/Shift-Tab at its focusable boundaries, excluding disabled, hidden, and inert controls. If no eligible controls exist, focus remains on the dialog itself. Eight forward Tabs and eight reverse Tabs now pass without leaving the dialog, followed by successful Enter/Escape/focus restoration.
+
+Run the full-editor verifier documented in `preview-transport.md`. The production build and all 121 core tests pass. This is actual Presets interaction in an isolated browser-import editor, not proof of every native crop/export dialog path. Each verifier run uses its own Electron profile so test presets do not affect the user's preferences or subsequent runs.

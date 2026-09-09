@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 const directory = path.resolve("work/editor-playback");
-app.setPath("userData", path.join(directory, "profile"));
+app.setPath("userData", path.join(directory, `profile-${process.pid}`));
 app.whenReady().then(async () => {
   let window: BrowserWindow | undefined;
   try {
@@ -97,11 +97,71 @@ app.whenReady().then(async () => {
         if (!video.paused) throw Error('Reserved or repeated Space toggled playback');
       }
     })()`);
+    await window.webContents.executeJavaScript(`(async () => {
+      const preset = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Presets');
+      if (!preset) throw Error('Missing Presets control');
+      preset.focus();
+      preset.click();
+      const deadline = performance.now() + 3000;
+      while (document.activeElement?.getAttribute('aria-label') !== 'Preset name') {
+        if (performance.now() > deadline) throw Error('Preset input did not receive initial focus');
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+    })()`);
+    for (let index = 0; index < 16; index++) {
+      window.webContents.sendInputEvent({
+        type: "keyDown",
+        keyCode: "Tab",
+        modifiers: index >= 8 ? ["shift"] : [],
+      });
+      window.webContents.sendInputEvent({
+        type: "keyUp",
+        keyCode: "Tab",
+        modifiers: index >= 8 ? ["shift"] : [],
+      });
+      const focus = await window.webContents.executeJavaScript(
+        `({inside: document.querySelector('dialog[open]')?.contains(document.activeElement), tag:document.activeElement.tagName, label:document.activeElement.getAttribute('aria-label')})`,
+      );
+      if (!focus.inside)
+        throw Error(
+          `Tab ${index + 1} escaped dialog: ${JSON.stringify(focus)}`,
+        );
+    }
+    await window.webContents.executeJavaScript(
+      `document.querySelector('[aria-label="Preset name"]').focus()`,
+    );
+    await window.webContents.insertText("Keyboard verification");
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await window.webContents.executeJavaScript(`(async () => {
+      const deadline = performance.now() + 3000;
+      while (JSON.parse(localStorage.getItem('refract-presets') || '[]').length !== 1) {
+        if (performance.now() > deadline) throw Error('Enter did not save the preset');
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      const saved = JSON.parse(localStorage.getItem('refract-presets'));
+      if (saved[0].name !== 'Keyboard verification') throw Error('Incorrect preset text');
+      if (document.querySelector('[aria-label="Preset name"]').value !== '') throw Error('Preset input did not reset');
+      const video = Array.from(document.querySelectorAll('video')).find(v => v.src.startsWith('blob:'));
+      if (!video.paused) throw Error('Dialog keyboard action started video');
+    })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    await window.webContents.executeJavaScript(`(async () => {
+      const deadline = performance.now() + 3000;
+      while (document.querySelector('dialog[open]')) {
+        if (performance.now() > deadline) throw Error('Escape did not dismiss the preset dialog');
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      if (document.activeElement.textContent.trim() !== 'Presets') throw Error('Dialog did not restore trigger focus');
+    })()`);
     console.log(
       JSON.stringify({
         ...result,
         focusedButtonSpace: "passed",
         reservedSpace: "passed",
+        presetEnterEscapeFocus: "passed",
+        modalTabContainment: "passed",
       }),
     );
   } catch (error) {

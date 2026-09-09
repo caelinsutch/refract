@@ -55,6 +55,33 @@ export function Modal({
       }}
       onKeyDown={(e) => {
         e.stopPropagation();
+        if (e.key === "Tab" && !e.nativeEvent.isComposing) {
+          const dialog = ref.current!;
+          const controls = Array.from(
+            dialog.querySelectorAll<HTMLElement>(
+              'button,input,select,textarea,a[href],[tabindex],[contenteditable="true"]',
+            ),
+          ).filter(
+            (node) =>
+              node.tabIndex >= 0 &&
+              !node.matches(":disabled") &&
+              !node.closest("[inert]") &&
+              node.getClientRects().length > 0 &&
+              getComputedStyle(node).visibility !== "hidden",
+          );
+          const index = controls.indexOf(document.activeElement as HTMLElement);
+          if (
+            index < 0 ||
+            (e.shiftKey ? index === 0 : index === controls.length - 1)
+          ) {
+            e.preventDefault();
+            (e.shiftKey ? controls.at(-1) : controls[0])?.focus({
+              preventScroll: true,
+            });
+            if (!controls.length) dialog.focus({ preventScroll: true });
+          }
+          return;
+        }
         if (
           e.key !== "Enter" ||
           e.nativeEvent.isComposing ||
