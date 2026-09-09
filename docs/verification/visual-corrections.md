@@ -1032,3 +1032,10 @@ Validation: production build and 185 core tests passed, including portrait, crop
 Ordinary MP4 and GIF exports now retain separate height/FPS choices and the selected format across launches. Defaults are MP4 720p/60fps and GIF 480p/15fps. Persisted values are validated per format. Completing a recording with automatic export no longer overwrites ordinary editor settings; its encoder request continues to use the dedicated completion settings.
 
 Validation: production build and 186 core tests passed. The renderer fixture changes MP4 to 2160p/50fps and GIF to 720p/20fps, switches both ways, reloads, reimports synthetic video, and verifies both choices remain intact. The focused completion/manual/quick export workflow also passed actual encoding, cancellation, and editor-settings isolation.
+
+
+### Editor control spacing — September 9
+
+Compared the installed editor accessibility tree and bundled layout definitions with Refract. The reference playback row has split, scrubber, preview settings, speed, and timeline zoom; Refract had an additional source mute button. Removed that duplicate (source mute remains in the Audio inspector), removed excess divider/zoom spacing, and tightened the aspect/crop/mask row to a 32px row with contiguous controls and no extra bottom margin.
+
+Validation: TypeScript/production build and the Electron layout fixture passed at 1000×660, 1320×880, and 1600×1000 in light and dark themes, including timeline fit/zoom, panel boundaries, and preview size persistence. Inspected the rendered 1320px screenshot. Screen Studio capture still returns a blank image, so this is a bounded layout correction, not verified pixel parity.

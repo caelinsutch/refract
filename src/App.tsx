@@ -75,8 +75,6 @@ import {
   CirclePlay,
   SkipBack,
   SkipForward,
-  Volume2,
-  VolumeX,
   Crop,
   Scan,
   Plus,
@@ -186,16 +184,16 @@ const s = sx.create({
     backgroundColor: "var(--surface-app)",
   },
   stageTools: {
-    height: 34,
+    height: 32,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: 7,
+    gap: 0,
     flexShrink: 0,
     alignSelf: "center",
     marginTop: 0,
-    marginBottom: 6,
-    paddingInline: 7,
+    marginBottom: 0,
+    paddingInline: 0,
   },
   canvasHolder: {
     width: "100%",
@@ -2409,7 +2407,7 @@ export default function App() {
                     style={{
                       width: 1,
                       height: 24,
-                      marginInline: 3,
+                      marginInline: 0,
                       flexShrink: 0,
                       background: "var(--white-a12)",
                     }}
@@ -2429,26 +2427,6 @@ export default function App() {
               >
                 <AudioLines size={14} />
               </Button>
-              <Button
-                icon
-                title={
-                  project?.appearance.muted
-                    ? "Unmute source audio"
-                    : "Mute source audio"
-                }
-                aria-pressed={project?.appearance.muted ?? false}
-                disabled={!project?.source.hasAudio}
-                onClick={() =>
-                  appearance({ muted: !project?.appearance.muted })
-                }
-              >
-                <StateIcon
-                  active={project?.appearance.muted ?? false}
-                  size={14}
-                  on={<VolumeX size={14} />}
-                  off={<Volume2 size={14} />}
-                />
-              </Button>
               <PreviewSettings
                 quality={previewQuality}
                 powerSaving={previewPowerSaving}
@@ -2465,7 +2443,7 @@ export default function App() {
                   step={0.1}
                   value={timelineZoom}
                   onChange={(e) => setTimelineZoom(Number(e.target.value))}
-                  style={{ width: 72, minWidth: 72, marginLeft: 6 }}
+                  style={{ width: 72, minWidth: 72, marginLeft: 2 }}
                 />
               )}
             </div>
