@@ -371,7 +371,7 @@ export function setupRecorder(
       return null;
     if (
       !request ||
-      !["camera", "microphone", "audio"].includes(request.kind) ||
+      !["camera", "microphone", "audio", "settings"].includes(request.kind) ||
       !Number.isFinite(request.x) ||
       !Number.isFinite(request.y)
     )
@@ -379,15 +379,20 @@ export function setupRecorder(
     inputMenuOpen = true;
     const owner = bar;
     try {
-      const sources = request.kind === "audio" ? null : await list();
+      const sources =
+        request.kind === "audio" || request.kind === "settings"
+          ? null
+          : await list();
       if (owner.isDestroyed()) return null;
       const inputs =
-        request.kind === "audio"
-          ? [{ value: "all", label: "Record system audio from all apps" }]
-          : (request.kind === "camera"
-              ? sources!.cameras
-              : sources!.microphones
-            ).map((input) => ({ value: input.id, label: input.name }));
+        request.kind === "settings"
+          ? []
+          : request.kind === "audio"
+            ? [{ value: "all", label: "Record system audio from all apps" }]
+            : (request.kind === "camera"
+                ? sources!.cameras
+                : sources!.microphones
+              ).map((input) => ({ value: input.id, label: input.name }));
       const offLabel =
         request.kind === "audio"
           ? "Don't record system audio"
@@ -398,47 +403,108 @@ export function setupRecorder(
           owner.removeListener("closed", finish);
           resolve(selection);
         };
-        const menu = Menu.buildFromTemplate([
-          ...inputs.map((input) => ({
-            label: input.label,
-            type: "checkbox" as const,
-            checked: request.selected === input.value,
-            click: () => {
-              selection = input;
-            },
-          })),
-          ...(inputs.length ? [{ type: "separator" as const }] : []),
-          ...(request.kind === "camera"
+        const menu = Menu.buildFromTemplate(
+          request.kind === "settings"
             ? [
                 {
-                  label: "Max camera resolution",
-                  submenu: ([720, 1080, 2160] as const).map(
-                    (cameraResolution) => ({
-                      label:
-                        cameraResolution === 2160
-                          ? "4K"
-                          : `${cameraResolution}p`,
-                      type: "checkbox" as const,
-                      checked:
-                        cameraResolution === (request.cameraResolution ?? 720),
+                  label: "After recording",
+                  submenu: [
+                    {
+                      label: "Create project",
+                      type: "checkbox",
+                      checked: request.completionAction !== "export-file",
                       click: () => {
-                        selection = { cameraResolution };
+                        selection = { completionAction: "create-project" };
                       },
-                    }),
-                  ),
+                    },
+                    {
+                      label: "Export and save to file",
+                      type: "checkbox",
+                      checked: request.completionAction === "export-file",
+                      click: () => {
+                        selection = { completionAction: "export-file" };
+                      },
+                    },
+                  ],
                 },
-                { type: "separator" as const },
+                {
+                  label: "Automatically create zooms",
+                  type: "checkbox",
+                  checked: request.automaticZooms !== false,
+                  click: () => {
+                    selection = {
+                      automaticZooms: request.automaticZooms === false,
+                    };
+                  },
+                },
+                { type: "separator" },
+                {
+                  label: "Recording countdown",
+                  submenu: ([0, 3, 5, 10] as const).map((countdownSeconds) => ({
+                    label:
+                      countdownSeconds === 0
+                        ? "No countdown"
+                        : `${countdownSeconds}s`,
+                    type: "checkbox" as const,
+                    checked:
+                      countdownSeconds ===
+                      countdownDuration(request.countdownSeconds),
+                    click: () => {
+                      selection = { countdownSeconds };
+                    },
+                  })),
+                },
+                { type: "separator" },
+                {
+                  label: "Recording settings…",
+                  click: () => {
+                    selection = { settings: "advanced" };
+                  },
+                },
               ]
-            : []),
-          {
-            label: offLabel,
-            type: "checkbox",
-            checked: !request.selected,
-            click: () => {
-              selection = { value: null, label: offLabel };
-            },
-          },
-        ]);
+            : [
+                ...inputs.map((input) => ({
+                  label: input.label,
+                  type: "checkbox" as const,
+                  checked: request.selected === input.value,
+                  click: () => {
+                    selection = input;
+                  },
+                })),
+                ...(inputs.length ? [{ type: "separator" as const }] : []),
+                ...(request.kind === "camera"
+                  ? [
+                      {
+                        label: "Max camera resolution",
+                        submenu: ([720, 1080, 2160] as const).map(
+                          (cameraResolution) => ({
+                            label:
+                              cameraResolution === 2160
+                                ? "4K"
+                                : `${cameraResolution}p`,
+                            type: "checkbox" as const,
+                            checked:
+                              cameraResolution ===
+                              (request.cameraResolution ?? 720),
+                            click: () => {
+                              selection = { cameraResolution };
+                            },
+                          }),
+                        ),
+                      },
+                      { type: "separator" as const },
+                    ]
+                  : []),
+                {
+                  label: offLabel,
+                  type: "checkbox",
+                  checked: !request.selected,
+                  click: () => {
+                    selection = { value: null, label: offLabel };
+                  },
+                },
+              ],
+        );
         owner.once("closed", finish);
         menu.popup({
           window: owner,

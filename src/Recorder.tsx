@@ -576,10 +576,46 @@ export default function Recorder() {
         kind,
         selected,
         cameraResolution,
+        countdownSeconds,
+        automaticZooms,
+        completionAction: completion.action,
         x: rect.left,
         y: rect.top,
       });
       if (!result) return;
+      if ("settings" in result) {
+        expand("settings");
+        void refresh();
+        return;
+      }
+      if ("countdownSeconds" in result) {
+        setCountdownSeconds(result.countdownSeconds);
+        try {
+          localStorage.setItem(
+            "refract.recorder.countdownSeconds",
+            String(result.countdownSeconds),
+          );
+        } catch {
+          /* Keep the session preference. */
+        }
+        return;
+      }
+      if ("automaticZooms" in result) {
+        setAutomaticZooms(result.automaticZooms);
+        try {
+          localStorage.setItem(
+            "refract.recorder.automaticZooms",
+            String(result.automaticZooms),
+          );
+        } catch {
+          /* Keep the session preference. */
+        }
+        return;
+      }
+      if ("completionAction" in result) {
+        updateCompletion({ ...completion, action: result.completionAction });
+        return;
+      }
       if ("cameraResolution" in result) {
         setCameraResolution(result.cameraResolution);
         try {
@@ -1285,8 +1321,18 @@ export default function Recorder() {
             <div {...sx.props(s.line)} />
             <button
               aria-label="Recording options"
+              aria-haspopup="menu"
+              aria-expanded={inputMenu === "settings"}
+              data-motion="static"
               {...sx.props(s.choice)}
-              onClick={() => pick("settings")}
+              onClick={(event) =>
+                void pickInput("settings", event.currentTarget)
+              }
+              onContextMenu={(event) => {
+                event.preventDefault();
+                void pickInput("settings", event.currentTarget);
+              }}
+              onKeyDown={(event) => inputMenuKey(event, "settings")}
             >
               <Settings2 size={18} />
               <ChevronDown size={11} />

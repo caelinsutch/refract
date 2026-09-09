@@ -6,6 +6,7 @@ app.setPath(
   "userData",
   path.resolve(`work/recorder-menus/profile-${process.pid}`),
 );
+const settingsMode = process.argv.includes("--settings");
 const cameraMode = process.argv.includes("--camera");
 const buildMenu = Menu.buildFromTemplate.bind(Menu);
 let inputMenu: Menu | undefined;
@@ -15,7 +16,11 @@ Menu.buildFromTemplate = (template) => {
     template.some(
       (item) =>
         item.label ===
-        (cameraMode ? "Max camera resolution" : "Don't record system audio"),
+        (settingsMode
+          ? "Recording countdown"
+          : cameraMode
+            ? "Max camera resolution"
+            : "Don't record system audio"),
     )
   )
     inputMenu = menu;
@@ -64,20 +69,23 @@ void app.whenReady().then(async () => {
     await contents.executeJavaScript(`window.originalBar = document.querySelector('[data-recorder-bar]');
       window.originalControls = Array.from(window.originalBar.querySelectorAll('button'));
       window.openAudio = () => window.originalControls.find(button => /system audio/i.test(button.textContent)).click(); void 0;`);
-    for (const [activation, select] of [
+    const interactions: Array<readonly [string, boolean]> = [
       ["context", false],
       ["keyboard", true],
       ["click", false],
-    ] as const) {
+    ];
+    if (settingsMode) interactions.push(["click", true], ["click", true]);
+    let settingsSelection = 0;
+    for (const [activation, select] of interactions) {
       inputMenu = undefined;
       bar!.focus();
       const point = await contents.executeJavaScript(`(() => {
-        const rect = window.originalControls.find(button => ${cameraMode ? "/camera/i" : "/system audio/i"}.test(button.textContent)).getBoundingClientRect();
+        const rect = window.originalControls.find(button => ${settingsMode ? "/Recording options/" : cameraMode ? "/camera/i" : "/system audio/i"}.test(button.getAttribute("aria-label") || button.textContent)).getBoundingClientRect();
         return {x: Math.round(rect.x + rect.width/2), y: Math.round(rect.y + rect.height/2)};
       })()`);
       if (activation === "keyboard") {
         await contents.executeJavaScript(
-          `window.originalControls.find(button => ${cameraMode ? "/camera/i" : "/system audio/i"}.test(button.textContent)).focus()`,
+          `window.originalControls.find(button => ${settingsMode ? "/Recording options/" : cameraMode ? "/camera/i" : "/system audio/i"}.test(button.getAttribute("aria-label") || button.textContent)).focus()`,
         );
         contents.sendInputEvent({ type: "keyDown", keyCode: "Down" });
         contents.sendInputEvent({ type: "keyUp", keyCode: "Down" });
@@ -104,7 +112,27 @@ void app.whenReady().then(async () => {
         bounds,
         "Opening menu moved/resized the recorder",
       );
-      if (cameraMode) {
+      if (settingsMode) {
+        const choices = inputMenu!.items.find(
+          (item) => item.label === "Recording countdown",
+        )!.submenu!.items;
+        assert.deepEqual(
+          choices.map((item) => item.label),
+          ["No countdown", "3s", "5s", "10s"],
+        );
+        if (select) {
+          if (settingsSelection === 0) choices[2].click();
+          else if (settingsSelection === 1)
+            inputMenu!.items
+              .find((item) => item.label === "Automatically create zooms")!
+              .click();
+          else
+            inputMenu!.items
+              .find((item) => item.label === "After recording")!
+              .submenu!.items[1].click();
+          settingsSelection++;
+        }
+      } else if (cameraMode) {
         const choices = inputMenu!.items.find(
           (item) => item.label === "Max camera resolution",
         )!.submenu!.items;
@@ -142,7 +170,26 @@ void app.whenReady().then(async () => {
       await wait(1200);
     }
     assert.equal(resizes, 0, "Input selection triggered a native resize");
-    if (cameraMode) {
+    if (settingsMode) {
+      assert.equal(
+        await contents.executeJavaScript(
+          "localStorage.getItem('refract.recorder.countdownSeconds')",
+        ),
+        "5",
+      );
+      assert.equal(
+        await contents.executeJavaScript(
+          "localStorage.getItem('refract.recorder.automaticZooms')",
+        ),
+        "false",
+      );
+      assert.equal(
+        await contents.executeJavaScript(
+          "JSON.parse(localStorage.getItem('refract.recorder.completion')).action",
+        ),
+        "export-file",
+      );
+    } else if (cameraMode) {
       assert.equal(
         await contents.executeJavaScript(
           "localStorage.getItem('refract.recorder.cameraResolution')",

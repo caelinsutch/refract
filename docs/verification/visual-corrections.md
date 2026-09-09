@@ -499,3 +499,20 @@ updated display-source hint, and verifies the intercepted capture request carrie
 zero. It does not start a real recording. Live start/cancel timing and native
 recording-options menu presentation remain unverified; the current control lives
 in Refract's recording settings panel.
+
+## Native recording-options menu — 2026-09-09
+
+The toolbar's options button now opens a native menu rather than expanding the
+transparent recorder window. Supported quick actions include the countdown
+submenu, automatic zoom creation, and after-recording behavior. Typed responses
+update the existing persisted settings. The remaining panel is available through
+an explicit “Recording settings…” action; opening that panel is the only action
+in this menu intended to expand the recorder.
+
+The production native-menu verifier's `--settings` path checks right-click,
+keyboard, and primary-click access; cancellation; persisted countdown, automatic
+zoom, and export-file choices; unchanged toolbar DOM; and zero native resizes.
+The renderer refresh verifier still passes through the explicit panel path.
+This is a partial menu match: desktop-icon hiding, the quick-share widget, dock
+visibility, recorded-area highlighting, and the reference's Advanced structure
+remain absent. Exact live menu placement/material comparison awaits unlock.

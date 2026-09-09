@@ -6,15 +6,22 @@ export type CaptureSource = {
   app?: string;
 };
 export type RecorderInputMenu = {
-  kind: "camera" | "microphone" | "audio";
+  kind: "camera" | "microphone" | "audio" | "settings";
   selected: string | null;
   cameraResolution?: 720 | 1080 | 2160;
+  countdownSeconds?: 0 | 3 | 5 | 10;
+  automaticZooms?: boolean;
+  completionAction?: "create-project" | "export-file";
   x: number;
   y: number;
 };
 export type RecorderInputSelection =
   | { value: string | null; label: string }
-  | { cameraResolution: 720 | 1080 | 2160 };
+  | { cameraResolution: 720 | 1080 | 2160 }
+  | { countdownSeconds: 0 | 3 | 5 | 10 }
+  | { automaticZooms: boolean }
+  | { completionAction: "create-project" | "export-file" }
+  | { settings: "advanced" };
 export type CaptureSources = {
   keyboardPermission?: "granted" | "required";
   permission: "granted" | "required";

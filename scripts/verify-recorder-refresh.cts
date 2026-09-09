@@ -17,7 +17,7 @@ void app.whenReady().then(async () => {
         recorderDirectory: async () => '',
         onRecorderState: () => () => {}, onAreaSelected: () => () => {},
         recorderExpand: async () => {},
-        recorderInputMenu: async request => ({value:'fixture-device', label:'A very long external camera and microphone device name'}),
+        recorderInputMenu: async request => request.kind === 'settings' ? {settings:'advanced'} : ({value:'fixture-device', label:'A very long external camera and microphone device name'}),
         recorderSources: () => ipcRenderer.invoke('verify-sources'),
         recorderStart: choice => ipcRenderer.invoke('verify-start',choice),
       });`,
