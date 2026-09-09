@@ -77,7 +77,7 @@ app.whenReady().then(async () => {
           const timeline = document.querySelector('[data-timeline]');
           const scroll = timeline.children[0];
           const slider = document.querySelector('input[aria-label="Timeline zoom"]');
-          const cut = document.querySelector('button[aria-label="Cut at playhead (C)"]');
+          const cut = document.querySelector('button[aria-label="Split clip (Option)"]');
           const controls = Array.from(slider.parentElement.children).filter(el=>el.getBoundingClientRect().width>0).map(rect);
           return {scroll:{width:scroll.clientWidth,content:scroll.scrollWidth},timeline:rect(timeline),clip:rect(document.querySelector('[aria-label^="Clip "]')),zoom:rect(document.querySelector('[aria-label="Zoom timeline"]')), sidebar:rect(document.querySelector('aside')), slider:rect(slider),cut:rect(cut),controls,playback:rect(document.querySelector('button[aria-label="Play"]').parentElement),sliderInTimeline:timeline.contains(slider),viewport:{width:innerWidth,height:innerHeight}};
         })()`);

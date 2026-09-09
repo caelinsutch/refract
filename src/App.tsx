@@ -491,6 +491,9 @@ export default function App() {
     handle: MaskHandle;
   } | null>(null);
 
+  const [splitTool, setSplitTool] = useState(false);
+  const [optionSplit, setOptionSplit] = useState(false);
+  const splitMode = splitTool || optionSplit;
   const [captionBusy, setCaptionBusy] = useState(false);
   const [musicBusy, setMusicBusy] = useState(false);
   const [previewQuality, setPreviewQuality] = useState<
@@ -832,18 +835,19 @@ export default function App() {
     }
     setPlaying(true);
   };
-  const cut = () => {
+  const cutAt = (position: number) => {
     if (project) {
-      const next = splitAt(project, time);
+      const next = splitAt(project, position);
       if (next !== project) {
         edit(next);
         setSelection({
           type: "clip",
-          id: sourceAt(next, time)?.segment.id ?? next.segments[0].id,
+          id: sourceAt(next, position)?.segment.id ?? next.segments[0].id,
         });
       }
     }
   };
+  const cut = () => cutAt(time);
   function removeSelection() {
     if (!project || !selection) return;
     if (selection.type === "clip") {
@@ -1218,6 +1222,7 @@ export default function App() {
         e.target instanceof HTMLSelectElement
       )
         return;
+      if (e.key === "Alt" && !e.repeat) setOptionSplit(true);
       if (e.code === "Space") {
         if (
           e.metaKey ||
@@ -1253,6 +1258,8 @@ export default function App() {
       if (e.key.toLowerCase() === "c" && !e.metaKey && !e.ctrlKey) cut();
       if (e.key === "Backspace" || e.key === "Delete") removeSelection();
       if (e.key === "Escape") {
+        setSplitTool(false);
+        setOptionSplit(false);
         setModal(null);
         setSelection(null);
       }
@@ -1269,8 +1276,16 @@ export default function App() {
       if (e.key === "ArrowRight") seek(time + 1000 / fps);
       if (e.key === "ArrowLeft") seek(time - 1000 / fps);
     };
+    const releaseOption = (event: KeyboardEvent) => {
+      if (event.key === "Alt") setOptionSplit(false);
+    };
+    const loseFocus = () => setOptionSplit(false);
+    window.addEventListener("keyup", releaseOption);
+    window.addEventListener("blur", loseFocus);
     window.addEventListener("keydown", key);
     return () => {
+      window.removeEventListener("keyup", releaseOption);
+      window.removeEventListener("blur", loseFocus);
       off?.();
       window.removeEventListener("keydown", key);
     };
@@ -2224,7 +2239,13 @@ export default function App() {
             <div {...sx.props(s.transportRight)}>
               {project && (
                 <>
-                  <Button title="Cut at playhead (C)" onClick={cut} icon>
+                  <Button
+                    title="Split clip (Option)"
+                    active={splitMode}
+                    aria-pressed={splitMode}
+                    onClick={() => setSplitTool((value) => !value)}
+                    icon
+                  >
                     <Scissors size={14} />
                   </Button>
                   <span
@@ -3437,6 +3458,8 @@ export default function App() {
             if (next?.type === "camera") setTab("camera");
           }}
           zoom={timelineZoom}
+          splitMode={splitMode}
+          splitAt={cutAt}
         />
       ) : (
         <div

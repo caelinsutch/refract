@@ -67,6 +67,7 @@ const s = sx.create({
     paddingLeft: 5,
     height: 22,
   }),
+  splitting: { cursor: "crosshair" },
   tickEnd: {
     transform: "translateX(-100%)",
     borderLeftWidth: 0,
@@ -189,6 +190,8 @@ export default function Timeline({
   selection,
   select,
   zoom,
+  splitMode,
+  splitAt,
 }: {
   project: Project;
   tracks: TimelineTracks;
@@ -198,6 +201,8 @@ export default function Timeline({
   selection: Selection;
   select: (s: Selection) => void;
   zoom: number;
+  splitMode: boolean;
+  splitAt: (time: number) => void;
 }) {
   const [editDraft, setEditDraft] = useState<{
     original: Project;
@@ -558,6 +563,7 @@ export default function Timeline({
                     ((clip.end - clip.start) / clip.speed) * px - 3,
                   ),
                   selection?.id === clip.id && s.selected,
+                  splitMode && s.splitting,
                 )}
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -572,6 +578,10 @@ export default function Timeline({
                   });
                 }}
                 onClick={(e) => {
+                  if (splitMode) {
+                    splitAt(toTime(e.clientX));
+                    return;
+                  }
                   select({ type: "clip", id: clip.id });
                   seek(toTime(e.clientX));
                 }}
@@ -602,7 +612,9 @@ export default function Timeline({
                       border: 0,
                       padding: 0,
                       touchAction: "none",
+                      pointerEvents: splitMode ? "none" : "auto",
                     }}
+                    tabIndex={splitMode ? -1 : 0}
                     aria-label={`Trim clip ${side}`}
                     title={`Drag to trim ${side}`}
                     onClick={(e) => e.stopPropagation()}
