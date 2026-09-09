@@ -470,7 +470,7 @@ export default function Recorder() {
       }
     },
   );
-  const sourceRequest = useRef<Promise<void> | null>(null);
+  const sourceRequest = useRef<Promise<CaptureSources | null> | null>(null);
   const displayRequest = useRef(0);
   const inputMenuBusy = useRef(false);
   const [sourceMenu, setSourceMenu] = useState<"display" | "window" | null>(
@@ -602,17 +602,37 @@ export default function Recorder() {
       offArea?.();
     };
   }, []);
-  function refresh(): Promise<void> {
+  const recoveryAttempt = useRef(0);
+  const [recovering, setRecovering] = useState(false);
+  useEffect(() => {
+    recoveryAttempt.current++;
+    setRecovering(false);
+  }, [panel]);
+  async function recover() {
+    if (recovering) return;
+    const attempt = ++recoveryAttempt.current;
+    setRecovering(true);
+    const next = await refresh();
+    if (attempt !== recoveryAttempt.current) return;
+    setRecovering(false);
+    if (!next) return;
+    setError("");
+    expand(next.permission === "required" ? "permission" : null);
+  }
+  function refresh(): Promise<CaptureSources | null> {
     if (sourceRequest.current) return sourceRequest.current;
-    if (!api) return Promise.resolve();
+    if (!api) return Promise.resolve(null);
     // Keep the existing controls visible while checking for device changes.
     setLoading(!sources);
     setError("");
     const request = (async () => {
       try {
-        setSources(await api.recorderSources());
+        const next = await api.recorderSources();
+        setSources(next);
+        return next;
       } catch (e) {
         setError(String(e));
+        return null;
       } finally {
         setLoading(false);
         sourceRequest.current = null;
@@ -628,6 +648,10 @@ export default function Recorder() {
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
+  }, [panel, sources?.permission, loading]);
+  useEffect(() => {
+    if (panel === "permission" && sources?.permission === "granted" && !loading)
+      expand(null);
   }, [panel, sources?.permission, loading]);
   const pick = async (mode: string) => {
     if (mode === "display" && api?.recorderDisplayPicker) {
@@ -941,6 +965,7 @@ export default function Recorder() {
                       settings: "Recording",
                       "quick-export": "Quick export settings",
                       error: "Recording needs attention",
+                      permission: "Screen recording access",
                     } as Record<string, string>
                   )[panel]
                 }
@@ -992,14 +1017,24 @@ export default function Recorder() {
                     state.error ||
                     "Recording could not start. Close this message and select a recording source to try again."}
                 </p>
-                <button {...sx.props(s.primary)} onClick={refresh}>
+                <button
+                  {...sx.props(s.primary)}
+                  autoFocus
+                  disabled={recovering}
+                  onClick={() => void recover()}
+                >
                   <RefreshCw size={13} />
-                  Try again
+                  {recovering ? "Checking…" : "Check again"}
                 </button>
               </>
-            ) : ["display", "window", "area", "microphone", "camera"].includes(
-                panel,
-              ) && sources?.permission === "required" ? (
+            ) : [
+                "display",
+                "window",
+                "area",
+                "microphone",
+                "camera",
+                "permission",
+              ].includes(panel) && sources?.permission === "required" ? (
               <>
                 <p {...sx.props(s.text)}>
                   Allow Refract to record your screen in macOS Settings, then

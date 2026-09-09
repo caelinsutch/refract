@@ -739,3 +739,11 @@ continues to require the system permission; window-source listing still does too
 - The overlay manager separately invalidates pending opens, including the microtask gap before window creation. Immediate close and superseding opens no longer create stale or duplicate fullscreen windows.
 - Verified against the production recorder state machine with only the overlay and capture process stubbed: finish old countdown, cancel it, start a new source, release old window closure, assert no capture, release current closure, assert exactly the new source reaches the capture request. Quit cancellation also passed. No real capture process was launched.
 - Native overlay regression passed immediate cancellation, concurrent opens, full-display bounds, live ticks, Escape, close-before-capture lifecycle, and native panel glass checks. Builds passed. Live reference appearance remains a separate pending check.
+
+### Recorder error recovery — 2026-09-09
+
+- Fixed a recovery dead end: the former Try again action refreshed sources but left the error panel open after success. Renamed it Check again to describe the action accurately; it does not silently restart a recording.
+- Recovery now closes a resolved error, routes missing screen access to the existing permission instructions, and retains a useful new message when checking sources fails. When access becomes granted, the permission panel closes instead of leaving an empty heading.
+- Closing or changing panels invalidates pending recovery, preventing a late result from reopening a dismissed error. The recovery action receives initial keyboard focus and shows a disabled Checking state while pending.
+- Production build and a new renderer recovery verifier passed missing-permission handling, successful dismissal, failed checks, Escape during a pending check, and zero capture requests. Existing recorder-refresh regression also passed scan coalescing, cached controls, updated device data, and stable toolbar identity.
+- These fixtures simulate source responses and do not grant macOS permissions or prove that a particular native capture failure is resolved.
