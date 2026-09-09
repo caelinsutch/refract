@@ -8,9 +8,12 @@ export type ExportOutput = {
 };
 
 /** Publish only a completed output; preserve any existing destination on failure. */
-export async function finishExport(output: ExportOutput): Promise<string> {
+export async function finishExport(
+  output: ExportOutput,
+  completion: Promise<void> = output.done,
+): Promise<string> {
   try {
-    await output.done;
+    await completion;
     if (output.cancelled) throw Error("Export cancelled.");
     const info = await fs.stat(output.temp);
     if (info.size === 0) throw Error("Encoder created an empty file.");

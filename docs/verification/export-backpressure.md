@@ -9,3 +9,11 @@ This closes one confirmed indefinite-wait path. It does not establish the cause 
 ## Live export follow-up
 
 A subsequent packaged-app 1080p60 export completed with 327 video frames (5.45 seconds) and AAC audio (5.439875 seconds). The output decoded successfully and retained shortcut overlays. The earlier intermittent stall did not reproduce in this run. This successful run narrows the current evidence but does not establish a root cause or prove the stall is fixed.
+
+## Finalization inactivity watchdog
+
+After the renderer supplies all frames and closes encoder input, the main process now waits through an output-activity watchdog. Size, modification time, or change time updates reset its two-minute inactivity deadline. This permits finalization longer than two minutes while the file continues to change. An unchanged or missing output for the full deadline triggers encoder shutdown, including the existing SIGKILL fallback after one second, before temporary-file cleanup. The original destination is only replaced after successful process completion and the existing nonempty-output checks.
+
+Two real child-process tests cover a stalled finalizer that ignores SIGTERM and a productive finalizer whose total runtime exceeds its shortened test deadline. The former is killed and leaves the existing destination intact; the latter publishes its complete output. The production build and all 87 tests pass. The background-audio verifier now uses the production frame writer, finalization watchdog, and publication helper. Both actual MP4 cases completed and decoded with the expected mixed and music-only tone levels.
+
+The watchdog measures output-file activity, not CPU progress. A legitimate encoder doing more than two minutes of work without updating its output would be stopped; very large/long exports still need workload verification. This closes the indefinite process-completion wait, not every possible media or filesystem stall, and does not explain the earlier intermittent 60 fps renderer seek stall.

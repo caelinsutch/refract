@@ -5,6 +5,11 @@ import { once } from "node:events";
 import path from "node:path";
 import assert from "node:assert/strict";
 import { createProject } from "../src/core/project";
+import { finishExport } from "../src/core/export-job";
+import {
+  waitForEncoderFinalization,
+  writeEncoderFrame,
+} from "../src/core/export-process";
 import { exportArgs } from "../src/core/export";
 const dir = path.resolve("work/background-audio");
 mkdirSync(dir, { recursive: true });
@@ -48,17 +53,23 @@ const frame = canvas.toBuffer("image/png");
 for (const muted of [false, true]) {
   p.appearance.muted = muted;
   const out = path.join(dir, muted ? "music-only.mp4" : "mixed.mp4");
-  const child = spawn(ffmpeg, exportArgs(p, source, out, 30, "mp4", music), {
+  const temp = out + ".pending.mp4";
+  const child = spawn(ffmpeg, exportArgs(p, source, temp, 30, "mp4", music), {
     stdio: ["pipe", "ignore", "pipe"],
   });
   let errors = "";
   child.stderr.on("data", (d) => (errors += d));
-  const done = once(child, "close");
-  for (let i = 0; i < 60; i++)
-    if (!child.stdin.write(frame)) await once(child.stdin, "drain");
+  const done = once(child, "close").then(([code]) => {
+    assert.equal(code, 0, errors);
+  });
+  void done.catch(() => {});
+  child.stdin.on("error", () => {});
+  for (let i = 0; i < 60; i++) await writeEncoderFrame(child, frame);
   child.stdin.end();
-  const [code] = await done;
-  assert.equal(code, 0, errors);
+  await finishExport(
+    { temp, dest: out, done, cancelled: false },
+    waitForEncoderFinalization(child, done, temp),
+  );
   const pcm = execFileSync(ffmpeg, [
     "-v",
     "error",

@@ -671,7 +671,12 @@ handle("export-finish", async (id: string) => {
   try {
     current.child.stdin!.end();
     const { finishExport } = await import("../src/core/export-job.js");
-    return await finishExport(current);
+    const { waitForEncoderFinalization } =
+      await import("../src/core/export-process.js");
+    return await finishExport(
+      current,
+      waitForEncoderFinalization(current.child, current.done, current.temp),
+    );
   } finally {
     if (job === current) job = null;
   }
