@@ -102,3 +102,23 @@ uses the maximum fill scale for vertical output, or for no-padding output, and
 otherwise 1. The neutral-to-zoom transition and exact size normalization remain
 to integrate. This first correction does not implement the vertical toggle,
 mouse clustering, edge-snap behavior, or the initial-fill factor.
+
+## Movement-driven automatic targets — 2026-09-09
+
+Automatic zoom now consumes mouse movement samples rather than requiring clicks.
+Consecutive samples are grouped while their spatial bounds fit horizontal 0.5
+and vertical 0.7 allowances of the cropped source area at the range scale. Each
+group contributes its bounding-box center at its first sample's source time.
+Empty ranges fall back to the nearest preceding cursor sample, or the next
+available sample. Recordings without any cursor data still remain neutral.
+
+These targets enter the existing deterministic spring checkpoints, preserving
+continuity and seek-order independence. Crop/source dimensions are included in
+the cache key because they affect grouping. Four added tests cover movement-only
+activation, grouping, boundary continuity and seeking, fallback/absent data, and
+crop-sensitive group size; all 134 core tests pass.
+
+Remaining difference: the allowance must also include the reference's initial
+fill scale once the size resolver is integrated. Edge snapping and the special
+cursor-target override are not implemented. This improves automatic tracking but
+does not establish identical framing trajectories to Screen Studio.

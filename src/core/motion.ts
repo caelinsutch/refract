@@ -1,3 +1,4 @@
+import { autoZoomTargets } from "./auto-zoom.js";
 import type { Project } from "./project.js";
 import { springState, type SpringConfig } from "./spring.js";
 export const screenPresets = {
@@ -45,7 +46,7 @@ export function screenMotionAt(p: Project, time: number): Target {
   const config =
     p.appearance.screenSpring ??
     screenPresets[p.appearance.animation === "smooth" ? "smooth" : "focused"];
-  const key = `${p.appearance.animation}/${config.stiffness}/${config.damping}/${config.mass}`;
+  const key = `${p.appearance.animation}/${config.stiffness}/${config.damping}/${config.mass}/${p.crop?.width}/${p.crop?.height}/${p.source.width}/${p.source.height}`;
   let entry = cache.get(p);
   if (
     !entry ||
@@ -57,18 +58,13 @@ export function screenMotionAt(p: Project, time: number): Target {
       .filter((z) => !z.disabled)
       .map((z) => ({
         z,
-        clicks:
-          z.mode === "auto"
-            ? p.cursor.filter(
-                (c) => c.click && c.time >= z.start && c.time <= z.end,
-              )
-            : [],
+        targets: z.mode === "auto" ? autoZoomTargets(p, z) : [],
       }));
     const times = new Set<number>([0]);
-    for (const { z, clicks } of zooms) {
+    for (const { z, targets } of zooms) {
       times.add(z.start);
       times.add(z.end);
-      for (const c of clicks) times.add(c.time);
+      for (const c of targets) times.add(c.time);
     }
     const orderedTimes = [...times].sort((a, b) => a - b);
     let point: Checkpoint = {
@@ -81,16 +77,20 @@ export function screenMotionAt(p: Project, time: number): Target {
     for (const t of orderedTimes) {
       point = advance(point, t, config);
       const active = zooms.find(
-        ({ z, clicks }) =>
+        ({ z, targets }) =>
           t >= z.start &&
           t < z.end &&
-          (z.mode === "manual" || clicks.length > 0),
+          (z.mode === "manual" || targets.length > 0),
       );
       let target = neutral();
       if (active) {
-        const { z, clicks } = active;
-        const click = clicks.findLast((c) => c.time <= t) ?? clicks[0];
-        target = { scale: z.scale, x: click?.x ?? z.x, y: click?.y ?? z.y };
+        const { z, targets } = active;
+        const targetPoint = targets.findLast((c) => c.time <= t) ?? targets[0];
+        target = {
+          scale: z.scale,
+          x: targetPoint?.x ?? z.x,
+          y: targetPoint?.y ?? z.y,
+        };
       }
       point = { ...point, target };
       checkpoints.push(point);
