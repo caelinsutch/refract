@@ -345,3 +345,20 @@ checks that the picker remains open, and restores Auto with one Undo.
 The reference's conditional “Always keep zoomed in” option for vertical outputs
 remains missing; this pass does not claim complete aspect-ratio feature parity.
 Popup material and exact option-row dimensions have not been visually matched.
+
+## Shared advanced-field disclosures — 2026-09-09
+
+The installed app was raised and inspected again through CUA. Its accessibility
+hierarchy remains readable, but the screenshot still returns white; a direct
+pixel comparison is not available from that capture.
+
+Read-only inspection of shared `NamedField` confirms togglable headers use a
+full-width label row, a small right-side chevron, 1px content gap, and a 200ms
+vertical flip when expanded. Collapsed contents are unmounted. Added a shared
+Disclosure component and used it for advanced shadows, motion blur, and spring
+controls, replacing the browser's default details triangle. Native buttons expose
+expanded state and content association; reduced motion removes chevron animation.
+The editor verifier exercises Space activation, ensures playback stays paused,
+and confirms collapsed fields are removed.
+
+This matches the observed disclosure structure, not verified whole-app pixels.

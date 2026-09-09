@@ -1,3 +1,4 @@
+import { Disclosure } from "./components/Disclosure";
 import { AspectRatioPicker } from "./components/AspectRatioPicker";
 import { playbackTime } from "./core/playback-time";
 import { PreviewSettings } from "./components/PreviewSettings";
@@ -2517,16 +2518,7 @@ export default function App() {
                   unit="%"
                   onChange={(shadow) => appearance({ shadow: shadow / 100 })}
                 />
-                <details>
-                  <summary
-                    style={{
-                      cursor: "pointer",
-                      color: "var(--white-a99)",
-                      paddingBlock: 10,
-                    }}
-                  >
-                    Advanced shadow settings
-                  </summary>
+                <Disclosure label="Advanced shadow settings">
                   <Toggle
                     label="Directional shadow"
                     value={project.appearance.shadowDirectional}
@@ -2562,7 +2554,7 @@ export default function App() {
                     resetValue={defaults.shadowBlur}
                     onChange={(shadowBlur) => appearance({ shadowBlur })}
                   />
-                </details>
+                </Disclosure>
               </>
             ) : tab === "cursor" ? (
               <>
@@ -2973,8 +2965,7 @@ export default function App() {
                   }
                 />
                 <Note>Add motion blur while the cursor or screen moves.</Note>
-                <details>
-                  <summary>Advanced motion blur settings</summary>
+                <Disclosure label="Advanced motion blur settings">
                   <Range
                     label="Screen movement blur"
                     value={(project.appearance.screenMoveBlur ?? 0) * 100}
@@ -3008,7 +2999,7 @@ export default function App() {
                       appearance({ cursorMotionBlur: value / 100 })
                     }
                   />
-                </details>
+                </Disclosure>
               </>
             ) : tab === "captions" ? (
               <>

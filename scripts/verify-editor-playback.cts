@@ -649,6 +649,21 @@ app.whenReady().then(async () => {
       await new Promise(resolve=>setTimeout(resolve,100));
       if(document.querySelector('button[aria-label="Aspect ratio"]').textContent!=='Auto') throw Error('Ratio was not restored by one Undo');
     })()`);
+    await window.webContents.executeJavaScript(`(() => {
+      const button=Array.from(document.querySelectorAll('[data-disclosure-header]')).find(b=>b.textContent==='Advanced shadow settings');
+      if(!button || button.getAttribute('aria-expanded')!=='false') throw Error('Shadow disclosure should start collapsed');
+      button.focus();
+    })()`);
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Space" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Space" });
+    await window.webContents.executeJavaScript(`(async () => {
+      await new Promise(resolve=>setTimeout(resolve,30));
+      const button=Array.from(document.querySelectorAll('[data-disclosure-header]')).find(b=>b.textContent==='Advanced shadow settings');
+      if(button.getAttribute('aria-expanded')!=='true'||!document.querySelector('input[aria-label="Shadow Distance"]')) throw Error('Space did not expand advanced shadows');
+      if(!Array.from(document.querySelectorAll('video')).find(v=>v.src.startsWith('blob:')).paused) throw Error('Disclosure Space also started playback');
+      button.click();await new Promise(resolve=>setTimeout(resolve,30));
+      if(document.querySelector('input[aria-label="Shadow Distance"]')) throw Error('Collapsed disclosure retained interactive controls');
+    })()`);
     const smallBounds = window.getBounds();
     assert.equal(
       await window.webContents.executeJavaScript(
@@ -743,6 +758,7 @@ app.whenReady().then(async () => {
         speedMenuAndMediaRate: "passed",
         previewSettingsAndPowerCap: "passed",
         aspectRatioCompositionAndUndo: "passed",
+        disclosureKeyboard: "passed",
       }),
     );
   } catch (error) {

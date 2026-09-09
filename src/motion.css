@@ -345,3 +345,15 @@ input[data-setting-slider]:active::-webkit-slider-thumb {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+[data-disclosure-header]:hover [data-disclosure-toggle] {
+  background-color: var(--white-a12);
+}
+[data-disclosure-toggle] {
+  transition: background-color var(--motion-feedback) var(--ease-responsive);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-disclosure-toggle] {
+    transition: none;
+  }
+}
