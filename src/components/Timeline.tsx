@@ -185,7 +185,7 @@ const s = sx.create({
   },
 });
 export default function Timeline({
-  project,
+  project: savedProject,
   tracks,
   time,
   seek,
@@ -207,6 +207,16 @@ export default function Timeline({
   setZoom: (n: number) => void;
   cut: () => void;
 }) {
+  const [trimDraft, setTrimDraft] = useState<{
+    original: Project;
+    project: Project;
+  } | null>(null);
+  const currentProject = useRef(savedProject);
+  currentProject.current = savedProject;
+  const cancelTrim = useRef<(() => void) | null>(null);
+  useEffect(() => () => cancelTrim.current?.(), []);
+  const project =
+    trimDraft?.original === savedProject ? trimDraft.project : savedProject;
   const [clipMenu, setClipMenu] = useState<{
     id: string;
     x: number;
@@ -286,29 +296,57 @@ export default function Timeline({
     target.addEventListener("lostpointercapture", end);
   }
   function dragClip(e: React.PointerEvent, id: string, side: "start" | "end") {
+    if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
+    cancelTrim.current?.();
     const target = e.currentTarget as HTMLElement,
-      original = project,
+      original = savedProject,
       x = e.clientX;
-    const gesture = `trim:${id}:${e.pointerId}:${e.timeStamp}`;
     target.setPointerCapture(e.pointerId);
     setDragScale(px);
     select({ type: "clip", id });
     seek(time);
-    const move = (ev: PointerEvent) =>
-      edit(trimClip(original, id, side, (ev.clientX - x) / px), gesture);
-    const end = () => {
+    const at = (ev: PointerEvent) =>
+      trimClip(original, id, side, (ev.clientX - x) / px);
+    const move = (ev: PointerEvent) => {
+      if (currentProject.current !== original) {
+        cancel();
+        return;
+      }
+      setTrimDraft({ original, project: at(ev) });
+    };
+    const cleanup = () => {
       setDragScale(null);
+      setTrimDraft(null);
+      cancelTrim.current = null;
       target.removeEventListener("pointermove", move);
       target.removeEventListener("pointerup", end);
-      target.removeEventListener("pointercancel", end);
-      target.removeEventListener("lostpointercapture", end);
+      target.removeEventListener("pointercancel", cancel);
+      target.removeEventListener("lostpointercapture", cancel);
+      window.removeEventListener("keydown", key, true);
+      if (target.hasPointerCapture(e.pointerId))
+        target.releasePointerCapture(e.pointerId);
     };
+    const cancel = () => cleanup();
+    const end = (ev: PointerEvent) => {
+      cleanup();
+      if (currentProject.current !== original) return;
+      const next = at(ev);
+      if (next !== original) edit(next);
+    };
+    const key = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      cancel();
+    };
+    cancelTrim.current = cancel;
     target.addEventListener("pointermove", move);
     target.addEventListener("pointerup", end);
-    target.addEventListener("pointercancel", end);
-    target.addEventListener("lostpointercapture", end);
+    target.addEventListener("pointercancel", cancel);
+    target.addEventListener("lostpointercapture", cancel);
+    window.addEventListener("keydown", key, true);
   }
   const [draft, setDraft] = useState<{
     kind: "zoom" | "mask";

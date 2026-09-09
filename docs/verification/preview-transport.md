@@ -63,3 +63,9 @@ The full-editor verifier types 0.75 into Trim start one character at a time and 
 ## Numeric readout precision
 
 A follow-up full-editor regression exposed that opening an exact value of 0.755 and confirming without typing changed it to 0.76. The editable draft was initialized from the rounded readout. Drafts now start from the full stored number; only the inactive readout is rounded. The updated verifier types 0.755, commits it, reopens and confirms unchanged, then checks Escape cancellation. The full editor sequence and production build pass. This prevents merely opening a value editor from changing fractional clip boundaries.
+
+## Clip trim gesture commit and cancellation
+
+Timeline clip trimming now renders a temporary timeline project while dragging and commits one edit at release using the release event's coordinates. Escape, pointer cancellation, or lost capture discard the temporary trim. Cleanup releases pointer capture and removes listeners; a concurrent project change prevents a stale gesture from overwriting newer edits. Non-primary pointer presses do not start trimming. Previously each pointer move edited project history and the release position was ignored.
+
+The full-editor verifier uses real Electron mouse events to move a clip edge, confirms that saved trim remains unchanged during the drag, cancels with Escape, and verifies unchanged saved length. A second gesture releases at a different coordinate without an intermediate move event; the resulting trim is applied, and one Undo restores the original value. The complete editor verifier, production build, and 123 core tests pass. The temporary draft currently updates timeline geometry; inspector values intentionally reflect the committed clip until release. Exact reference drag motion and all other timeline range gestures remain separate work.

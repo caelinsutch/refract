@@ -267,6 +267,89 @@ app.whenReady().then(async () => {
       await new Promise(resolve=>setTimeout(resolve,30));
       if(Number(document.querySelector('input[aria-label="Trim start"]').getAttribute("value"))!==0.755) throw Error('Escape changed trim');
     })()`);
+    const trimHandle = async () =>
+      window!.webContents.executeJavaScript(`(() => {
+      const handles=document.querySelectorAll('button[aria-label="Trim clip end"]');
+      const rect=handles[handles.length-1].getBoundingClientRect();
+      return {x:Math.round(rect.left+rect.width/2),y:Math.round(rect.top+rect.height/2)};
+    })()`);
+    const initialEnd = await window.webContents.executeJavaScript(
+      `document.querySelector('input[aria-label="Trim end"]').getAttribute('value')`,
+    );
+    let handle = await trimHandle();
+    window.webContents.sendInputEvent({
+      type: "mouseDown",
+      ...handle,
+      button: "left",
+      clickCount: 1,
+    });
+    window.webContents.sendInputEvent({
+      type: "mouseMove",
+      x: handle.x - 40,
+      y: handle.y,
+      button: "left",
+    });
+    await window.webContents.executeJavaScript(
+      `new Promise(resolve=>setTimeout(resolve,40))`,
+    );
+    assert.equal(
+      await window.webContents.executeJavaScript(
+        `document.querySelector('input[aria-label="Trim end"]').getAttribute('value')`,
+      ),
+      initialEnd,
+      "Drag committed before release",
+    );
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    window.webContents.sendInputEvent({
+      type: "mouseUp",
+      x: handle.x - 40,
+      y: handle.y,
+      button: "left",
+      clickCount: 1,
+    });
+    await window.webContents.executeJavaScript(
+      `new Promise(resolve=>setTimeout(resolve,40))`,
+    );
+    assert.equal(
+      await window.webContents.executeJavaScript(
+        `document.querySelector('input[aria-label="Trim end"]').getAttribute('value')`,
+      ),
+      initialEnd,
+      "Cancelled trim changed the clip",
+    );
+    handle = await trimHandle();
+    window.webContents.sendInputEvent({
+      type: "mouseDown",
+      ...handle,
+      button: "left",
+      clickCount: 1,
+    });
+    window.webContents.sendInputEvent({
+      type: "mouseUp",
+      x: handle.x - 60,
+      y: handle.y,
+      button: "left",
+      clickCount: 1,
+    });
+    await window.webContents.executeJavaScript(`(async () => {
+      const deadline=performance.now()+3000;
+      while(Number(document.querySelector('input[aria-label="Trim end"]').getAttribute('value'))>=${Number(initialEnd)}) {
+        if(performance.now()>deadline) throw Error('Trim ignored final release position');
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+      document.querySelector('button[aria-label="Undo"]').click();
+    })()`);
+    await window.webContents.executeJavaScript(
+      `new Promise(resolve=>setTimeout(resolve,40))`,
+    );
+    assert.equal(
+      await window.webContents.executeJavaScript(
+        `document.querySelector('input[aria-label="Trim end"]').getAttribute('value')`,
+      ),
+      initialEnd,
+      "One undo did not restore the trim",
+    );
     console.log(
       JSON.stringify({
         ...result,
@@ -276,6 +359,7 @@ app.whenReady().then(async () => {
         modalTabContainment: "passed",
         cropKeyboard: "passed",
         exactTrimEntry: "passed",
+        trimGesture: "passed",
       }),
     );
   } catch (error) {
