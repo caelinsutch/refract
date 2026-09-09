@@ -1,3 +1,4 @@
+import { BackgroundImagePicker } from "./components/BackgroundImagePicker";
 import { GradientPresets } from "./components/GradientPresets";
 import { InsetBalance } from "./components/InsetBalance";
 import { InsetColors } from "./components/InsetColors";
@@ -555,7 +556,6 @@ export default function App() {
     cameraVideo = useRef<HTMLVideoElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     input = useRef<HTMLInputElement>(null),
-    bgInput = useRef<HTMLInputElement>(null),
     captionInput = useRef<HTMLInputElement>(null),
     cancelExport = useRef(false),
     projectRef = useRef(project),
@@ -2499,10 +2499,13 @@ export default function App() {
                   </>
                 ) : project.appearance.background === "image" ? (
                   <>
-                    <Button onClick={() => bgInput.current?.click()}>
-                      <ImageIcon size={13} />
-                      Choose background image
-                    </Button>
+                    <BackgroundImagePicker
+                      key={project.id}
+                      value={project.appearance.image}
+                      onChange={(image) =>
+                        appearance({ image, background: "image" })
+                      }
+                    />
                     <Divider />
                   </>
                 ) : (
@@ -3367,21 +3370,6 @@ export default function App() {
         accept=".srt,.vtt"
         hidden
         onChange={captionFile}
-      />
-      <input
-        ref={bgInput}
-        type="file"
-        accept="image/*"
-        hidden
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = () =>
-              appearance({ image: String(reader.result), background: "image" });
-            reader.readAsDataURL(file);
-          }
-        }}
       />
       {modal ? (
         <Modal

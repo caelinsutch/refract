@@ -847,3 +847,11 @@ continues to require the system permission; window-source listing still does too
 - Optional gradientStops appearance data persists the full palette. Preview/export place stops at evenly spaced positions along the existing top-left/bottom-right axis. Validation rejects malformed palettes.
 - Build and thirteen focused compositor/preset tests passed all preset round trips, malformed input, two-color fallback, and multi-stop pixel interpolation. The editor fixture passed 69 visible DOM entries, selection, endpoint values, manual customization, and Undo restoring preset selection.
 - Live reference color/pixel comparison, especially rounding of generated lightened colors, remains unverified.
+
+### Background image picker — 2026-09-09
+
+- Replaced the plain browse button with a reference-style image card: preview, photo icon, browse/drop/paste instructions, and a blurred instruction overlay over the selected image.
+- Browsing, dropping, and pasting an image while hovering/focusing the card share one decode-before-apply path. Invalid images preserve the existing background and report an inline error. Pending reads are invalidated when the picker unmounts; project IDs key the picker to prevent cross-project completion. File input resets after selection so the same file can be chosen again.
+- Paste handling ignores text inputs and editable content. It processes only the image attached to the user's paste event, without proactively reading the clipboard.
+- Production build and inspector fixture passed image drop, synthetic image paste, preview dimensions, composition background pixels, invalid-image recovery, and Undo. The fixture uses generated image bytes and does not read the user's clipboard.
+- The existing data-URL persistence path is retained; large-image memory/performance and exact live reference appearance still need comparison.

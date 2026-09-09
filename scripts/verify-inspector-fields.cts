@@ -363,6 +363,65 @@ app.whenReady().then(async () => {
       ),
       "true",
     );
+    await read(
+      `Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Image').click()`,
+    );
+    await wait(100);
+    await read(`window.imageFile=color=>{const canvas=document.createElement('canvas');canvas.width=8;canvas.height=8;const c=canvas.getContext('2d');c.fillStyle=color;c.fillRect(0,0,8,8);const bytes=Uint8Array.from(atob(canvas.toDataURL().split(',')[1]),v=>v.charCodeAt(0));return new File([bytes],'background.png',{type:'image/png'});};
+      window.dropImage=file=>{const transfer=new DataTransfer();transfer.items.add(file);document.querySelector('button[aria-label="Choose background image"]').dispatchEvent(new DragEvent('drop',{dataTransfer:transfer,bubbles:true,cancelable:true}));};
+      dropImage(imageFile('blue'));`);
+    await wait(600);
+    assert.equal(
+      await read(
+        `document.querySelector('img[alt="Background image preview"]').naturalWidth`,
+      ),
+      8,
+    );
+    const firstImage = await read(
+      `document.querySelector('img[alt="Background image preview"]').src`,
+    );
+    await read(
+      `const transfer=new DataTransfer();transfer.items.add(imageFile('green'));document.querySelector('button[aria-label="Choose background image"]').focus();document.dispatchEvent(new ClipboardEvent('paste',{clipboardData:transfer,bubbles:true,cancelable:true}));`,
+    );
+    await wait(600);
+    const pastedImage = await read(
+      `document.querySelector('img[alt="Background image preview"]').src`,
+    );
+    assert.notEqual(pastedImage, firstImage, "Paste did not replace image");
+    const backgroundPixel = await read(
+      `Array.from(document.querySelector('canvas').getContext('2d').getImageData(1,1,1,1).data)`,
+    );
+    assert.ok(
+      backgroundPixel[1] >= 127 &&
+        backgroundPixel[0] < 2 &&
+        backgroundPixel[2] < 2,
+      "Pasted image did not reach composition",
+    );
+    await read(
+      `dropImage(new File(['broken'],'broken.png',{type:'image/png'}))`,
+    );
+    await wait(300);
+    assert.equal(
+      await read(
+        `document.querySelector('img[alt="Background image preview"]').src`,
+      ),
+      pastedImage,
+      "Invalid image replaced background",
+    );
+    assert.ok(
+      await read(
+        `document.querySelector('[role="alert"]').textContent.includes('could not be opened')`,
+      ),
+    );
+    await read(`document.querySelector('button[aria-label="Undo"]').click()`);
+    await wait(100);
+    assert.equal(
+      await read(
+        `document.querySelector('img[alt="Background image preview"]').src`,
+      ),
+      firstImage,
+      "Image replacement undo failed",
+    );
     console.log(
       JSON.stringify({
         rest: "hidden",
