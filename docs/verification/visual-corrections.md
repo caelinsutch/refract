@@ -431,3 +431,20 @@ cached display/settings controls stay visible, changed display dimensions appear
 and both toolbar buttons and the settings field retain DOM identity. This verifies
 renderer behavior, not native window compositing or physical device enumeration.
 The live packaged-app click check remains pending while the Mac is locked.
+
+## Recorder control dimensions — 2026-09-09
+
+Read-only inspection of the installed recording-picker bundle confirms mode
+buttons are 56×50px, with 22px icons, a 0.75px icon-label gap, 10px labels with
+line-height 1 and a -2px bottom margin. Camera and microphone controls reserve
+126px and 146px respectively. Shared large controls are 40px high with 14px
+horizontal padding; input icons use the 16px control-icon size. Applied these
+dimensions, inactive input text at 50% opacity with full text color on hover,
+and fixed-width ellipsis for device names. Removed extra horizontal separator
+margins and per-button gaps that consumed the compact bar's available width.
+
+The delayed-source verifier now also selects deliberately long device names via
+a fixture menu response and checks all toolbar controls retain their x positions
+and widths and remain within the window. Inspected its captured toolbar image.
+This establishes stable renderer geometry; reference material, SF Symbols, and
+live native compositing remain unverified.

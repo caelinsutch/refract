@@ -17,6 +17,7 @@ void app.whenReady().then(async () => {
         recorderDirectory: async () => '',
         onRecorderState: () => () => {}, onAreaSelected: () => () => {},
         recorderExpand: async () => {},
+        recorderInputMenu: async request => ({value:'fixture-device', label:'A very long external camera and microphone device name'}),
         recorderSources: () => ipcRenderer.invoke('verify-sources'),
       });`,
     );
@@ -127,6 +128,31 @@ void app.whenReady().then(async () => {
       if(window.bar !== document.querySelector('[data-recorder-bar]') || window.controls.some(button=>!button.isConnected)) throw Error('Toolbar remounted');
       if(document.body.textContent.includes('Finding available sources')) throw Error('Cached controls replaced by loading');
     })()`);
+    await evaluate(`window.cameraControl = window.controls.find(button => button.textContent === 'No camera');
+      window.microphoneControl = window.controls.find(button => button.textContent === 'No microphone');
+      window.geometry = window.controls.map(button => {const r=button.getBoundingClientRect(); return [r.x,r.width];});
+      window.cameraControl.click();`);
+    await until(
+      () => evaluate("window.cameraControl.textContent.includes('very long')"),
+      "Camera selection did not complete",
+    );
+    await evaluate("window.microphoneControl.click()");
+    await until(
+      () =>
+        evaluate("window.microphoneControl.textContent.includes('very long')"),
+      "Microphone selection did not complete",
+    );
+    await evaluate(`(() => {
+      window.controls.forEach((button,index) => {
+        const r=button.getBoundingClientRect(), old=window.geometry[index];
+        if(Math.abs(r.x-old[0])>0.1 || Math.abs(r.width-old[1])>0.1) throw Error('Device name shifted toolbar controls');
+        if(r.right>innerWidth || r.left<0) throw Error('Toolbar control clipped outside window');
+      });
+    })()`);
+    await fs.writeFile(
+      path.join(directory, "toolbar.png"),
+      (await window.webContents.capturePage()).toPNG(),
+    );
     console.log(
       JSON.stringify({
         overlappingScans: "coalesced",

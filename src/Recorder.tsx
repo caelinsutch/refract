@@ -52,7 +52,7 @@ const s = sx.create({
     display: "flex",
     alignItems: "center",
     paddingInline: 10,
-    gap: 2,
+    gap: 0,
     borderRadius: 19,
     backgroundColor: "var(--surface-recorder)",
     backgroundImage:
@@ -65,14 +65,14 @@ const s = sx.create({
     flexShrink: 0,
   },
   mode: {
-    height: 51,
-    width: 58,
+    height: 50,
+    width: 56,
     flexShrink: 0,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
+    gap: 0.75,
     padding: 0,
     borderWidth: 0,
     borderRadius: "var(--radius-item)",
@@ -81,18 +81,29 @@ const s = sx.create({
     fontSize: 10,
   },
   active: { backgroundColor: "var(--white-a17)" },
+  modeLabel: { lineHeight: 1, marginBottom: -2 },
+  cameraChoice: { width: 126 },
+  microphoneChoice: { width: 146 },
+  inputLabel: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" },
+  inputInactive: {
+    color: {
+      default: "color-mix(in srgb, var(--text-primary) 50%, transparent)",
+      ":hover": "var(--text-primary)",
+    },
+  },
   choice: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    height: 42,
-    paddingInline: 13,
+    height: 40,
+    paddingInline: 14,
+    flexShrink: 0,
     borderWidth: 0,
     borderRadius: "var(--radius-item)",
     backgroundColor: { default: "transparent", ":hover": "var(--white-a13)" },
-    color: "var(--text-muted)",
-    fontSize: 12,
+    color: "var(--text-primary)",
+    fontSize: 13,
     whiteSpace: "nowrap",
   },
   close: {
@@ -114,9 +125,9 @@ const s = sx.create({
   line: {
     width: 1,
     flexShrink: 0,
-    height: 40,
+    alignSelf: "stretch",
     backgroundColor: "var(--white-a0b)",
-    marginInline: 6,
+    marginBlock: 10,
   },
   panel: {
     width: 460,
@@ -1150,11 +1161,12 @@ export default function Recorder() {
             ].map((m) => (
               <button
                 key={m.id}
+                data-motion="static"
                 {...sx.props(s.mode, panel === m.id && s.active)}
                 onClick={() => pick(m.id)}
               >
                 <m.icon size={22} strokeWidth={1.5} />
-                <span>{m.label}</span>
+                <span {...sx.props(s.modeLabel)}>{m.label}</span>
               </button>
             ))}
             <div {...sx.props(s.line)} />
@@ -1162,17 +1174,19 @@ export default function Recorder() {
               aria-haspopup="menu"
               aria-expanded={inputMenu === "camera"}
               data-motion="static"
-              {...sx.props(s.choice)}
+              {...sx.props(
+                s.choice,
+                s.cameraChoice,
+                !camera && s.inputInactive,
+              )}
               onClick={(event) => void pickInput("camera", event.currentTarget)}
             >
-              {camera ? <Video size={19} /> : <VideoOff size={19} />}
-              <span
-                style={{
-                  maxWidth: 100,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
+              {camera ? (
+                <Video size={16} style={{ flexShrink: 0 }} />
+              ) : (
+                <VideoOff size={16} style={{ flexShrink: 0 }} />
+              )}
+              <span {...sx.props(s.inputLabel)}>
                 {camera
                   ? inputNames.camera ||
                     sources?.cameras?.find((c) => c.id === camera)?.name ||
@@ -1184,19 +1198,21 @@ export default function Recorder() {
               aria-haspopup="menu"
               aria-expanded={inputMenu === "microphone"}
               data-motion="static"
-              {...sx.props(s.choice)}
+              {...sx.props(
+                s.choice,
+                s.microphoneChoice,
+                !microphone && s.inputInactive,
+              )}
               onClick={(event) =>
                 void pickInput("microphone", event.currentTarget)
               }
             >
-              {microphone ? <Mic size={19} /> : <MicOff size={19} />}
-              <span
-                style={{
-                  maxWidth: 120,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
+              {microphone ? (
+                <Mic size={16} style={{ flexShrink: 0 }} />
+              ) : (
+                <MicOff size={16} style={{ flexShrink: 0 }} />
+              )}
+              <span {...sx.props(s.inputLabel)}>
                 {microphone
                   ? inputNames.microphone || micName
                   : "No microphone"}
@@ -1206,14 +1222,14 @@ export default function Recorder() {
               aria-haspopup="menu"
               aria-expanded={inputMenu === "audio"}
               data-motion="static"
-              {...sx.props(s.choice)}
+              {...sx.props(s.choice, !systemAudio && s.inputInactive)}
               onClick={(event) => void pickInput("audio", event.currentTarget)}
             >
               <StateIcon
                 active={systemAudio}
-                size={19}
-                on={<Volume2 size={19} />}
-                off={<VolumeX size={19} />}
+                size={16}
+                on={<Volume2 size={16} />}
+                off={<VolumeX size={16} />}
               />
               <span>{systemAudio ? "System audio" : "No system audio"}</span>
             </button>
