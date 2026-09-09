@@ -63,6 +63,7 @@ export type Appearance = {
   inset: number;
   insetBalance?: { x: number; y: number };
   insetColor: string;
+  insetOpacity?: number;
   shadow: number;
   shadowDirectional: boolean;
   shadowDistance: number;
@@ -523,6 +524,13 @@ export function validateProject(value: unknown): Project {
       p.appearance.cursorLoopMs > 4000)
   )
     throw new Error("The project has an invalid cursor loop duration.");
+  if (
+    p.appearance.insetOpacity !== undefined &&
+    (!valid(p.appearance.insetOpacity) ||
+      p.appearance.insetOpacity < 0 ||
+      p.appearance.insetOpacity > 1)
+  )
+    throw new Error("The project has an invalid inset opacity.");
   if (
     p.appearance.insetBalance !== undefined &&
     (!p.appearance.insetBalance ||

@@ -221,6 +221,27 @@ app.whenReady().then(async () => {
     await wait(100);
     assert.equal(await read("Number(corners.value)"), 58);
     await read(
+      `document.querySelector('button[aria-label="Edit Inset opacity"]').click()`,
+    );
+    await c.insertText("0.375");
+    c.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    c.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await wait(100);
+    assert.equal(
+      await read(
+        `Number(document.querySelector('input[aria-label="Inset opacity"]').value)`,
+      ),
+      0.375,
+    );
+    await read(`document.querySelector('button[aria-label="Undo"]').click()`);
+    await wait(100);
+    assert.equal(
+      await read(
+        `Number(document.querySelector('input[aria-label="Inset opacity"]').value)`,
+      ),
+      1,
+    );
+    await read(
       `Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Inset balance').click()`,
     );
     await wait(100);

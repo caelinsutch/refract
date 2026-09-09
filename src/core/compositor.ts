@@ -268,16 +268,35 @@ export function drawFrame(
       const angle = (a.shadowAngle * Math.PI) / 180;
       c.shadowOffsetX = Math.cos(angle) * distance;
       c.shadowOffsetY = Math.sin(angle) * distance;
-      rounded(
-        c,
-        x - edges.left * edgeScale,
-        y - edges.top * edgeScale,
-        w + (edges.left + edges.right) * edgeScale,
-        h + (edges.top + edges.bottom) * edgeScale,
-        outerRadius,
-      );
+      const frameX = x - edges.left * edgeScale,
+        frameY = y - edges.top * edgeScale,
+        frameWidth = w + (edges.left + edges.right) * edgeScale,
+        frameHeight = h + (edges.top + edges.bottom) * edgeScale;
+      const opacity = a.insetOpacity ?? 1;
       c.fillStyle = a.insetColor;
+      if (opacity < 1) {
+        // Draw the outside shadow at full strength before blending the inset color.
+        c.save();
+        c.beginPath();
+        c.rect(0, 0, width, height);
+        c.roundRect(
+          frameX,
+          frameY,
+          frameWidth,
+          frameHeight,
+          Math.max(0, Math.min(outerRadius, frameWidth / 2, frameHeight / 2)),
+        );
+        c.clip("evenodd");
+        rounded(c, frameX, frameY, frameWidth, frameHeight, outerRadius);
+        c.fill();
+        c.restore();
+        c.shadowColor = "transparent";
+      }
+      rounded(c, frameX, frameY, frameWidth, frameHeight, outerRadius);
+      c.save();
+      c.globalAlpha *= opacity;
       c.fill();
+      c.restore();
       c.shadowColor = "transparent";
       c.shadowBlur = 0;
       c.shadowOffsetX = c.shadowOffsetY = 0;

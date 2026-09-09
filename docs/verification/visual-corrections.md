@@ -825,3 +825,10 @@ continues to require the system permission; window-source listing still does too
 - Optional insetBalance project data redistributes the fixed inset total between opposing edges. Shared preview/export geometry shifts the video within a stationary outer frame; cursor/mask geometry and preview targeting follow it. Old projects default to centered balance. Project validation rejects out-of-range balance coordinates.
 - Production build and focused compositor/balance tests passed default compatibility, edge totals, snapping, frame invariance, hit testing, round trip, and validation. The editor fixture passed keyboard movement, a pointer drag to a new position, Reset, and prior inset/color checks. Exact reference motion and live side-by-side pixel comparison remain open.
 - Inset opacity remains a separate missing control.
+
+### Inset opacity — 2026-09-09
+
+- Added the reference's Inset opacity control beneath inset colors, with a 0–1 range, 0.001 precision, and above-thumb numeric feedback. It appears while inset is enabled.
+- Optional insetOpacity data defaults to one for existing projects. The shared preview/export compositor blends inset color independently of video content and draws the outside shadow at its existing strength. Validation rejects non-finite and out-of-range opacity.
+- Production build and 15 focused compositor/project tests passed. Pixel checks at opacity zero, one-half, and one verify inset blending, opaque video, and identical outside shadow samples. Persistence/invalid-input checks and the full inspector fixture passed fractional entry, Undo, and existing inset balance/color interactions.
+- These tests establish implementation behavior; reference pixel comparison at translucent inset boundaries remains outstanding.

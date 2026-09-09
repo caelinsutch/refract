@@ -418,3 +418,57 @@ test("outer-radius rendering preserves equivalent legacy frames and changes both
   assert.ok(moreRed > 0, "Video clip did not become square");
   assert.ok(moreWhite > 0, "Inset frame did not become square");
 });
+
+test("inset opacity blends its color without fading video or outside shadow", () => {
+  const source = createCanvas(1280, 720),
+    sc = source.getContext("2d");
+  sc.fillStyle = "#ff0000";
+  sc.fillRect(0, 0, 1280, 720);
+  const p = createProject({
+    file: "test",
+    width: 1280,
+    height: 720,
+    duration: 2000,
+    hasAudio: false,
+  });
+  Object.assign(p.appearance, {
+    padding: 20,
+    inset: 30,
+    radius: 0,
+    outerRadius: 0,
+    insetColor: "#ffffff",
+    background: "color",
+    color: "#0000ff",
+    shadow: 1,
+    shadowDirectional: false,
+    shadowBlur: 10,
+  });
+  const output = createCanvas(1280, 720),
+    c = output.getContext("2d");
+  const render = () => {
+    drawFrame(
+      c as unknown as CanvasRenderingContext2D,
+      source as unknown as CanvasImageSource,
+      p,
+      0,
+      1280,
+      720,
+    );
+  };
+  const pixel = (x: number, y: number) => [...c.getImageData(x, y, 1, 1).data];
+  render();
+  const shadow = pixel(215, 360),
+    opaque = pixel(240, 360);
+  assert.deepEqual(opaque, [255, 255, 255, 255]);
+  assert.ok(shadow[2] < 255);
+  for (const opacity of [0, 0.5, 1]) {
+    p.appearance.insetOpacity = opacity;
+    render();
+    const inset = pixel(240, 360);
+    assert.ok(Math.abs(inset[0] - opacity * 255) <= 1);
+    assert.ok(Math.abs(inset[1] - opacity * 255) <= 1);
+    assert.equal(inset[2], 255);
+    assert.deepEqual(pixel(640, 360), [255, 0, 0, 255]);
+    assert.deepEqual(pixel(215, 360), shadow, "Outside shadow opacity changed");
+  }
+});

@@ -2586,6 +2586,17 @@ export default function App() {
                   />
                 ) : null}
                 {project.appearance.inset > 0 && (
+                  <Range
+                    label="Inset opacity"
+                    value={project.appearance.insetOpacity ?? 1}
+                    min={0}
+                    max={1}
+                    step={0.001}
+                    preview={false}
+                    onChange={(insetOpacity) => appearance({ insetOpacity })}
+                  />
+                )}
+                {project.appearance.inset > 0 && (
                   <Disclosure label="Inset balance">
                     <InsetBalance
                       value={project.appearance.insetBalance}

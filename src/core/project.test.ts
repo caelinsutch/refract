@@ -78,3 +78,16 @@ test("invalid media ranges are rejected before playback", () => {
   p.segments[0].speed = 0;
   assert.throws(() => validateProject(p), /clip range/);
 });
+
+test("inset opacity persists and rejects invalid values", () => {
+  const p = fixture();
+  p.appearance.insetOpacity = 0.375;
+  assert.equal(
+    validateProject(JSON.parse(JSON.stringify(p))).appearance.insetOpacity,
+    0.375,
+  );
+  for (const opacity of [-0.1, 1.1, NaN, Infinity]) {
+    p.appearance.insetOpacity = opacity;
+    assert.throws(() => validateProject(p), /inset opacity/);
+  }
+});
