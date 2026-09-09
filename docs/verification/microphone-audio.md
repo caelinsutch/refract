@@ -42,3 +42,9 @@ node --import tsx scripts/verify-microphone-timing.ts
 ```
 
 The native synthetic writer requires normal macOS codec-service access; inside the restricted tool sandbox, AVFoundation rejected the AAC input. The same generated-audio command succeeded outside that sandbox. The production alignment argument helper is exercised directly by the TypeScript verifier. It measures onset at 0.6000208 seconds, confirms leading silence through 0.59 seconds, and decodes 1.004 seconds including the tone. Desktop/renderer and Swift builds pass. Real microphone start/pause/resume alignment remains unverified.
+
+## Incomplete native tracks
+
+Finalization now requires every created media writer to reach `.completed`, including microphone and camera. Unknown, cancelled, and failed writers cannot emit a successful `finished` event. Cursor and keyboard JSON are written atomically before this check, retaining those recoverable artifacts even when a media writer is incomplete. The desktop completion path also requires the camera file when a camera was selected instead of silently treating a missing file as an optional track.
+
+A Swift fault-injection harness (`scripts/verify-track-completion.swift`) instantiated the current Recorder and supplied an unstarted microphone writer, then an unstarted camera writer. Each call to the actual `stop()` method emitted its corresponding error and no finished event; both metadata files existed afterward. For this harness, `native/Recorder.swift` was copied to scratch with only its `CaptureMain` entry point omitted, and compiled with the same native support sources. No screen, microphone, or camera permission was used. Swift and production desktop/renderer builds pass. Device disconnection and disk-full failures still need live testing.

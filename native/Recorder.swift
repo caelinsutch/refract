@@ -221,8 +221,25 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         if let writer, writer.status == .writing { await writer.finishWriting() }
         if let micWriter, micWriter.status == .writing { await micWriter.finishWriting() }
         if let cameraWriter, cameraWriter.status == .writing { await cameraWriter.finishWriting() }
-        if let writer, writer.status == .failed { emit(["event": "error", "message": writer.error?.localizedDescription ?? "Recording could not be saved."]); return }
-        do { let data = try JSONSerialization.data(withJSONObject: cursor); try data.write(to: URL(fileURLWithPath: output).appendingPathComponent("cursor.json")); let keyData = try JSONSerialization.data(withJSONObject: keyboard); try keyData.write(to: URL(fileURLWithPath: output).appendingPathComponent("keyboard.json")); emit(["event": "finished", "duration": length, "output": output]) } catch { emit(["event": "error", "message": error.localizedDescription]) }
+        do {
+            let data = try JSONSerialization.data(withJSONObject: cursor)
+            try data.write(to: URL(fileURLWithPath: output).appendingPathComponent("cursor.json"), options: .atomic)
+            let keyData = try JSONSerialization.data(withJSONObject: keyboard)
+            try keyData.write(to: URL(fileURLWithPath: output).appendingPathComponent("keyboard.json"), options: .atomic)
+        } catch {
+            emit(["event": "error", "message": error.localizedDescription])
+            return
+        }
+        let tracks: [(String, AVAssetWriter?)] = [("Screen", writer), ("Microphone", micWriter), ("Camera", cameraWriter)]
+        for (name, track) in tracks {
+            guard let track else { continue }
+            guard track.status == .completed else {
+                let detail = track.error?.localizedDescription ?? "No complete media track was produced."
+                emit(["event": "error", "message": "\(name) recording could not be saved. \(detail) Original recording files remain in the project folder."])
+                return
+            }
+        }
+        emit(["event": "finished", "duration": length, "output": output])
     }
 }
 @main struct CaptureMain {

@@ -202,9 +202,8 @@ app.whenReady().then(() => {
       const source = await probe(file);
       source.file = "media/" + path.basename(file);
       let cameraUrl: string | undefined;
-      try {
+      if (choice.cameraId) {
         const cameraFile = path.join(dir, "media/camera.mp4");
-        await fs.access(cameraFile);
         const info = await probe(cameraFile);
         source.camera = {
           file: "media/camera.mp4",
@@ -212,8 +211,6 @@ app.whenReady().then(() => {
           height: info.height,
         };
         cameraUrl = expose(cameraFile);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       }
       const cursor = JSON.parse(
         await fs.readFile(path.join(dir, "media/cursor.json"), "utf8"),
