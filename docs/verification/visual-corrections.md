@@ -832,3 +832,10 @@ continues to require the system permission; window-source listing still does too
 - Optional insetOpacity data defaults to one for existing projects. The shared preview/export compositor blends inset color independently of video content and draws the outside shadow at its existing strength. Validation rejects non-finite and out-of-range opacity.
 - Production build and 15 focused compositor/project tests passed. Pixel checks at opacity zero, one-half, and one verify inset blending, opaque video, and identical outside shadow samples. Persistence/invalid-input checks and the full inspector fixture passed fractional entry, Undo, and existing inset balance/color interactions.
 - These tests establish implementation behavior; reference pixel comparison at translucent inset boundaries remains outstanding.
+
+### Custom gradient rendering correction — 2026-09-09
+
+- Installed background controls define custom gradients with two endpoint colors, from normalized (0,0) to (1,1). My initial assumption about explicit direction/swap controls was not supported by this module; it exposes color inputs and a preset gallery.
+- Corrected Refract's custom gradient, which previously used three stops and repeated the starting color at the far end, on the opposite diagonal. Preview/export now interpolate between the two chosen colors along the reference diagonal. Wallpaper rendering retains its separate artwork treatment.
+- Color inputs now sit below Background Color/Background Gradient labels with an 8px gap. Existing custom-gradient projects receive the corrected appearance; their saved colors remain unchanged.
+- Production build and all 10 compositor tests passed, including endpoint and intermediate-pixel assertions in landscape and portrait output. The reference gradient preset gallery remains missing.

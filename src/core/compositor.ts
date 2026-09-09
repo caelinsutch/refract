@@ -200,14 +200,19 @@ export function drawFrame(
       height + overscan * 2,
     );
   } else {
-    const colors =
+    const colors = wallpapers[a.wallpaper % wallpapers.length];
+    const grad =
       a.background === "gradient"
-        ? [a.color, a.color2, a.color]
-        : wallpapers[a.wallpaper % wallpapers.length];
-    const grad = c.createLinearGradient(0, height, width, 0);
-    grad.addColorStop(0, colors[0]);
-    grad.addColorStop(0.6, colors[1]);
-    grad.addColorStop(1, colors[2]);
+        ? c.createLinearGradient(0, 0, width, height)
+        : c.createLinearGradient(0, height, width, 0);
+    if (a.background === "gradient") {
+      grad.addColorStop(0, a.color);
+      grad.addColorStop(1, a.color2);
+    } else {
+      grad.addColorStop(0, colors[0]);
+      grad.addColorStop(0.6, colors[1]);
+      grad.addColorStop(1, colors[2]);
+    }
     c.fillStyle = grad;
     c.fillRect(
       -overscan,

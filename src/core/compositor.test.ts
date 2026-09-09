@@ -472,3 +472,51 @@ test("inset opacity blends its color without fading video or outside shadow", ()
     assert.deepEqual(pixel(215, 360), shadow, "Outside shadow opacity changed");
   }
 });
+
+test("custom gradients interpolate from top-left to bottom-right without repeating a color", () => {
+  const source = createCanvas(1280, 720);
+  const p = createProject({
+    file: "test",
+    width: 1280,
+    height: 720,
+    duration: 2000,
+    hasAudio: false,
+  });
+  Object.assign(p.appearance, {
+    background: "gradient",
+    color: "#ff0000",
+    color2: "#0000ff",
+    padding: 35,
+    shadow: 0,
+  });
+  for (const [width, height] of [
+    [1280, 720],
+    [720, 1280],
+  ]) {
+    const output = createCanvas(width, height),
+      c = output.getContext("2d");
+    drawFrame(
+      c as unknown as CanvasRenderingContext2D,
+      source as unknown as CanvasImageSource,
+      p,
+      0,
+      width,
+      height,
+    );
+    const pixel = (x: number, y: number) => [
+      ...c.getImageData(x, y, 1, 1).data,
+    ];
+    const start = pixel(0, 0),
+      end = pixel(width - 1, height - 1);
+    assert.ok(start[0] > 253 && start[2] < 2);
+    assert.ok(end[2] > 253 && end[0] < 2);
+    const x = Math.floor(width / 2),
+      y = 1;
+    const fraction =
+      ((x + 0.5) * width + (y + 0.5) * height) /
+      (width * width + height * height);
+    const middle = pixel(x, y);
+    assert.ok(Math.abs(middle[0] - 255 * (1 - fraction)) <= 1);
+    assert.ok(Math.abs(middle[2] - 255 * fraction) <= 1);
+  }
+});

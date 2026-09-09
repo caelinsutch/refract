@@ -2506,29 +2506,39 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    <Row>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                      }}
+                    >
                       <span>
                         {project.appearance.background === "color"
-                          ? "Color"
-                          : "Gradient colors"}
+                          ? "Background Color"
+                          : "Background Gradient"}
                       </span>
-                      <input
-                        aria-label="Background color"
-                        type="color"
-                        value={project.appearance.color}
-                        onChange={(e) => appearance({ color: e.target.value })}
-                      />
-                      {project.appearance.background === "gradient" ? (
+                      <div style={{ display: "flex", gap: 8 }}>
                         <input
-                          aria-label="Gradient second color"
+                          aria-label="Background color"
                           type="color"
-                          value={project.appearance.color2}
+                          value={project.appearance.color}
                           onChange={(e) =>
-                            appearance({ color2: e.target.value })
+                            appearance({ color: e.target.value })
                           }
                         />
-                      ) : null}
-                    </Row>
+                        {project.appearance.background === "gradient" ? (
+                          <input
+                            aria-label="Gradient second color"
+                            type="color"
+                            value={project.appearance.color2}
+                            onChange={(e) =>
+                              appearance({ color2: e.target.value })
+                            }
+                          />
+                        ) : null}
+                      </div>
+                    </div>
                     <Divider />
                   </>
                 )}
