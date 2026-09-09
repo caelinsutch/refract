@@ -49,3 +49,11 @@ Production compilation and all 110 existing tests pass. The tests establish core
 Changing click volume now auditions the selected profile at the new gain, including the 25% reset. Auditions use a single controller: a newer request stops the prior source, pending Web Audio resume requests cannot play stale selections, and leaving a project or choosing None cancels the audition. Ended sources disconnect their gain and source nodes. Stale resume failures after cancellation do not show an unrelated error in a new project.
 
 Three asynchronous regression tests cover out-of-order resume completion, project departure with successful/failed pending resume, and volume replacement with node cleanup. All 115 core tests and the production build pass. These use a controlled AudioContext substitute; actual audible playback and continuous timeline seek/loop synchronization still need runtime verification. The original synthesized profiles still do not establish acoustic parity with Screen Studio.
+
+## Encoded four-track mix verification
+
+The background-audio verifier now encodes eight MP4 cases: clicks on/off × microphone present/absent × source muted/unmuted, always with looping music. Its two-second edited timeline retains source 0–1 s at 1× and 2–4 s at 2×. It independently expects clicks at 200/1100/1700 ms and excludes a click in removed footage.
+
+Decoded AAC preserves the expected tone amplitudes before and after the cut: source approximately 0.0624 (expected 0.0625), microphone 0.0125, music 0.0312. Source mute does not mute the independent microphone, music, or click stream. Subtracting each matching no-click encode from its click-enabled encode verifies the expected click waveform at all three edited times; the four-track case has relative RMS errors of 0.0692, 0.2384, and 0.2319 against the original PCM transient (lossy AAC plus baseline encoding differences). The gate is <0.6. These measurements verify timing and gain in the synthetic combined export, not acoustic equivalence to Screen Studio's sound recordings.
+
+Run `node --import tsx scripts/verify-background-audio.ts`. All eight encodes passed using the production export arguments, pipe completion, frame writer, finalization watchdog, and atomic publication helper. Physical microphone/camera capture and live editor audio synchronization remain separate verification gaps.
