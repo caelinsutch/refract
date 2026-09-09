@@ -1,6 +1,6 @@
 import { screenExposure, drawScreenExposure } from "./screen-blur";
 import { cursorExposure, drawCursorExposure } from "./cursor-render";
-import { drawShortcut } from "./shortcuts";
+import { drawShortcut, shortcutEnabled, shortcutFontSize } from "./shortcuts";
 import { cameraFrameAt } from "./camera-layout";
 import { layoutCaption } from "./captions";
 import {
@@ -18,6 +18,7 @@ const captionLayoutCache = new WeakMap<
     text: string;
     width: number;
     height: number;
+    reservation: number;
     layout: ReturnType<typeof layoutCaption>;
   }
 >();
@@ -396,24 +397,47 @@ export function drawFrame(
   const caption = p.captions.find((s) => source >= s.start && source < s.end);
   let shortcutBottom = 33 * scale;
   if (caption) {
+    // Reserve throughout the caption to avoid font-size jumps as a badge appears.
+    const gap = Math.min(12 * scale, height * 0.03);
+    const reservation = (p.shortcuts ?? []).some(
+      (shortcut) =>
+        shortcutEnabled(p, shortcut) &&
+        shortcut.start < caption.end &&
+        shortcut.end > caption.start,
+    )
+      ? shortcutFontSize(width, height, p.appearance.shortcutSize) * 1.8 + gap
+      : 0;
     const cached = captionLayoutCache.get(c);
     const layout =
       cached?.text === caption.text &&
       cached.width === width &&
-      cached.height === height
+      cached.height === height &&
+      cached.reservation === reservation
         ? cached.layout
-        : layoutCaption(caption.text, width, height, (text, fontSize) => {
-            c.font = `600 ${fontSize}px -apple-system, sans-serif`;
-            return c.measureText(text).width;
-          });
+        : layoutCaption(
+            caption.text,
+            width,
+            height,
+            (text, fontSize) => {
+              c.font = `600 ${fontSize}px -apple-system, sans-serif`;
+              return c.measureText(text).width;
+            },
+            reservation,
+          );
     if (layout !== cached?.layout)
-      captionLayoutCache.set(c, { text: caption.text, width, height, layout });
+      captionLayoutCache.set(c, {
+        text: caption.text,
+        width,
+        height,
+        reservation,
+        layout,
+      });
     const { lines, textWidth, lineHeight, boxHeight, top } = layout;
     const captionScale = layout.scale;
     c.font = `600 ${layout.fontSize}px -apple-system, sans-serif`;
     c.textAlign = "center";
     c.textBaseline = "middle";
-    shortcutBottom = layout.bottom + boxHeight + 12 * scale;
+    shortcutBottom = layout.bottom + boxHeight + gap;
     c.fillStyle = "#000b";
     rounded(
       c,

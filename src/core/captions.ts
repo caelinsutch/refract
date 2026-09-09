@@ -99,10 +99,11 @@ export function layoutCaption(
   width: number,
   height: number,
   measure: (text: string, fontSize: number) => number,
+  topReservation = 0,
 ) {
   const baseScale = width / 1280;
   const bottom = Math.min(33 * baseScale, height * 0.1);
-  const maxHeight = height - bottom * 2;
+  const maxHeight = height - bottom * 2 - topReservation;
   const at = (factor: number) => {
     const scale = baseScale * factor;
     const fontSize = 30 * scale;

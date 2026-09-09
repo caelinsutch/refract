@@ -109,3 +109,72 @@ test("caption layout preserves normal sizing and fits long text without dropping
     }
   }
 });
+
+test("caption layout reserves a separate shortcut band", async () => {
+  const { layoutCaption } = await import("./captions");
+  const { shortcutFontSize } = await import("./shortcuts");
+  const measure = (text: string, size: number) => text.length * size * 0.6;
+  for (const [width, height] of [
+    [1280, 720],
+    [720, 1280],
+    [4096, 256],
+  ]) {
+    const badgeHeight = shortcutFontSize(width, height, 3) * 1.8;
+    const gap = Math.min((12 * width) / 1280, height * 0.03);
+    const caption = layoutCaption(
+      "Long caption line\n".repeat(120),
+      width,
+      height,
+      measure,
+      badgeHeight + gap,
+    );
+    const badgeTop = caption.top - gap - badgeHeight;
+    assert.ok(badgeTop >= caption.bottom - 0.001);
+    assert.ok(badgeTop + badgeHeight <= caption.top - gap + 0.001);
+    assert.ok(badgeHeight <= height * 0.25 + 0.001);
+  }
+});
+
+test("rendered captions stay stable as an overlapping shortcut ends", async () => {
+  const { createCanvas } = await import("@napi-rs/canvas");
+  const { drawFrame } = await import("./compositor");
+  const p = createProject({
+    file: "fixture",
+    width: 1280,
+    height: 720,
+    duration: 1000,
+    hasAudio: false,
+  });
+  p.captions = [
+    {
+      id: "caption",
+      start: 0,
+      end: 1000,
+      text: "A long caption line\n".repeat(24),
+    },
+  ];
+  p.shortcuts = [
+    { id: "badge", start: 0, end: 500, key: "K", modifiers: ["command"] },
+  ];
+  p.appearance.showShortcuts = true;
+  const source = createCanvas(1280, 720);
+  const frame = createCanvas(1280, 360);
+  const context = frame.getContext("2d");
+  const lowerHalf = () =>
+    Buffer.from(context.getImageData(0, 180, 1280, 180).data);
+  drawFrame(context as any, source as any, p, 0, 1280, 360);
+  const withBadge = lowerHalf();
+  drawFrame(context as any, source as any, p, 750, 1280, 360);
+  assert.deepEqual(
+    lowerHalf(),
+    withBadge,
+    "caption pixels must not jump when the badge expires",
+  );
+  p.appearance.showShortcuts = false;
+  drawFrame(context as any, source as any, p, 750, 1280, 360);
+  assert.notDeepEqual(
+    lowerHalf(),
+    withBadge,
+    "disabling shortcuts must invalidate the reserved layout",
+  );
+});

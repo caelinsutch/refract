@@ -17,17 +17,32 @@ export function shortcutLabel(s: Shortcut) {
       .join("") + s.key
   );
 }
+export function shortcutEnabled(p: Project, shortcut: Shortcut) {
+  return (
+    p.appearance.showShortcuts &&
+    !shortcut.disabled &&
+    (p.appearance.showSingleKeyShortcuts ||
+      shortcut.modifiers.some((m) => m !== "shift"))
+  );
+}
+
+export function shortcutFontSize(
+  width: number,
+  height: number,
+  configuredSize: number,
+) {
+  return Math.min(
+    ((28 * width) / 1280) * configuredSize,
+    (height * 0.25) / 1.8,
+  );
+}
+
 export function shortcutAt(p: Project, time: number) {
   if (!p.appearance.showShortcuts) return null;
   const at = sourceAt(p, time);
   if (!at) return null;
   const matches = (p.shortcuts ?? []).filter(
-    (s) =>
-      !s.disabled &&
-      (p.appearance.showSingleKeyShortcuts ||
-        s.modifiers.some((m) => m !== "shift")) &&
-      at.time >= s.start &&
-      at.time < s.end,
+    (s) => shortcutEnabled(p, s) && at.time >= s.start && at.time < s.end,
   );
   return matches.at(-1) ?? null;
 }
@@ -43,7 +58,7 @@ export function drawShortcut(
   const shortcut = shortcutAt(p, time);
   if (!shortcut) return;
   const scale = width / 1280;
-  const size = 28 * scale * p.appearance.shortcutSize;
+  const size = shortcutFontSize(width, height, p.appearance.shortcutSize);
   c.save();
   c.font = `500 ${size}px -apple-system, sans-serif`;
   c.textAlign = "center";
