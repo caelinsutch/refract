@@ -1150,6 +1150,22 @@ export default function App() {
         pausePreview();
         setModal("export");
       }
+      if (a === "previous-clipboard-exports") {
+        void window.refract
+          ?.showClipboardExports()
+          .catch((error) => tell(String(error)));
+      }
+      if (project && !exportBusy.current) {
+        if (a === "export-file" || a === "export-clipboard") {
+          const destination = a === "export-file" ? "file" : "clipboard";
+          setExportDestination(destination);
+          setModal("export");
+          void exportVideo(undefined, destination);
+        }
+        if (a === "quick-export-file" || a === "quick-export-clipboard") {
+          quickExport(a === "quick-export-file" ? "file" : "clipboard");
+        }
+      }
       if (a === "undo") undo();
       if (a === "redo") redo();
     };
@@ -1267,14 +1283,18 @@ export default function App() {
       completion: RecordingCompletion;
     },
     destination = exportDestination,
+    quickSettings?: RecordingCompletion,
   ) {
     if (exportBusy.current) return;
     const exportProject = recording?.project ?? project;
     const exportUrl = recording?.url ?? url;
     const exportCameraUrl = recording ? recording.cameraUrl : cameraUrl;
-    const exportResolution = recording?.completion.resolution ?? resolution;
-    const exportFps = recording?.completion.fps ?? fps;
-    const exportFormat = recording ? "mp4" : format;
+    const exportResolution =
+      recording?.completion.resolution ??
+      quickSettings?.resolution ??
+      resolution;
+    const exportFps = recording?.completion.fps ?? quickSettings?.fps ?? fps;
+    const exportFormat = recording || quickSettings ? "mp4" : format;
     const targetDestination = recording
       ? recording.completion.action === "export-clipboard"
         ? "clipboard"
@@ -1301,7 +1321,7 @@ export default function App() {
         destination: targetDestination,
       });
       if (!id) {
-        if (recording) setModal(null);
+        if (recording || quickSettings) setModal(null);
         return;
       }
       setExporting(true);
@@ -1376,6 +1396,22 @@ export default function App() {
       exportBusy.current = false;
       setExporting(false);
     }
+  }
+  function quickExport(destination: "file" | "clipboard") {
+    if (!project || !window.refract || exportBusy.current) return;
+    let settings = recordingCompletion(null);
+    try {
+      settings = recordingCompletion(
+        JSON.parse(
+          localStorage.getItem("refract.recorder.completion") ?? "null",
+        ),
+      );
+    } catch {
+      /* Use defaults if saved settings are unavailable. */
+    }
+    setExportDestination(destination);
+    setModal("export");
+    void exportVideo(undefined, destination, settings);
   }
   async function copyFrame() {
     if (!canvas.current) return;
@@ -1588,7 +1624,7 @@ export default function App() {
       id: "export",
       label: "Export video…",
       group: "Export",
-      shortcut: "⌘E",
+      shortcut: "⇧⌘E",
       keywords: "mp4 gif",
       disabled: !project,
       run: () => setModal("export"),
@@ -1604,6 +1640,22 @@ export default function App() {
         setModal("export");
         void exportVideo(undefined, "clipboard");
       },
+    },
+    {
+      id: "quick-export-file",
+      label: "Quick export to file…",
+      group: "Export",
+      shortcut: "⌥⌘S",
+      disabled: !project || exporting || !window.refract,
+      run: () => quickExport("file"),
+    },
+    {
+      id: "quick-export-clipboard",
+      label: "Quick export to clipboard",
+      group: "Export",
+      shortcut: "⌥⌘C",
+      disabled: !project || exporting || !window.refract,
+      run: () => quickExport("clipboard"),
     },
     {
       id: "previous-clipboard-exports",

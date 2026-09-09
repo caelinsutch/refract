@@ -311,7 +311,58 @@ app.whenReady().then(async () => {
       document.querySelector('#command-previous-clipboard-exports').click();
     })()`);
     await until(() => folderRequests === 1);
+    output = path.join(directory, "quick-clipboard.mp4");
+    frames.length = 0;
+    await window.webContents.executeJavaScript(
+      `localStorage.setItem('refract.recorder.completion',JSON.stringify({action:'create-project',resolution:1080,fps:30}));`,
+    );
+    const beforeQuick = requests.length;
+    window.webContents.send("menu-action", "quick-export-clipboard");
+    await until(() => requests.length === beforeQuick + 1);
+    await window.webContents.executeJavaScript(`(async()=>{
+      const deadline=performance.now()+30000;
+      while(document.querySelector('dialog[open]')) {
+        if(performance.now()>deadline) throw Error('Quick clipboard export did not finish');
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+    })()`);
+    assert.equal(
+      requests.at(-1).format,
+      "mp4",
+      "Quick export inherited editor GIF format",
+    );
+    assert.equal(requests.at(-1).destination, "clipboard");
+    assert.equal(requests.at(-1).fps, 30);
+    assert.equal(requests.at(-1).width, 1080);
+    assert.equal(frames.length, 8);
+    encode = false;
+    window.webContents.send("menu-action", "quick-export-file");
+    await until(() => requests.length === beforeQuick + 2);
+    assert.equal(requests.at(-1).destination, "file");
+    assert.equal(requests.at(-1).fps, 30);
+    await window.webContents.executeJavaScript(
+      `new Promise(resolve=>setTimeout(resolve,100))`,
+    );
+    assert.equal(
+      await window.webContents.executeJavaScript(
+        `document.querySelectorAll('dialog[open]').length`,
+      ),
+      0,
+      "Cancelled quick export left dialog open",
+    );
+    window.webContents.send("menu-action", "export-file");
+    await until(() => requests.length === beforeQuick + 3);
+    assert.equal(
+      requests.at(-1).format,
+      "gif",
+      "Quick export changed editor settings",
+    );
+    assert.equal(requests.at(-1).fps, 24);
+    assert.equal(requests.at(-1).width, 1280);
     const report = {
+      quickExportSavedSettings: true,
+      quickExportCancellation: true,
+      editorExportSettingsRetained: true,
       previousClipboardExportsCommand: true,
       manualClipboardGIF: true,
       enterDefaultAction: true,

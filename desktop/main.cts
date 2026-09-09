@@ -326,11 +326,6 @@ app.whenReady().then(() => {
             click: () => send("saveAs"),
           },
           { type: "separator" },
-          {
-            label: "Export…",
-            accelerator: "CmdOrCtrl+E",
-            click: () => send("export"),
-          },
           { role: "close" },
         ],
       },
@@ -352,6 +347,38 @@ app.whenReady().then(() => {
           { role: "copy" },
           { role: "paste" },
           { role: "selectAll" },
+        ],
+      },
+      {
+        label: "Export",
+        submenu: [
+          {
+            label: "Export…",
+            accelerator: "CmdOrCtrl+Shift+E",
+            click: () => send("export"),
+          },
+          { type: "separator" },
+          { label: "Export to file…", click: () => send("export-file") },
+          {
+            label: "Export to clipboard",
+            click: () => send("export-clipboard"),
+          },
+          { type: "separator" },
+          {
+            label: "Quick export to file…",
+            accelerator: "CmdOrCtrl+Alt+S",
+            click: () => send("quick-export-file"),
+          },
+          {
+            label: "Quick export to clipboard",
+            accelerator: "CmdOrCtrl+Alt+C",
+            click: () => send("quick-export-clipboard"),
+          },
+          { type: "separator" },
+          {
+            label: "Show previous clipboard exports",
+            click: () => send("previous-clipboard-exports"),
+          },
         ],
       },
       {
