@@ -111,11 +111,10 @@ export function screenMotionAt(p: Project, time: number): Target {
     p.appearance.animation === "instant"
       ? point.target
       : advance(point, time, config).position;
-  const scale = Math.max(1, Math.min(8 * initialScale, value.scale)),
-    limit = 0.5 / scale;
+  const scale = Math.max(1, Math.min(8 * initialScale, value.scale));
   return {
     scale,
-    x: Math.max(limit, Math.min(1 - limit, value.x)),
-    y: Math.max(limit, Math.min(1 - limit, value.y)),
+    x: Math.max(0, Math.min(1, value.x)),
+    y: Math.max(0, Math.min(1, value.y)),
   };
 }

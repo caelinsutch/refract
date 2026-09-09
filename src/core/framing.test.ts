@@ -79,3 +79,26 @@ test("fill factor is included in spring evolution without a discontinuity at zoo
   zoomAt(p, 0);
   assert.deepEqual(zoomAt(p, 1800), expected);
 });
+
+test("manual corner targets reach the scaled body's legal edges", () => {
+  const p = fixture();
+  p.appearance.ratio = "2:1";
+  p.appearance.padding = 10;
+  p.zooms[0].scale = 2;
+  for (const [x, y] of [
+    [0, 0],
+    [1, 1],
+  ]) {
+    p.zooms = [{ ...p.zooms[0], x, y }];
+    assert.equal(zoomAt(p, 1500).x, x);
+    assert.equal(zoomAt(p, 1500).y, y);
+    const g = videoGeometry(p, 1500, 400, 200);
+    if (x === 0) {
+      assert.equal(g.x, 20);
+      assert.equal(g.y, 20);
+    } else {
+      assert.equal(g.x + g.w, 380);
+      assert.equal(g.y + g.h, 180);
+    }
+  }
+});

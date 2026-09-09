@@ -159,3 +159,18 @@ legacy defaults, and Undo. All 141 tests pass. The Electron verifier additionall
 checks that the vertical-only control is reachable with menu keyboard navigation.
 Exact edge snapping, initial-frame behavior, inset normalization, and rendered
 comparison with Screen Studio remain unverified.
+
+## Remove the crop-center clamp — 2026-09-09
+
+The motion output still constrained normalized targets to half the visible source
+region from each edge. That was appropriate to the former source-recropping
+implementation but prevented the destination-body model from reaching its legal
+corner positions. Targets now span 0–1, with body positioning constrained by the
+shared geometry. A new test checks top-left and bottom-right body edges; the old
+crop-center assertion was replaced with bounded, settled corner targets.
+
+Further recovered evidence: automatic zoom has an Advanced / Snap to edges slider
+with range 0–0.45, reset value 0.25, and a percentage-of-visible-area readout.
+The manual path supplies snap ratio zero. That setting and its visible-area
+remapping are still absent; removing the obsolete clamp does not implement auto
+edge snapping.
