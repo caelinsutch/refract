@@ -411,6 +411,110 @@ app.whenReady().then(async () => {
       const width=document.querySelector('[aria-label="Zoom timeline"] [role="button"]').getBoundingClientRect().width;
       if (Math.abs(width-158)>3) throw Error('Zoom used click duration instead of release distance: '+width);
     })()`);
+    const rangeRect = () =>
+      window!.webContents.executeJavaScript(`(() => {
+      const r=document.querySelector('[aria-label="Zoom timeline"] [role="button"]').getBoundingClientRect();
+      return {left:r.left,width:r.width,x:Math.round(r.right-3),y:Math.round(r.top+r.height/2)};
+    })()`);
+    const initialRange = await rangeRect();
+    const settle = () =>
+      window!.webContents.executeJavaScript(
+        `new Promise(resolve=>setTimeout(resolve,40))`,
+      );
+    window.webContents.sendInputEvent({
+      type: "mouseDown",
+      x: initialRange.x,
+      y: initialRange.y,
+      button: "left",
+      clickCount: 1,
+    });
+    window.webContents.sendInputEvent({
+      type: "mouseMove",
+      x: initialRange.x + 50,
+      y: initialRange.y,
+      button: "left",
+    });
+    await settle();
+    assert.ok(
+      (await rangeRect()).width > initialRange.width + 30,
+      "Range draft did not follow pointer",
+    );
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+    window.webContents.sendInputEvent({
+      type: "mouseUp",
+      x: initialRange.x + 50,
+      y: initialRange.y,
+      button: "left",
+      clickCount: 1,
+    });
+    await settle();
+    assert.equal(
+      (await rangeRect()).width,
+      initialRange.width,
+      "Escape retained range draft",
+    );
+    window.webContents.sendInputEvent({
+      type: "mouseDown",
+      x: initialRange.x,
+      y: initialRange.y,
+      button: "left",
+      clickCount: 1,
+    });
+    window.webContents.sendInputEvent({
+      type: "mouseUp",
+      x: initialRange.x + 60,
+      y: initialRange.y,
+      button: "left",
+      clickCount: 1,
+    });
+    await settle();
+    assert.ok(
+      Math.abs((await rangeRect()).width - initialRange.width - 60) < 2,
+      "Range ignored final release position",
+    );
+    await window.webContents.executeJavaScript(
+      `document.querySelector('button[aria-label="Undo"]').click()`,
+    );
+    await settle();
+    assert.equal(
+      (await rangeRect()).width,
+      initialRange.width,
+      "One undo did not restore range",
+    );
+    const moveX = Math.round(initialRange.left + initialRange.width / 2);
+    window.webContents.sendInputEvent({
+      type: "mouseDown",
+      x: moveX,
+      y: initialRange.y,
+      button: "left",
+      clickCount: 1,
+    });
+    window.webContents.sendInputEvent({
+      type: "mouseUp",
+      x: moveX + 40,
+      y: initialRange.y,
+      button: "left",
+      clickCount: 1,
+    });
+    await settle();
+    assert.ok(
+      Math.abs((await rangeRect()).left - initialRange.left - 40) < 2,
+      "Range move ignored release",
+    );
+    assert.ok(
+      Math.abs((await rangeRect()).width - initialRange.width) < 2,
+      "Moving range changed duration",
+    );
+    await window.webContents.executeJavaScript(
+      `document.querySelector('button[aria-label="Undo"]').click()`,
+    );
+    await settle();
+    assert.equal(
+      (await rangeRect()).left,
+      initialRange.left,
+      "One undo did not restore range move",
+    );
     await window.webContents.executeJavaScript(`(async () => {
       const status=document.querySelector('[role="status"]');
       const timeline=document.querySelector('[data-timeline]');
@@ -444,6 +548,7 @@ app.whenReady().then(async () => {
         exactTrimEntry: "passed",
         trimGesture: "passed",
         rangeCreation: "passed",
+        existingRangeGestures: "passed",
       }),
     );
   } catch (error) {

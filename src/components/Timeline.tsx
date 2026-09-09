@@ -207,18 +207,18 @@ export default function Timeline({
   setZoom: (n: number) => void;
   cut: () => void;
 }) {
-  const [trimDraft, setTrimDraft] = useState<{
+  const [editDraft, setEditDraft] = useState<{
     original: Project;
     project: Project;
   } | null>(null);
   const currentProject = useRef(savedProject);
   currentProject.current = savedProject;
-  const cancelTrim = useRef<(() => void) | null>(null);
+  const cancelRangeEdit = useRef<(() => void) | null>(null);
   const cancelRangeCreation = useRef<(() => void) | null>(null);
   useEffect(() => () => cancelRangeCreation.current?.(), [savedProject]);
-  useEffect(() => () => cancelTrim.current?.(), []);
+  useEffect(() => () => cancelRangeEdit.current?.(), [savedProject]);
   const project =
-    trimDraft?.original === savedProject ? trimDraft.project : savedProject;
+    editDraft?.original === savedProject ? editDraft.project : savedProject;
   const [clipMenu, setClipMenu] = useState<{
     id: string;
     x: number;
@@ -255,73 +255,48 @@ export default function Timeline({
     side: "start" | "end" | "move",
     kind: "zoom" | "mask",
   ) {
+    if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
+    cancelRangeEdit.current?.();
+    cancelRangeCreation.current?.();
     const startX = e.clientX;
     const target = e.currentTarget as HTMLElement;
     target.focus({ preventScroll: true });
     target.setPointerCapture(e.pointerId);
+    setDragScale(px);
     select({ type: kind, id: z.id });
     seek(time);
-    const original = structuredClone(project);
-    const gesture = `${kind}:${z.id}:${e.pointerId}:${e.timeStamp}`;
-    const move = (ev: PointerEvent) => {
-      const delta = (ev.clientX - startX) / px;
-      const next = dragZoomRange(original, z, side, delta);
-      edit(
-        {
-          ...original,
-          ...(kind === "zoom"
-            ? {
-                zooms: original.zooms.map((v) =>
-                  v.id === z.id ? (next as Zoom) : v,
-                ),
-              }
-            : {
-                masks: original.masks.map((v) =>
-                  v.id === z.id ? (next as Mask) : v,
-                ),
-              }),
-        },
-        gesture,
-      );
+    const original = savedProject;
+    const at = (ev: PointerEvent): Project => {
+      const next = dragZoomRange(original, z, side, (ev.clientX - startX) / px);
+      if (next.start === z.start && next.end === z.end) return original;
+      return {
+        ...original,
+        ...(kind === "zoom"
+          ? {
+              zooms: original.zooms.map((v) =>
+                v.id === z.id ? (next as Zoom) : v,
+              ),
+            }
+          : {
+              masks: original.masks.map((v) =>
+                v.id === z.id ? (next as Mask) : v,
+              ),
+            }),
+      };
     };
-    const end = () => {
-      target.removeEventListener("pointermove", move);
-      target.removeEventListener("pointerup", end);
-      target.removeEventListener("pointercancel", end);
-      target.removeEventListener("lostpointercapture", end);
-    };
-    target.addEventListener("pointermove", move);
-    target.addEventListener("pointerup", end);
-    target.addEventListener("pointercancel", end);
-    target.addEventListener("lostpointercapture", end);
-  }
-  function dragClip(e: React.PointerEvent, id: string, side: "start" | "end") {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    cancelTrim.current?.();
-    const target = e.currentTarget as HTMLElement,
-      original = savedProject,
-      x = e.clientX;
-    target.setPointerCapture(e.pointerId);
-    setDragScale(px);
-    select({ type: "clip", id });
-    seek(time);
-    const at = (ev: PointerEvent) =>
-      trimClip(original, id, side, (ev.clientX - x) / px);
     const move = (ev: PointerEvent) => {
       if (currentProject.current !== original) {
         cancel();
         return;
       }
-      setTrimDraft({ original, project: at(ev) });
+      setEditDraft({ original, project: at(ev) });
     };
     const cleanup = () => {
+      setEditDraft(null);
       setDragScale(null);
-      setTrimDraft(null);
-      cancelTrim.current = null;
+      cancelRangeEdit.current = null;
       target.removeEventListener("pointermove", move);
       target.removeEventListener("pointerup", end);
       target.removeEventListener("pointercancel", cancel);
@@ -343,7 +318,62 @@ export default function Timeline({
       ev.stopPropagation();
       cancel();
     };
-    cancelTrim.current = cancel;
+    cancelRangeEdit.current = cancel;
+    target.addEventListener("pointermove", move);
+    target.addEventListener("pointerup", end);
+    target.addEventListener("pointercancel", cancel);
+    target.addEventListener("lostpointercapture", cancel);
+    window.addEventListener("keydown", key, true);
+  }
+
+  function dragClip(e: React.PointerEvent, id: string, side: "start" | "end") {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    cancelRangeEdit.current?.();
+    cancelRangeCreation.current?.();
+    const target = e.currentTarget as HTMLElement,
+      original = savedProject,
+      x = e.clientX;
+    target.setPointerCapture(e.pointerId);
+    setDragScale(px);
+    select({ type: "clip", id });
+    seek(time);
+    const at = (ev: PointerEvent) =>
+      trimClip(original, id, side, (ev.clientX - x) / px);
+    const move = (ev: PointerEvent) => {
+      if (currentProject.current !== original) {
+        cancel();
+        return;
+      }
+      setEditDraft({ original, project: at(ev) });
+    };
+    const cleanup = () => {
+      setDragScale(null);
+      setEditDraft(null);
+      cancelRangeEdit.current = null;
+      target.removeEventListener("pointermove", move);
+      target.removeEventListener("pointerup", end);
+      target.removeEventListener("pointercancel", cancel);
+      target.removeEventListener("lostpointercapture", cancel);
+      window.removeEventListener("keydown", key, true);
+      if (target.hasPointerCapture(e.pointerId))
+        target.releasePointerCapture(e.pointerId);
+    };
+    const cancel = () => cleanup();
+    const end = (ev: PointerEvent) => {
+      cleanup();
+      if (currentProject.current !== original) return;
+      const next = at(ev);
+      if (next !== original) edit(next);
+    };
+    const key = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      cancel();
+    };
+    cancelRangeEdit.current = cancel;
     target.addEventListener("pointermove", move);
     target.addEventListener("pointerup", end);
     target.addEventListener("pointercancel", cancel);
@@ -358,7 +388,7 @@ export default function Timeline({
   function addRange(e: React.PointerEvent, kind: "zoom" | "mask") {
     if (e.button !== 0) return;
     e.preventDefault();
-    cancelTrim.current?.();
+    cancelRangeEdit.current?.();
     cancelRangeCreation.current?.();
     const original = savedProject;
     const target = e.currentTarget as HTMLElement,

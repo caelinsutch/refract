@@ -77,3 +77,9 @@ New timeline ranges now use the pointer-up position rather than the last pointer
 The full-editor test uncovered an unrelated hit-testing obstruction: the informational `Preset saved` status message intercepted the pointer over the zoom track. Informational status messages now ignore pointer input while retaining their status semantics. With that corrected, real mouse input verifies cancellation produces no zoom, then releases 160 pixels from the anchor without an intermediate move and obtains the expected 158-pixel range (including the existing 2-pixel visual gap), rather than the default click duration.
 
 The complete editor verifier and production build pass. Core tests remain at 123 passing. Zoom creation was exercised live; mask creation uses the shared handler but has not been independently exercised in this sequence.
+
+## Existing timeline range gestures
+
+Zoom and mask moves/resizes now use a temporary timeline draft. Release commits the final pointer coordinates once; Escape, pointer cancellation, lost capture, project replacement and unmount cancel the draft. The drag scale stays fixed during the gesture. A no-op does not create an edit. Clip trimming and range creation cancel an outstanding range edit before starting.
+
+The isolated production editor verifier exercises real Electron pointer input for an existing zoom: visible resize draft, Escape restoration, release with no intermediate move, one-step resize undo, move preserving duration, and one-step move undo. These checks passed with the previous playback, modal, crop, numeric trim and range-creation checks. Production build and 124 core tests passed. Masks share this handler, but this run did not independently exercise mask gestures or compare their interaction to Screen Studio.
