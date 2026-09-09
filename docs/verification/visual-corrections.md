@@ -722,3 +722,12 @@ continues to require the system permission; window-source listing still does too
 - Production build and the extended native verifier passed: native settings action, all picker windows closed before handoff, no capture on settings navigation, editable/persisted resolution, focused Done, return to recording, and cross-window completion/zoom preferences reaching the capture request.
 - The verifier now imports the shared result type; its compiled entry point is `work/display-picker-runner/scripts/verify-display-picker.cjs`. The new verifier was run at that path and reported the quickExport checks explicitly.
 - Live appearance remains unverified while the Mac is locked. Refract currently exposes a focused recorder panel rather than the reference's full settings section; broader settings layout parity remains open.
+
+### Quick-export encoding matrix — 2026-09-09
+
+- Extended the recording-completion verifier from a single 720px/24fps case to all 15 quick-export combinations: long-edge sizes 720, 1080, 1920, 2560, 3840 and frame rates 24, 30, 60.
+- Each case delivers a synthetic recording-finished event to the production renderer, renders the video frames, streams them through production `writeEncoderFrame`, uses production `exportArgs` and `waitForEncoderFinalization`, and probes the actual MP4.
+- All 15 passed H.264 codec, expected dimensions, frame count, frame rate, duration, and absence of invented audio streams. Machine-readable results are in `quick-export-matrix.json`. At 30fps, the quarter-second fixture rounds up to eight frames (0.266667 seconds), as expected.
+- Retained checks for duplicate completion suppression, destination cancellation, and create-project avoiding export. The fixture now disables hidden-window throttling and explicitly preserves a nonzero exit status on failure.
+- The initial synchronous PNG batch fixture stalled on the first larger case. Confirmed and stopped its idle encoder, then replaced that test-only path with production streaming. The corrected full matrix completed successfully. This was a verifier change; no application encoding change was required.
+- Scope limits: synthetic silent footage, short durations, normal-speed clips. This does not prove long recordings, captured audio synchronization, permissions, or visual parity with Screen Studio.

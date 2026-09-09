@@ -1,4 +1,8 @@
-import { execFileSync } from "node:child_process";
+import {
+  execFileSync,
+  spawn,
+  type ChildProcessWithoutNullStreams,
+} from "node:child_process";
 import { app, BrowserWindow, ipcMain } from "electron";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -6,8 +10,11 @@ import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
 const directory = path.resolve("work/recording-completion");
 app.setPath("userData", path.join(directory, `profile-${process.pid}`));
+app.on("window-all-closed", () => {});
 app.whenReady().then(async () => {
   let window: BrowserWindow | undefined;
+  let encoder: ChildProcessWithoutNullStreams | undefined;
+  let failed = false;
   try {
     await fs.mkdir(directory, { recursive: true });
     const { build } = await import("vite");
@@ -36,7 +43,16 @@ app.whenReady().then(async () => {
     const requests: any[] = [];
     let encode = false;
     const frames: Buffer[] = [];
-    const output = path.join(directory, "completed.mp4");
+    let output = path.join(directory, "completed.mp4");
+    const matrix: object[] = [];
+    const { exportArgs } = await import(
+      pathToFileURL(path.resolve("dist-electron/src/core/export.js")).href
+    );
+    const { writeEncoderFrame, waitForEncoderFinalization } = await import(
+      pathToFileURL(path.resolve("dist-electron/src/core/export-process.js"))
+        .href
+    );
+    let encoderDone: Promise<void> | undefined;
     const source = path.join(directory, "source.mp4");
     execFileSync("/opt/homebrew/bin/ffmpeg", [
       "-v",
@@ -52,39 +68,43 @@ app.whenReady().then(async () => {
       "yuv420p",
       source,
     ]);
-    ipcMain.handle("verify-frame", (_, data) => {
-      frames.push(Buffer.from(data));
+    ipcMain.handle("verify-frame", async (_, data) => {
+      const frame = Buffer.from(data);
+      frames.push(frame);
+      await writeEncoderFrame(encoder!, frame);
     });
-    ipcMain.handle("verify-finish", () => {
-      execFileSync(
-        "/opt/homebrew/bin/ffmpeg",
-        [
-          "-v",
-          "error",
-          "-y",
-          "-f",
-          "image2pipe",
-          "-framerate",
-          "24",
-          "-i",
-          "pipe:0",
-          "-c:v",
-          "libx264",
-          "-pix_fmt",
-          "yuv420p",
-          output,
-        ],
-        { input: Buffer.concat(frames) },
-      );
+    ipcMain.handle("verify-finish", async () => {
+      encoder!.stdin.end();
+      await waitForEncoderFinalization(encoder!, encoderDone!, output);
       return output;
     });
     ipcMain.handle("verify-export", (_, settings) => {
       requests.push(settings);
-      return encode ? "verification-export" : null;
+      if (!encode) return null;
+      const current = spawn(
+        "/opt/homebrew/bin/ffmpeg",
+        exportArgs(settings.project, source, output, settings.fps, "mp4"),
+      );
+      encoder = current;
+      let errors = "";
+      current.stderr.on("data", (data) => {
+        errors = (errors + data).slice(-4000);
+      });
+      current.stdin.on("error", () => {});
+      encoderDone = new Promise<void>((resolve, reject) => {
+        current.once("error", reject);
+        current.once("close", (code) =>
+          code === 0
+            ? resolve()
+            : reject(Error(errors || `Encoder exit ${code}`)),
+        );
+      });
+      void encoderDone.catch(() => {});
+      return "verification-export";
     });
     window = new BrowserWindow({
       show: false,
-      webPreferences: { preload, sandbox: true },
+      webPreferences: { preload, sandbox: true, backgroundThrottling: false },
     });
     await window.loadFile(path.resolve("dist/index.html"));
     const projectURL = pathToFileURL(
@@ -133,58 +153,95 @@ app.whenReady().then(async () => {
     );
     assert.equal(requests.length, 1, "Create-project action exported");
     encode = true;
-    window.webContents.send("recording-finished", {
-      ...result,
-      project: {
-        ...project,
-        id: "third",
-        source: { ...project.source, width: 320, height: 240, duration: 250 },
-        segments: [{ id: "short", start: 0, end: 250, speed: 1 }],
-      },
-      url: pathToFileURL(source).href,
-    });
-    await until(() => frames.length === 6);
-    await window.webContents.executeJavaScript(`(async()=>{
-      const deadline=performance.now()+10000;
-      while(!document.querySelector('[role="status"]')?.textContent.includes('Exported completed.mp4')) {
-        if(performance.now()>deadline) throw Error('Completion export did not finish');
-        await new Promise(resolve=>setTimeout(resolve,20));
+    for (const resolution of [720, 1080, 1920, 2560, 3840]) {
+      for (const fps of [24, 30, 60]) {
+        frames.length = 0;
+        output = path.join(directory, `completed-${resolution}-${fps}.mp4`);
+        const basename = path.basename(output);
+        window.webContents.send("recording-finished", {
+          ...result,
+          project: {
+            ...project,
+            id: `matrix-${resolution}-${fps}`,
+            source: {
+              ...project.source,
+              width: 320,
+              height: 240,
+              duration: 250,
+            },
+            segments: [{ id: "short", start: 0, end: 250, speed: 1 }],
+          },
+          completion: { action: "export-file", resolution, fps },
+          url: pathToFileURL(source).href,
+        });
+        await window.webContents.executeJavaScript(`(async()=>{
+          const deadline=performance.now()+30000;
+          while(!document.querySelector('[role="status"]')?.textContent.includes(${JSON.stringify("Exported " + basename)})) {
+            if(performance.now()>deadline) throw Error('Completion export did not finish: '+document.body.textContent.slice(-500));
+            await new Promise(resolve=>setTimeout(resolve,20));
+          }
+        })()`);
+        const probe = JSON.parse(
+          execFileSync(
+            "/opt/homebrew/bin/ffprobe",
+            [
+              "-v",
+              "error",
+              "-count_frames",
+              "-show_entries",
+              "stream=codec_name,width,height,nb_read_frames,r_frame_rate:format=duration",
+              "-of",
+              "json",
+              output,
+            ],
+            { encoding: "utf8" },
+          ),
+        );
+        const video = probe.streams[0];
+        assert.equal(video.codec_name, "h264");
+        assert.equal(
+          probe.streams.length,
+          1,
+          "Silent source gained an audio stream",
+        );
+        assert.equal(Number(video.nb_read_frames), Math.ceil(fps / 4));
+        assert.equal(frames.length, Math.ceil(fps / 4));
+        assert.equal(video.r_frame_rate, `${fps}/1`);
+        assert.equal(Math.max(video.width, video.height), resolution);
+        assert.ok(
+          Math.abs(Number(probe.format.duration) - Math.ceil(fps / 4) / fps) <
+            0.002,
+        );
+        matrix.push({
+          resolution,
+          fps,
+          width: video.width,
+          height: video.height,
+          frames: frames.length,
+          duration: Number(probe.format.duration),
+        });
+        console.log(`Verified ${resolution}px / ${fps} fps`);
       }
-    })()`);
-    const probe = JSON.parse(
-      execFileSync(
-        "/opt/homebrew/bin/ffprobe",
-        [
-          "-v",
-          "error",
-          "-show_entries",
-          "stream=width,height,nb_frames,r_frame_rate:format=duration",
-          "-of",
-          "json",
-          output,
-        ],
-        { encoding: "utf8" },
-      ),
-    );
-    assert.equal(probe.streams[0].nb_frames, "6");
-    assert.equal(probe.streams[0].r_frame_rate, "24/1");
-    assert.equal(
-      Math.max(probe.streams[0].width, probe.streams[0].height),
-      720,
-    );
-    assert.ok(Math.abs(Number(probe.format.duration) - 0.25) < 0.001);
-    console.log({
-      encodedFrames: frames.length,
+    }
+    const report = {
+      matrix,
+      productionEncoderArguments: true,
       duplicateSuppressed: true,
       captureSettingsUsed: true,
       destinationCancellation: true,
       createProjectNoExport: true,
-    });
+    };
+    await fs.writeFile(
+      path.join(directory, "matrix.json"),
+      JSON.stringify(report, null, 2),
+    );
+    console.log(JSON.stringify(report));
   } catch (error) {
     console.error(error);
-    process.exitCode = 1;
+    failed = true;
   } finally {
+    encoder?.kill();
     window?.destroy();
-    app.exit(Number(process.exitCode ?? 0));
+    app.exit(failed ? 1 : 0);
   }
 });

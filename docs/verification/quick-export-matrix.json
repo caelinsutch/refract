@@ -1,0 +1,129 @@
+{
+  "matrix": [
+    {
+      "resolution": 720,
+      "fps": 24,
+      "width": 720,
+      "height": 540,
+      "frames": 6,
+      "duration": 0.25
+    },
+    {
+      "resolution": 720,
+      "fps": 30,
+      "width": 720,
+      "height": 540,
+      "frames": 8,
+      "duration": 0.266667
+    },
+    {
+      "resolution": 720,
+      "fps": 60,
+      "width": 720,
+      "height": 540,
+      "frames": 15,
+      "duration": 0.25
+    },
+    {
+      "resolution": 1080,
+      "fps": 24,
+      "width": 1080,
+      "height": 810,
+      "frames": 6,
+      "duration": 0.25
+    },
+    {
+      "resolution": 1080,
+      "fps": 30,
+      "width": 1080,
+      "height": 810,
+      "frames": 8,
+      "duration": 0.266667
+    },
+    {
+      "resolution": 1080,
+      "fps": 60,
+      "width": 1080,
+      "height": 810,
+      "frames": 15,
+      "duration": 0.25
+    },
+    {
+      "resolution": 1920,
+      "fps": 24,
+      "width": 1920,
+      "height": 1440,
+      "frames": 6,
+      "duration": 0.25
+    },
+    {
+      "resolution": 1920,
+      "fps": 30,
+      "width": 1920,
+      "height": 1440,
+      "frames": 8,
+      "duration": 0.266667
+    },
+    {
+      "resolution": 1920,
+      "fps": 60,
+      "width": 1920,
+      "height": 1440,
+      "frames": 15,
+      "duration": 0.25
+    },
+    {
+      "resolution": 2560,
+      "fps": 24,
+      "width": 2560,
+      "height": 1920,
+      "frames": 6,
+      "duration": 0.25
+    },
+    {
+      "resolution": 2560,
+      "fps": 30,
+      "width": 2560,
+      "height": 1920,
+      "frames": 8,
+      "duration": 0.266667
+    },
+    {
+      "resolution": 2560,
+      "fps": 60,
+      "width": 2560,
+      "height": 1920,
+      "frames": 15,
+      "duration": 0.25
+    },
+    {
+      "resolution": 3840,
+      "fps": 24,
+      "width": 3840,
+      "height": 2880,
+      "frames": 6,
+      "duration": 0.25
+    },
+    {
+      "resolution": 3840,
+      "fps": 30,
+      "width": 3840,
+      "height": 2880,
+      "frames": 8,
+      "duration": 0.266667
+    },
+    {
+      "resolution": 3840,
+      "fps": 60,
+      "width": 3840,
+      "height": 2880,
+      "frames": 15,
+      "duration": 0.25
+    }
+  ],
+  "productionEncoderArguments": true,
+  "duplicateSuppressed": true,
+  "captureSettingsUsed": true,
+  "destinationCancellation": true,
+  "createProjectNoExport": true
+}
