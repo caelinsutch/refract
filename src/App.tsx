@@ -1,3 +1,4 @@
+import { WallpaperPicker } from "./components/WallpaperPicker";
 import { BackgroundImagePicker } from "./components/BackgroundImagePicker";
 import { GradientPresets } from "./components/GradientPresets";
 import { InsetBalance } from "./components/InsetBalance";
@@ -105,7 +106,6 @@ import {
   previewDimensions,
   drawFrame,
   sourcePointAt,
-  wallpapers,
 } from "./core/compositor";
 import { emptyHistory, reduceHistory } from "./core/history";
 import CropEditor from "./components/CropEditor";
@@ -353,27 +353,6 @@ const s = sx.create({
     color: "var(--accent)",
     borderBottomColor: "var(--accent)",
   },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, 32px)",
-    gap: 7,
-    marginTop: 13,
-    marginBottom: 22,
-  },
-  swatch: (a: string, b: string, c: string) => ({
-    height: 32,
-    position: "relative",
-    overflow: "hidden",
-    borderRadius: "var(--radius-control)",
-    borderWidth: 0,
-    outlineWidth: 1,
-    outlineStyle: "solid",
-    outlineColor: { default: "transparent", ":hover": "var(--sample-hover)" },
-    outlineOffset: 1,
-    backgroundImage: `linear-gradient(125deg, ${a}, ${b} 56%, ${c})`,
-    cursor: "default",
-  }),
-  chosen: { outlineColor: "var(--sample-selected)" },
   empty: {
     display: "flex",
     flexDirection: "column",
@@ -2450,51 +2429,10 @@ export default function App() {
                 </div>
                 {project.appearance.background === "wallpaper" ? (
                   <>
-                    <Row>
-                      <span>Wallpaper</span>
-                      <span {...sx.props(s.muted)}>Refract collection</span>
-                    </Row>
-                    <button
-                      style={{
-                        width: "100%",
-                        height: 32,
-                        borderRadius: 6,
-                        border: "1px solid var(--white-a06)",
-                        background: "var(--white-a05)",
-                        color: "var(--text-primary)",
-                        justifyContent: "center",
-                        marginTop: 12,
-                      }}
-                      onClick={() =>
-                        appearance({
-                          wallpaper: Math.floor(
-                            Math.random() * wallpapers.length,
-                          ),
-                        })
-                      }
-                    >
-                      Pick random wallpaper
-                    </button>
-                    <div {...sx.props(s.grid)}>
-                      {wallpapers.map((colors, i) => (
-                        <button
-                          key={i}
-                          data-wallpaper-swatch
-                          data-motion="static"
-                          aria-pressed={project.appearance.wallpaper === i}
-                          title={`Wallpaper ${i + 1}`}
-                          aria-label={`Wallpaper ${i + 1}`}
-                          {...sx.props(
-                            s.swatch(colors[0], colors[1], colors[2]),
-                            project.appearance.wallpaper === i && s.chosen,
-                          )}
-                          onClick={() => {
-                            if (project.appearance.wallpaper !== i)
-                              appearance({ wallpaper: i });
-                          }}
-                        />
-                      ))}
-                    </div>
+                    <WallpaperPicker
+                      value={project.appearance.wallpaper}
+                      onChange={(wallpaper) => appearance({ wallpaper })}
+                    />
                     <Divider />
                   </>
                 ) : project.appearance.background === "image" ? (

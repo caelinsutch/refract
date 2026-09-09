@@ -101,13 +101,82 @@ app.whenReady().then(async () => {
       results.push(selector);
     }
     await hover('button[aria-label="Play"]');
-    await hover('[data-disclosure-header]');
+    await hover("[data-disclosure-header]");
     assert.equal(
-      await read("getComputedStyle(subject.querySelector('[data-disclosure-toggle]')).backgroundColor"),
-      'rgba(0, 0, 0, 0)',
-      'Disclosure still paints a competing static hover',
+      await read(
+        "getComputedStyle(subject.querySelector('[data-disclosure-toggle]')).backgroundColor",
+      ),
+      "rgba(0, 0, 0, 0)",
+      "Disclosure still paints a competing static hover",
     );
     await hover("[data-wallpaper-swatch]");
+    await read(
+      `document.querySelector('[data-wallpaper-swatch]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:1100,clientY:350}));`,
+    );
+    await wait(100);
+    assert.equal(
+      await read(
+        `document.querySelector('[aria-label="Wallpaper options"]').matches(':popover-open')`,
+      ),
+      true,
+    );
+    await hover('[aria-label="Wallpaper options"] [role="menuitemcheckbox"]');
+    await read(
+      `document.querySelector('[aria-label="Wallpaper options"] button').click()`,
+    );
+    await wait(100);
+    assert.deepEqual(
+      await read(
+        `JSON.parse(localStorage.getItem('refract.wallpaper-favorites'))`,
+      ),
+      [0],
+    );
+    await fs.writeFile(
+      path.join(directory, "wallpaper-favorites.png"),
+      (await c.capturePage()).toPNG(),
+    );
+    await read(
+      `const select=document.querySelector('select[aria-label="Wallpaper collection"]');select.value='favorites';select.dispatchEvent(new Event('change',{bubbles:true}));`,
+    );
+    await wait(100);
+    assert.equal(
+      await read(`document.querySelectorAll('[data-wallpaper-swatch]').length`),
+      1,
+    );
+    // Keyboard context menu must work even without a mouse event position.
+    await read(
+      `document.querySelector('[data-wallpaper-swatch]').dispatchEvent(new KeyboardEvent('keydown',{key:'F10',shiftKey:true,bubbles:true}));`,
+    );
+    await wait(100);
+    assert.equal(
+      await read(`document.activeElement.getAttribute('role')`),
+      "menuitemcheckbox",
+    );
+    assert.equal(
+      await read(`document.activeElement.getAttribute('aria-checked')`),
+      "true",
+    );
+    c.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    c.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await wait(100);
+    assert.equal(
+      await read(`document.querySelectorAll('[data-wallpaper-swatch]').length`),
+      0,
+    );
+    assert.equal(
+      await read(`document.activeElement.getAttribute('aria-label')`),
+      "Wallpaper collection",
+    );
+    assert.deepEqual(
+      await read(
+        `JSON.parse(localStorage.getItem('refract.wallpaper-favorites'))`,
+      ),
+      [],
+    );
+    await read(
+      `document.querySelector('select[aria-label="Wallpaper collection"]').value='all';document.querySelector('select[aria-label="Wallpaper collection"]').dispatchEvent(new Event('change',{bubbles:true}));`,
+    );
+    await wait(100);
     await hover('[data-timeline] [role="button"]');
     assert.equal(
       await read(
