@@ -24,6 +24,7 @@ export type Selection = {
   type: "clip" | "zoom" | "mask" | "camera";
   id: string;
 } | null;
+const timelinePadding = 20;
 const s = sx.create({
   root: {
     backgroundColor: "var(--surface-app)",
@@ -36,7 +37,7 @@ const s = sx.create({
   scroll: {
     overflowX: "auto",
     overflowY: "auto",
-    paddingInline: 20,
+    paddingInline: timelinePadding,
     flexGrow: 1,
   },
   inner: (width: number) => ({
@@ -66,6 +67,15 @@ const s = sx.create({
     paddingLeft: 5,
     height: 22,
   }),
+  tickEnd: {
+    transform: "translateX(-100%)",
+    borderLeftWidth: 0,
+    borderRightWidth: 1,
+    borderRightStyle: "solid",
+    borderRightColor: "var(--border-strong)",
+    paddingLeft: 0,
+    paddingRight: 5,
+  },
   clip: (left: number, width: number) => ({
     position: "absolute",
     left,
@@ -214,7 +224,8 @@ export default function Timeline({
   useEffect(() => {
     const node = viewport.current;
     if (!node) return;
-    const measure = () => setViewportWidth(Math.max(1, node.clientWidth - 48));
+    const measure = () =>
+      setViewportWidth(Math.max(1, node.clientWidth - timelinePadding * 2));
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(node);
@@ -521,7 +532,13 @@ export default function Timeline({
             }}
           >
             {ticks.map((t) => (
-              <span key={t} {...sx.props(s.tick(t * px))}>
+              <span
+                key={t}
+                {...sx.props(
+                  s.tick(t * px),
+                  (total - t) * px < 48 && s.tickEnd,
+                )}
+              >
                 {formatTime(t)}
               </span>
             ))}

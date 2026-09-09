@@ -75,12 +75,18 @@ app.whenReady().then(async () => {
         const layout = await read(`(() => {
           const rect = el => { const r=el.getBoundingClientRect(); return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}; };
           const timeline = document.querySelector('[data-timeline]');
+          const scroll = timeline.children[0];
           const slider = document.querySelector('input[aria-label="Timeline zoom"]');
           const cut = document.querySelector('button[aria-label="Cut at playhead (C)"]');
           const controls = Array.from(slider.parentElement.children).filter(el=>el.getBoundingClientRect().width>0).map(rect);
-          return {timeline:rect(timeline),clip:rect(document.querySelector('[aria-label^="Clip "]')),zoom:rect(document.querySelector('[aria-label="Zoom timeline"]')), sidebar:rect(document.querySelector('aside')), slider:rect(slider),cut:rect(cut),controls,playback:rect(document.querySelector('button[aria-label="Play"]').parentElement),sliderInTimeline:timeline.contains(slider),viewport:{width:innerWidth,height:innerHeight}};
+          return {scroll:{width:scroll.clientWidth,content:scroll.scrollWidth},timeline:rect(timeline),clip:rect(document.querySelector('[aria-label^="Clip "]')),zoom:rect(document.querySelector('[aria-label="Zoom timeline"]')), sidebar:rect(document.querySelector('aside')), slider:rect(slider),cut:rect(cut),controls,playback:rect(document.querySelector('button[aria-label="Play"]').parentElement),sliderInTimeline:timeline.contains(slider),viewport:{width:innerWidth,height:innerHeight}};
         })()`);
         assert.equal(layout.timeline.height, 152);
+        assert.equal(
+          layout.scroll.content,
+          layout.scroll.width,
+          "Fitted timeline overflows horizontally",
+        );
         assert.equal(layout.clip.height, 48);
         assert.equal(layout.clip.x, 20);
         assert.equal(layout.clip.y - layout.timeline.y, 29);
@@ -102,7 +108,36 @@ app.whenReady().then(async () => {
           path.join(directory, `${theme}-${width}.png`),
           (await c.capturePage()).toPNG(),
         );
-        results.push({ theme, width, height, ...layout });
+        await read(`(() => {
+          const slider = document.querySelector('input[aria-label="Timeline zoom"]');
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(slider,'4');
+          slider.dispatchEvent(new Event('input',{bubbles:true}));
+        })()`);
+        await wait(100);
+        const zoomed = await read(`(() => {
+          const scroll = document.querySelector('[data-timeline]').children[0];
+          scroll.scrollLeft = scroll.scrollWidth;
+          return {width:scroll.clientWidth,content:scroll.scrollWidth,left:scroll.scrollLeft};
+        })()`);
+        assert.ok(
+          zoomed.content > zoomed.width * 3,
+          "Zoom did not expand timeline",
+        );
+        assert.ok(zoomed.left > 0, "Zoomed timeline cannot scroll to its end");
+        await read(`(() => {
+          const slider = document.querySelector('input[aria-label="Timeline zoom"]');
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(slider,'1');
+          slider.dispatchEvent(new Event('input',{bubbles:true}));
+        })()`);
+        await wait(100);
+        assert.equal(
+          await read(
+            "document.querySelector('[data-timeline]').children[0].scrollLeft",
+          ),
+          0,
+          "Fit did not reset scroll",
+        );
+        results.push({ theme, width, height, ...layout, zoomed });
       }
     }
     await fs.writeFile(
