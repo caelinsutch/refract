@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld("refract", {
   recorderDirectory: () => ipcRenderer.invoke("recorder-directory"),
   recorderChooseDirectory: () =>
     ipcRenderer.invoke("recorder-directory-choose"),
+  recorderSymbols: () => ipcRenderer.invoke("recorder-symbols"),
   recorderSources: () => ipcRenderer.invoke("recorder-sources"),
   recorderInputMenu: (request: unknown) =>
     ipcRenderer.invoke("recorder-input-menu", request),

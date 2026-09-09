@@ -36,6 +36,7 @@ declare global {
       recorderState(): Promise<RecorderState>;
       recorderDirectory(): Promise<string>;
       recorderChooseDirectory(): Promise<string | null>;
+      recorderSymbols(): Promise<Record<string, string>>;
       recorderSources(): Promise<CaptureSources>;
       recorderInputMenu(
         request: RecorderInputMenu,

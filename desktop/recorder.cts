@@ -1,5 +1,5 @@
 import { countdownDuration, countdownRemaining } from "./countdown.cjs";
-import { installRecorderGlass } from "./recorder-glass.cjs";
+import { installRecorderGlass, recorderSymbols } from "./recorder-glass.cjs";
 import {
   readRecordingDestination,
   saveRecordingDestination,
@@ -370,6 +370,7 @@ export function setupRecorder(
   register("recorder-show", () => show());
   register("recorder-state", () => state);
   register("recorder-sources", list);
+  register("recorder-symbols", recorderSymbols);
   let inputMenuOpen = false;
   register("recorder-input-menu", async (request: RecorderInputMenu) => {
     if (

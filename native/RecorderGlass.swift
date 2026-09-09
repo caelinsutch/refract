@@ -66,10 +66,21 @@ private let install: napi_callback = { env, info in
     return result
 }
 
+private let symbolAtlas: napi_callback = { env, _ in
+    var result: napi_value?
+    let atlas = recorderSymbolAtlas()
+    atlas.withCString { text in
+        _ = napi_create_string_utf8(env, text, atlas.utf8.count, &result)
+    }
+    return result
+}
+
 @_cdecl("napi_register_module_v1")
 public func registerRecorderGlass(_ env: napi_env?, _ exports: napi_value?) -> napi_value? {
     var function: napi_value?
     _ = napi_create_function(env, "install", 7, install, nil, &function)
     _ = napi_set_named_property(env, exports, "install", function)
+    _ = napi_create_function(env, "symbolAtlas", 11, symbolAtlas, nil, &function)
+    _ = napi_set_named_property(env, exports, "symbolAtlas", function)
     return exports
 }

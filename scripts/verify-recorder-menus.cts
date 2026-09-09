@@ -1,5 +1,6 @@
-import { app, BrowserWindow, Menu } from "electron";
+import { app, BrowserWindow, Menu, nativeImage } from "electron";
 import path from "node:path";
+import fs from "node:fs/promises";
 import assert from "node:assert/strict";
 
 app.setPath(
@@ -64,6 +65,33 @@ void app.whenReady().then(async () => {
       "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null))))",
     );
     const bounds = bar!.getBounds();
+    const atlas = require(
+      path.resolve("dist-electron/desktop/recorder-glass.cjs"),
+    ).recorderSymbols() as Record<string, string>;
+    assert.equal(Object.keys(atlas).length, 12, "System glyphs are missing");
+    for (const [name, uri] of Object.entries(atlas)) {
+      const image = nativeImage.createFromDataURL(uri);
+      assert.deepEqual(
+        image.getSize(),
+        { width: 144, height: 144 },
+        `${name} has wrong resolution`,
+      );
+      const pixels = image.toBitmap();
+      let clear = false,
+        ink = false;
+      for (let i = 3; i < pixels.length; i += 4) {
+        clear ||= pixels[i] === 0;
+        ink ||= pixels[i] > 0;
+      }
+      assert.ok(clear && ink, `${name} has an empty or opaque mask`);
+    }
+    await until(
+      () =>
+        contents.executeJavaScript(
+          "document.querySelectorAll('[data-recorder-bar] [data-native-symbol]').length === 10",
+        ),
+      "Native glyphs did not reach the toolbar",
+    );
     assert.equal(
       await contents.executeJavaScript(
         "document.documentElement.classList.contains('native-recorder-glass') && getComputedStyle(document.querySelector('[data-recorder-bar]')).backdropFilter === 'none'",
@@ -233,6 +261,11 @@ void app.whenReady().then(async () => {
         "Native selection did not update the renderer",
       );
     }
+    await fs.mkdir(path.resolve("work/recorder-menus"), { recursive: true });
+    await fs.writeFile(
+      path.resolve("work/recorder-menus/toolbar.png"),
+      (await contents.capturePage()).toPNG(),
+    );
     console.log(
       JSON.stringify({
         nativeMenu: "passed",

@@ -604,3 +604,28 @@ case was corrected: subsequent pointer movement or a press reactivates the fill.
 The full editor playback/keyboard verifier also passes. Its ratio Escape check now
 waits for native key delivery and focus restoration instead of asserting before
 the asynchronous key event arrives.
+
+## Native recorder symbols and optical sizing — 2026-09-09
+
+Replaced the recorder's approximate toolbar glyphs with runtime AppKit system
+symbols: dock.rectangle, macwindow, square.dashed, apps.iphone, video/video.slash,
+microphone.fill/microphone.slash.fill, music.note.tv, gear, chevron.down, and
+xmark.circle.fill. The names were checked against the installed reference's
+recorder UI. Older system naming falls back from microphone to mic. The Swift
+addon renders the installed system glyphs; no reference assets are redistributed.
+
+Each 22pt glyph is drawn in a 48pt transparent canvas at 3x resolution. The React
+mask preserves that ratio at its requested point size and follows currentColor,
+including inactive, hover, and light/dark theme colors. It keeps the existing
+button and icon layout slots. An initial implementation normalized every glyph to
+a square; live side-by-side inspection showed that made wide symbols too small.
+The corrected rendering preserves AppKit's natural glyph metrics. The close
+control's horizontal margin increased by 1px per side to align the mode group
+with the reference while keeping its hit target and drag regions stable.
+
+The application/Swift build passes. The native-menu verifier validates all 12
+144px alpha masks, their transparent and nonempty pixels, and all ten visible
+native glyphs in the toolbar. Repeated menu selection/cancellation preserves DOM
+identity and performs zero native resizes. The renderer refresh check also passes
+with long camera/microphone labels. Screenshots and live reference comparison were
+used for optical sizing; full-app visual parity remains unproven.

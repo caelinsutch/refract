@@ -1,3 +1,4 @@
+import { RecorderSymbol, RecorderSymbols } from "./components/RecorderSymbol";
 import { recordingCompletion } from "./core/recording-completion";
 import { captureAreaBetween } from "./core/capture-area";
 import { StateIcon } from "./components/StateIcon";
@@ -133,6 +134,11 @@ const s = sx.create({
       ":hover": "var(--close-control-hover)",
     },
     color: "var(--text-inverse)",
+  },
+  recorderClose: {
+    marginInline: 8,
+    backgroundColor: { default: "transparent", ":hover": "transparent" },
+    color: "var(--text-muted)",
   },
   line: {
     width: 1,
@@ -353,6 +359,19 @@ export function AreaPicker() {
 }
 export default function Recorder() {
   const api = window.refract;
+  const [symbols, setSymbols] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let mounted = true;
+    void api
+      ?.recorderSymbols?.()
+      .then((value) => {
+        if (mounted) setSymbols(value);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const [completion, setCompletion] = useState(() => {
     try {
       return recordingCompletion(
@@ -720,660 +739,707 @@ export default function Recorder() {
   const micName =
     sources?.microphones.find((m) => m.id === microphone)?.name ?? "Microphone";
   return (
-    <div {...sx.props(s.root)}>
-      {panel && !busy ? (
-        <section {...sx.props(s.panel)} data-floating-surface="recorder">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h2 {...sx.props(s.heading)}>
-              {
-                (
-                  {
-                    display: "Record a display",
-                    window: "Record a window",
-                    area: "Record an area",
-                    "area-ready": "Your recording area",
-                    microphone: "Microphone",
-                    audio: "System audio",
-                    camera: "Camera",
-                    device: "Connected device",
-                    settings: "Recording",
-                    error: "Recording needs attention",
-                  } as Record<string, string>
-                )[panel]
-              }
-            </h2>
-            <button
-              aria-label="Close options"
-              {...sx.props(s.close)}
-              onClick={() => expand(null)}
+    <RecorderSymbols.Provider value={symbols}>
+      <div {...sx.props(s.root)}>
+        {panel && !busy ? (
+          <section {...sx.props(s.panel)} data-floating-surface="recorder">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
-              <X size={14} />
-            </button>
-          </div>
-          {loading ? (
-            <p {...sx.props(s.text)}>Finding available sources…</p>
-          ) : error ? (
-            <>
-              <p {...sx.props(s.text)}>{error}</p>
-              <button {...sx.props(s.primary)} onClick={refresh}>
-                <RefreshCw size={13} />
-                Try again
-              </button>
-            </>
-          ) : ["display", "window", "area", "microphone", "camera"].includes(
-              panel,
-            ) && sources?.permission === "required" ? (
-            <>
-              <p {...sx.props(s.text)}>
-                Allow Refract to record your screen in macOS Settings, then
-                refresh the available sources.
-              </p>
-              <button
-                {...sx.props(s.primary)}
-                disabled={loading}
-                onClick={async () => {
-                  setLoading(true);
-                  setError("");
-                  try {
-                    await api?.recorderPermissions();
-                    await refresh();
-                  } catch (error) {
-                    setError(String(error));
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              >
-                Allow screen recording
-                <ArrowUpRight size={13} />
-              </button>
-              <button {...sx.props(s.item)} onClick={refresh}>
-                <RefreshCw size={14} />
-                Refresh sources
-              </button>
-            </>
-          ) : panel === "display" || panel === "area" ? (
-            <>
-              {sources?.displays.map((d, i) => (
-                <button
-                  key={d.id}
-                  {...sx.props(s.item)}
-                  onClick={() =>
-                    panel === "area"
-                      ? chooseArea(d.id)
-                      : start({ mode: "display", displayId: d.id })
-                  }
-                >
-                  <Monitor size={29} strokeWidth={1.2} />
-                  <span>
-                    <span {...sx.props(s.itemTitle)}>
-                      {i === 0 ? "Main display" : `Display ${i + 1}`}
-                    </span>
-                    <span {...sx.props(s.itemDetail)}>
-                      {d.width} × {d.height} ·{" "}
-                      {panel === "area"
-                        ? "Choose area"
-                        : countdownSeconds === 0
-                          ? "Click to start recording"
-                          : `Click to start a ${countdownSeconds}-second countdown`}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </>
-          ) : panel === "window" ? (
-            <>
-              {sources?.windows.length === 0 ? (
-                <>
-                  <p {...sx.props(s.text)}>
-                    No app windows are available. Open the window you want to
-                    record, then refresh.
-                  </p>
-                  <button {...sx.props(s.item)} onClick={refresh}>
-                    <RefreshCw size={14} /> Refresh windows
-                  </button>
-                </>
-              ) : null}
-              {sources?.windows.map((w) => (
-                <button
-                  key={w.id}
-                  {...sx.props(s.item)}
-                  onClick={() => start({ mode: "window", windowId: w.id })}
-                >
-                  <AppWindow size={25} strokeWidth={1.3} />
-                  <span style={{ overflow: "hidden" }}>
-                    <span
-                      {...sx.props(s.itemTitle)}
-                      style={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {w.name || w.app}
-                    </span>
-                    <span {...sx.props(s.itemDetail)}>
-                      {w.app} · {Math.round(w.width)} × {Math.round(w.height)}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </>
-          ) : panel === "area-ready" && area ? (
-            <>
-              <p {...sx.props(s.text)}>
-                {Math.round(area.area!.width)} × {Math.round(area.area!.height)}{" "}
-                pixels selected
-              </p>
-              <button
-                ref={areaStartButton}
-                {...sx.props(s.primary)}
-                onClick={() =>
-                  start({
-                    mode: "area",
-                    displayId: area.displayId,
-                    area: area.area,
-                  })
+              <h2 {...sx.props(s.heading)}>
+                {
+                  (
+                    {
+                      display: "Record a display",
+                      window: "Record a window",
+                      area: "Record an area",
+                      "area-ready": "Your recording area",
+                      microphone: "Microphone",
+                      audio: "System audio",
+                      camera: "Camera",
+                      device: "Connected device",
+                      settings: "Recording",
+                      error: "Recording needs attention",
+                    } as Record<string, string>
+                  )[panel]
                 }
-              >
-                Start recording
-              </button>
+              </h2>
               <button
-                {...sx.props(s.item)}
-                onClick={() => chooseArea(area.displayId)}
+                aria-label="Close options"
+                {...sx.props(s.close)}
+                onClick={() => expand(null)}
               >
-                <Scan size={15} />
-                Choose another area
+                <X size={14} />
               </button>
-            </>
-          ) : panel === "microphone" ? (
-            <>
-              <button
-                {...sx.props(s.item)}
-                onClick={() => {
-                  setMicrophone(undefined);
-                  expand(null);
-                }}
-              >
-                <MicOff size={17} />
-                No microphone{!microphone ? <Check size={13} /> : null}
-              </button>
-              {sources?.microphones.map((m) => (
-                <button
-                  key={m.id}
-                  {...sx.props(s.item)}
-                  onClick={() => {
-                    setMicrophone(m.id);
-                    expand(null);
-                  }}
-                >
-                  <Mic size={17} />
-                  {m.name}
-                  {microphone === m.id ? <Check size={13} /> : null}
+            </div>
+            {loading ? (
+              <p {...sx.props(s.text)}>Finding available sources…</p>
+            ) : error ? (
+              <>
+                <p {...sx.props(s.text)}>{error}</p>
+                <button {...sx.props(s.primary)} onClick={refresh}>
+                  <RefreshCw size={13} />
+                  Try again
                 </button>
-              ))}
-            </>
-          ) : panel === "audio" ? (
-            <>
-              {[false, true].map((v) => (
+              </>
+            ) : ["display", "window", "area", "microphone", "camera"].includes(
+                panel,
+              ) && sources?.permission === "required" ? (
+              <>
+                <p {...sx.props(s.text)}>
+                  Allow Refract to record your screen in macOS Settings, then
+                  refresh the available sources.
+                </p>
                 <button
-                  key={String(v)}
-                  {...sx.props(s.item)}
-                  onClick={() => {
-                    setSystemAudio(v);
-                    expand(null);
-                  }}
-                >
-                  {v ? <Volume2 size={17} /> : <VolumeX size={17} />}{" "}
-                  {v ? "Record all system audio" : "No system audio"}
-                  {systemAudio === v ? <Check size={13} /> : null}
-                </button>
-              ))}
-            </>
-          ) : panel === "camera" ? (
-            <>
-              <button
-                {...sx.props(s.item)}
-                onClick={() => {
-                  setCamera(undefined);
-                  expand(null);
-                }}
-              >
-                <VideoOff size={17} />
-                No camera{!camera ? <Check size={13} /> : null}
-              </button>
-              {sources?.cameras?.map((c) => (
-                <button
-                  key={c.id}
-                  {...sx.props(s.item)}
-                  onClick={() => {
-                    setCamera(c.id);
-                    expand(null);
-                  }}
-                >
-                  <Video size={17} />
-                  {c.name}
-                  {camera === c.id ? <Check size={13} /> : null}
-                </button>
-              ))}
-            </>
-          ) : panel === "device" ? (
-            <p {...sx.props(s.text)}>
-              Direct iPhone and iPad capture is not connected yet. To record an
-              iPhone Mirroring window, choose Window.
-            </p>
-          ) : panel === "settings" ? (
-            <>
-              <label {...sx.props(s.item)}>
-                <span>Recording countdown</span>
-                <select
-                  aria-label="Recording countdown"
-                  value={countdownSeconds}
-                  onChange={(event) => {
-                    const value = Number(event.target.value) as 0 | 3 | 5 | 10;
-                    setCountdownSeconds(value);
+                  {...sx.props(s.primary)}
+                  disabled={loading}
+                  onClick={async () => {
+                    setLoading(true);
+                    setError("");
                     try {
-                      localStorage.setItem(
-                        "refract.recorder.countdownSeconds",
-                        String(value),
-                      );
-                    } catch {
-                      /* Keep the session preference. */
+                      await api?.recorderPermissions();
+                      await refresh();
+                    } catch (error) {
+                      setError(String(error));
+                    } finally {
+                      setLoading(false);
                     }
                   }}
                 >
-                  <option value={0}>No countdown</option>
-                  <option value={3}>3s</option>
-                  <option value={5}>5s</option>
-                  <option value={10}>10s</option>
-                </select>
-              </label>
-              <label {...sx.props(s.item)}>
-                <span>After recording</span>
-                <select
-                  aria-label="After recording"
-                  value={completion.action}
-                  onChange={(e) =>
-                    updateCompletion({
-                      ...completion,
-                      action: e.target.value as typeof completion.action,
+                  Allow screen recording
+                  <ArrowUpRight size={13} />
+                </button>
+                <button {...sx.props(s.item)} onClick={refresh}>
+                  <RefreshCw size={14} />
+                  Refresh sources
+                </button>
+              </>
+            ) : panel === "display" || panel === "area" ? (
+              <>
+                {sources?.displays.map((d, i) => (
+                  <button
+                    key={d.id}
+                    {...sx.props(s.item)}
+                    onClick={() =>
+                      panel === "area"
+                        ? chooseArea(d.id)
+                        : start({ mode: "display", displayId: d.id })
+                    }
+                  >
+                    <Monitor size={29} strokeWidth={1.2} />
+                    <span>
+                      <span {...sx.props(s.itemTitle)}>
+                        {i === 0 ? "Main display" : `Display ${i + 1}`}
+                      </span>
+                      <span {...sx.props(s.itemDetail)}>
+                        {d.width} × {d.height} ·{" "}
+                        {panel === "area"
+                          ? "Choose area"
+                          : countdownSeconds === 0
+                            ? "Click to start recording"
+                            : `Click to start a ${countdownSeconds}-second countdown`}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </>
+            ) : panel === "window" ? (
+              <>
+                {sources?.windows.length === 0 ? (
+                  <>
+                    <p {...sx.props(s.text)}>
+                      No app windows are available. Open the window you want to
+                      record, then refresh.
+                    </p>
+                    <button {...sx.props(s.item)} onClick={refresh}>
+                      <RefreshCw size={14} /> Refresh windows
+                    </button>
+                  </>
+                ) : null}
+                {sources?.windows.map((w) => (
+                  <button
+                    key={w.id}
+                    {...sx.props(s.item)}
+                    onClick={() => start({ mode: "window", windowId: w.id })}
+                  >
+                    <AppWindow size={25} strokeWidth={1.3} />
+                    <span style={{ overflow: "hidden" }}>
+                      <span
+                        {...sx.props(s.itemTitle)}
+                        style={{
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {w.name || w.app}
+                      </span>
+                      <span {...sx.props(s.itemDetail)}>
+                        {w.app} · {Math.round(w.width)} × {Math.round(w.height)}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </>
+            ) : panel === "area-ready" && area ? (
+              <>
+                <p {...sx.props(s.text)}>
+                  {Math.round(area.area!.width)} ×{" "}
+                  {Math.round(area.area!.height)} pixels selected
+                </p>
+                <button
+                  ref={areaStartButton}
+                  {...sx.props(s.primary)}
+                  onClick={() =>
+                    start({
+                      mode: "area",
+                      displayId: area.displayId,
+                      area: area.area,
                     })
                   }
                 >
-                  <option value="create-project">Create project</option>
-                  <option value="export-file">Export and save to file</option>
-                </select>
-              </label>
-              {completion.action === "export-file" && (
-                <>
-                  <label {...sx.props(s.item)}>
-                    <span>MP4 resolution</span>
-                    <select
-                      aria-label="Quick export resolution"
-                      value={completion.resolution}
-                      onChange={(e) =>
-                        updateCompletion({
-                          ...completion,
-                          resolution: Number(e.target.value),
-                        })
-                      }
-                    >
-                      {[720, 1080, 1920, 2560, 3840].map((n) => (
-                        <option key={n} value={n}>
-                          {n}px
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label {...sx.props(s.item)}>
-                    <span>Frame rate</span>
-                    <select
-                      aria-label="Quick export frame rate"
-                      value={completion.fps}
-                      onChange={(e) =>
-                        updateCompletion({
-                          ...completion,
-                          fps: Number(e.target.value),
-                        })
-                      }
-                    >
-                      {[24, 30, 60].map((n) => (
-                        <option key={n} value={n}>
-                          {n} fps
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </>
-              )}
-              <button
-                {...sx.props(s.item)}
-                disabled={choosingDirectory}
-                title={recordingDirectory || "Change recording directory"}
-                onClick={async () => {
-                  setChoosingDirectory(true);
-                  try {
-                    const directory = await api?.recorderChooseDirectory();
-                    if (directory) setRecordingDirectory(directory);
-                  } catch (error) {
-                    setError(String(error));
-                  } finally {
-                    setChoosingDirectory(false);
-                  }
-                }}
-              >
-                <FolderOpen size={17} style={{ flexShrink: 0 }} />
-                <span style={{ minWidth: 0 }}>
-                  <span {...sx.props(s.itemTitle)}>Save new recordings to</span>
-                  <span
-                    {...sx.props(s.itemDetail)}
-                    style={{
-                      display: "block",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                  Start recording
+                </button>
+                <button
+                  {...sx.props(s.item)}
+                  onClick={() => chooseArea(area.displayId)}
+                >
+                  <Scan size={15} />
+                  Choose another area
+                </button>
+              </>
+            ) : panel === "microphone" ? (
+              <>
+                <button
+                  {...sx.props(s.item)}
+                  onClick={() => {
+                    setMicrophone(undefined);
+                    expand(null);
+                  }}
+                >
+                  <MicOff size={17} />
+                  No microphone{!microphone ? <Check size={13} /> : null}
+                </button>
+                {sources?.microphones.map((m) => (
+                  <button
+                    key={m.id}
+                    {...sx.props(s.item)}
+                    onClick={() => {
+                      setMicrophone(m.id);
+                      expand(null);
                     }}
                   >
-                    {recordingDirectory || "Loading folder…"}
+                    <Mic size={17} />
+                    {m.name}
+                    {microphone === m.id ? <Check size={13} /> : null}
+                  </button>
+                ))}
+              </>
+            ) : panel === "audio" ? (
+              <>
+                {[false, true].map((v) => (
+                  <button
+                    key={String(v)}
+                    {...sx.props(s.item)}
+                    onClick={() => {
+                      setSystemAudio(v);
+                      expand(null);
+                    }}
+                  >
+                    {v ? <Volume2 size={17} /> : <VolumeX size={17} />}{" "}
+                    {v ? "Record all system audio" : "No system audio"}
+                    {systemAudio === v ? <Check size={13} /> : null}
+                  </button>
+                ))}
+              </>
+            ) : panel === "camera" ? (
+              <>
+                <button
+                  {...sx.props(s.item)}
+                  onClick={() => {
+                    setCamera(undefined);
+                    expand(null);
+                  }}
+                >
+                  <VideoOff size={17} />
+                  No camera{!camera ? <Check size={13} /> : null}
+                </button>
+                {sources?.cameras?.map((c) => (
+                  <button
+                    key={c.id}
+                    {...sx.props(s.item)}
+                    onClick={() => {
+                      setCamera(c.id);
+                      expand(null);
+                    }}
+                  >
+                    <Video size={17} />
+                    {c.name}
+                    {camera === c.id ? <Check size={13} /> : null}
+                  </button>
+                ))}
+              </>
+            ) : panel === "device" ? (
+              <p {...sx.props(s.text)}>
+                Direct iPhone and iPad capture is not connected yet. To record
+                an iPhone Mirroring window, choose Window.
+              </p>
+            ) : panel === "settings" ? (
+              <>
+                <label {...sx.props(s.item)}>
+                  <span>Recording countdown</span>
+                  <select
+                    aria-label="Recording countdown"
+                    value={countdownSeconds}
+                    onChange={(event) => {
+                      const value = Number(event.target.value) as
+                        0 | 3 | 5 | 10;
+                      setCountdownSeconds(value);
+                      try {
+                        localStorage.setItem(
+                          "refract.recorder.countdownSeconds",
+                          String(value),
+                        );
+                      } catch {
+                        /* Keep the session preference. */
+                      }
+                    }}
+                  >
+                    <option value={0}>No countdown</option>
+                    <option value={3}>3s</option>
+                    <option value={5}>5s</option>
+                    <option value={10}>10s</option>
+                  </select>
+                </label>
+                <label {...sx.props(s.item)}>
+                  <span>After recording</span>
+                  <select
+                    aria-label="After recording"
+                    value={completion.action}
+                    onChange={(e) =>
+                      updateCompletion({
+                        ...completion,
+                        action: e.target.value as typeof completion.action,
+                      })
+                    }
+                  >
+                    <option value="create-project">Create project</option>
+                    <option value="export-file">Export and save to file</option>
+                  </select>
+                </label>
+                {completion.action === "export-file" && (
+                  <>
+                    <label {...sx.props(s.item)}>
+                      <span>MP4 resolution</span>
+                      <select
+                        aria-label="Quick export resolution"
+                        value={completion.resolution}
+                        onChange={(e) =>
+                          updateCompletion({
+                            ...completion,
+                            resolution: Number(e.target.value),
+                          })
+                        }
+                      >
+                        {[720, 1080, 1920, 2560, 3840].map((n) => (
+                          <option key={n} value={n}>
+                            {n}px
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label {...sx.props(s.item)}>
+                      <span>Frame rate</span>
+                      <select
+                        aria-label="Quick export frame rate"
+                        value={completion.fps}
+                        onChange={(e) =>
+                          updateCompletion({
+                            ...completion,
+                            fps: Number(e.target.value),
+                          })
+                        }
+                      >
+                        {[24, 30, 60].map((n) => (
+                          <option key={n} value={n}>
+                            {n} fps
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </>
+                )}
+                <button
+                  {...sx.props(s.item)}
+                  disabled={choosingDirectory}
+                  title={recordingDirectory || "Change recording directory"}
+                  onClick={async () => {
+                    setChoosingDirectory(true);
+                    try {
+                      const directory = await api?.recorderChooseDirectory();
+                      if (directory) setRecordingDirectory(directory);
+                    } catch (error) {
+                      setError(String(error));
+                    } finally {
+                      setChoosingDirectory(false);
+                    }
+                  }}
+                >
+                  <FolderOpen size={17} style={{ flexShrink: 0 }} />
+                  <span style={{ minWidth: 0 }}>
+                    <span {...sx.props(s.itemTitle)}>
+                      Save new recordings to
+                    </span>
+                    <span
+                      {...sx.props(s.itemDetail)}
+                      style={{
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {recordingDirectory || "Loading folder…"}
+                    </span>
+                    <span {...sx.props(s.itemDetail)}>Change directory…</span>
                   </span>
-                  <span {...sx.props(s.itemDetail)}>Change directory…</span>
-                </span>
-              </button>
-              <button
-                {...sx.props(s.item)}
-                aria-pressed={automaticZooms}
-                onClick={() => {
-                  const next = !automaticZooms;
-                  setAutomaticZooms(next);
-                  try {
-                    localStorage.setItem(
-                      "refract.recorder.automaticZooms",
-                      String(next),
-                    );
-                  } catch {
-                    /* The current recording still uses the selection. */
-                  }
-                }}
-              >
-                <span style={{ width: 17, display: "flex" }}>
-                  {automaticZooms ? <Check size={17} /> : null}
-                </span>
-                Automatically create zooms
-              </button>
-              <button
-                {...sx.props(s.item)}
-                onClick={async () => {
-                  try {
-                    await api?.recorderKeyboardPermissions();
-                    await refresh();
-                  } catch (error) {
-                    setError(String(error));
-                  }
-                }}
-              >
-                <Keyboard size={17} />{" "}
-                {sources?.keyboardPermission === "granted"
-                  ? "Keyboard shortcuts enabled"
-                  : "Enable keyboard shortcut capture…"}
-              </button>
-              <button
-                {...sx.props(s.item)}
-                onClick={() => api?.recorderImport()}
-              >
-                <FolderOpen size={17} />
-                Create project from video…
-              </button>
-              <button
-                {...sx.props(s.item)}
-                onClick={() => api?.recorderClose()}
-              >
-                <Settings2 size={17} />
-                Open editor
-              </button>
-              <div {...sx.props(s.text)}>
-                <Keyboard size={12} /> Show recorder / stop: ⌘⇧2
-                <br />
-                Pause / resume: ⌘⇧P
+                </button>
+                <button
+                  {...sx.props(s.item)}
+                  aria-pressed={automaticZooms}
+                  onClick={() => {
+                    const next = !automaticZooms;
+                    setAutomaticZooms(next);
+                    try {
+                      localStorage.setItem(
+                        "refract.recorder.automaticZooms",
+                        String(next),
+                      );
+                    } catch {
+                      /* The current recording still uses the selection. */
+                    }
+                  }}
+                >
+                  <span style={{ width: 17, display: "flex" }}>
+                    {automaticZooms ? <Check size={17} /> : null}
+                  </span>
+                  Automatically create zooms
+                </button>
+                <button
+                  {...sx.props(s.item)}
+                  onClick={async () => {
+                    try {
+                      await api?.recorderKeyboardPermissions();
+                      await refresh();
+                    } catch (error) {
+                      setError(String(error));
+                    }
+                  }}
+                >
+                  <Keyboard size={17} />{" "}
+                  {sources?.keyboardPermission === "granted"
+                    ? "Keyboard shortcuts enabled"
+                    : "Enable keyboard shortcut capture…"}
+                </button>
+                <button
+                  {...sx.props(s.item)}
+                  onClick={() => api?.recorderImport()}
+                >
+                  <FolderOpen size={17} />
+                  Create project from video…
+                </button>
+                <button
+                  {...sx.props(s.item)}
+                  onClick={() => api?.recorderClose()}
+                >
+                  <Settings2 size={17} />
+                  Open editor
+                </button>
+                <div {...sx.props(s.text)}>
+                  <Keyboard size={12} /> Show recorder / stop: ⌘⇧2
+                  <br />
+                  Pause / resume: ⌘⇧P
+                </div>
+              </>
+            ) : null}
+          </section>
+        ) : null}
+        <div {...sx.props(s.bar)} data-recorder-bar>
+          {busy ? (
+            <>
+              <div {...sx.props(s.status)}>
+                {state.phase === "countdown" ? (
+                  <>
+                    <span {...sx.props(s.count)}>{state.countdown}</span>
+                    <span {...sx.props(s.hint)}>
+                      Get ready… recording starts in a moment
+                    </span>
+                    <button
+                      {...sx.props(s.choice)}
+                      onClick={() => api?.recorderStop()}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : state.phase === "starting" || state.phase === "stopping" ? (
+                  <>
+                    <LoaderCircle size={19} />
+                    <span>
+                      {state.phase === "starting"
+                        ? "Starting recording…"
+                        : "Saving your recording…"}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      {...sx.props(s.indicator)}
+                      style={{ opacity: state.phase === "paused" ? 0.35 : 1 }}
+                    />
+                    <span {...sx.props(s.elapsed)}>
+                      {formatTime(state.elapsed, true)}
+                    </span>
+                    <span {...sx.props(s.hint)}>
+                      {state.phase === "paused" ? "Paused" : "Recording"}
+                    </span>
+                    <span
+                      role="img"
+                      aria-label={
+                        state.keyboardStatus === "available"
+                          ? state.phase === "paused"
+                            ? "Keyboard capture paused"
+                            : "Keyboard capture active"
+                          : "Keyboard capture unavailable"
+                      }
+                      title={
+                        state.keyboardStatus === "available"
+                          ? state.phase === "paused"
+                            ? "Keyboard capture paused"
+                            : "Keyboard capture active"
+                          : state.keyboardStatus === "permission-required"
+                            ? "Keyboard capture needs Input Monitoring permission. Enable it in Recording options before your next recording."
+                            : "Keyboard capture unavailable for this recording"
+                      }
+                      style={{ display: "flex", color: "var(--text-muted)" }}
+                    >
+                      {state.keyboardStatus === "available" ? (
+                        <Keyboard size={15} />
+                      ) : (
+                        <KeyboardOff size={15} />
+                      )}
+                    </span>
+                    <div style={{ width: 25 }} />
+                    <button
+                      aria-label={
+                        state.phase === "paused"
+                          ? "Resume recording"
+                          : "Pause recording"
+                      }
+                      {...sx.props(s.choice)}
+                      onClick={() => api?.recorderPause()}
+                    >
+                      <StateIcon
+                        active={state.phase === "paused"}
+                        size={18}
+                        on={<Play size={18} />}
+                        off={<Pause size={18} />}
+                      />
+                    </button>
+                    <button
+                      aria-label="Stop recording"
+                      title="Stop recording (⌘⇧2)"
+                      {...sx.props(s.stop)}
+                      onClick={() => api?.recorderStop()}
+                    >
+                      <Square size={15} fill="currentColor" />
+                    </button>
+                  </>
+                )}
               </div>
             </>
-          ) : null}
-        </section>
-      ) : null}
-      <div {...sx.props(s.bar)} data-recorder-bar>
-        {busy ? (
-          <>
-            <div {...sx.props(s.status)}>
-              {state.phase === "countdown" ? (
-                <>
-                  <span {...sx.props(s.count)}>{state.countdown}</span>
-                  <span {...sx.props(s.hint)}>
-                    Get ready… recording starts in a moment
-                  </span>
-                  <button
-                    {...sx.props(s.choice)}
-                    onClick={() => api?.recorderStop()}
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : state.phase === "starting" || state.phase === "stopping" ? (
-                <>
-                  <LoaderCircle size={19} />
-                  <span>
-                    {state.phase === "starting"
-                      ? "Starting recording…"
-                      : "Saving your recording…"}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span
-                    {...sx.props(s.indicator)}
-                    style={{ opacity: state.phase === "paused" ? 0.35 : 1 }}
-                  />
-                  <span {...sx.props(s.elapsed)}>
-                    {formatTime(state.elapsed, true)}
-                  </span>
-                  <span {...sx.props(s.hint)}>
-                    {state.phase === "paused" ? "Paused" : "Recording"}
-                  </span>
-                  <span
-                    role="img"
-                    aria-label={
-                      state.keyboardStatus === "available"
-                        ? state.phase === "paused"
-                          ? "Keyboard capture paused"
-                          : "Keyboard capture active"
-                        : "Keyboard capture unavailable"
-                    }
-                    title={
-                      state.keyboardStatus === "available"
-                        ? state.phase === "paused"
-                          ? "Keyboard capture paused"
-                          : "Keyboard capture active"
-                        : state.keyboardStatus === "permission-required"
-                          ? "Keyboard capture needs Input Monitoring permission. Enable it in Recording options before your next recording."
-                          : "Keyboard capture unavailable for this recording"
-                    }
-                    style={{ display: "flex", color: "var(--text-muted)" }}
-                  >
-                    {state.keyboardStatus === "available" ? (
-                      <Keyboard size={15} />
-                    ) : (
-                      <KeyboardOff size={15} />
-                    )}
-                  </span>
-                  <div style={{ width: 25 }} />
-                  <button
-                    aria-label={
-                      state.phase === "paused"
-                        ? "Resume recording"
-                        : "Pause recording"
-                    }
-                    {...sx.props(s.choice)}
-                    onClick={() => api?.recorderPause()}
-                  >
-                    <StateIcon
-                      active={state.phase === "paused"}
-                      size={18}
-                      on={<Play size={18} />}
-                      off={<Pause size={18} />}
-                    />
-                  </button>
-                  <button
-                    aria-label="Stop recording"
-                    title="Stop recording (⌘⇧2)"
-                    {...sx.props(s.stop)}
-                    onClick={() => api?.recorderStop()}
-                  >
-                    <Square size={15} fill="currentColor" />
-                  </button>
-                </>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            <button
-              aria-label="Close recorder"
-              {...sx.props(s.close)}
-              onClick={() => api?.recorderClose()}
-            >
-              <X size={18} />
-            </button>
-            <div {...sx.props(s.line)} />
-            <div {...sx.props(s.modes)}>
-              {[
-                { id: "display", label: "Display", icon: Monitor },
-                { id: "window", label: "Window", icon: AppWindow },
-                { id: "area", label: "Area", icon: Scan },
-                { id: "device", label: "Device", icon: Smartphone },
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  aria-pressed={panel === m.id}
-                  data-motion="static"
-                  {...sx.props(s.mode, panel === m.id && s.active)}
-                  onClick={() => pick(m.id)}
-                >
-                  <m.icon size={22} strokeWidth={1.5} />
-                  <span {...sx.props(s.modeLabel)}>{m.label}</span>
-                </button>
-              ))}
-            </div>
-            <div {...sx.props(s.line)} />
-            <div {...sx.props(s.inputs)}>
+          ) : (
+            <>
               <button
-                aria-haspopup="menu"
-                aria-expanded={inputMenu === "camera"}
-                data-motion="static"
-                {...sx.props(
-                  s.choice,
-                  s.cameraChoice,
-                  !camera && s.inputInactive,
-                )}
-                onClick={(event) =>
-                  void pickInput("camera", event.currentTarget)
-                }
-                onContextMenu={(event) => {
-                  event.preventDefault();
-                  void pickInput("camera", event.currentTarget);
-                }}
-                onKeyDown={(event) => inputMenuKey(event, "camera")}
+                aria-label="Close recorder"
+                {...sx.props(s.close, s.recorderClose)}
+                onClick={() => api?.recorderClose()}
               >
-                {camera ? (
-                  <Video size={16} style={{ flexShrink: 0 }} />
-                ) : (
-                  <VideoOff size={16} style={{ flexShrink: 0 }} />
-                )}
-                <span {...sx.props(s.inputLabel)}>
-                  {camera
-                    ? inputNames.camera ||
-                      sources?.cameras?.find((c) => c.id === camera)?.name ||
-                      "Camera"
-                    : "No camera"}
-                </span>
-              </button>
-              <button
-                aria-haspopup="menu"
-                aria-expanded={inputMenu === "microphone"}
-                data-motion="static"
-                {...sx.props(
-                  s.choice,
-                  s.microphoneChoice,
-                  !microphone && s.inputInactive,
-                )}
-                onClick={(event) =>
-                  void pickInput("microphone", event.currentTarget)
-                }
-                onContextMenu={(event) => {
-                  event.preventDefault();
-                  void pickInput("microphone", event.currentTarget);
-                }}
-                onKeyDown={(event) => inputMenuKey(event, "microphone")}
-              >
-                {microphone ? (
-                  <Mic size={16} style={{ flexShrink: 0 }} />
-                ) : (
-                  <MicOff size={16} style={{ flexShrink: 0 }} />
-                )}
-                <span {...sx.props(s.inputLabel)}>
-                  {microphone
-                    ? inputNames.microphone || micName
-                    : "No microphone"}
-                </span>
-              </button>
-              <button
-                aria-haspopup="menu"
-                aria-expanded={inputMenu === "audio"}
-                data-motion="static"
-                {...sx.props(s.choice, !systemAudio && s.inputInactive)}
-                onClick={(event) =>
-                  void pickInput("audio", event.currentTarget)
-                }
-                onContextMenu={(event) => {
-                  event.preventDefault();
-                  void pickInput("audio", event.currentTarget);
-                }}
-                onKeyDown={(event) => inputMenuKey(event, "audio")}
-              >
-                <StateIcon
-                  active={systemAudio}
-                  size={16}
-                  on={<Volume2 size={16} />}
-                  off={<VolumeX size={16} />}
+                <RecorderSymbol
+                  name="close"
+                  size={22}
+                  fallback={<X size={18} />}
                 />
-                <span>{systemAudio ? "System audio" : "No system audio"}</span>
               </button>
-            </div>
-            <div {...sx.props(s.line)} />
-            <button
-              aria-label="Recording options"
-              aria-haspopup="menu"
-              aria-expanded={inputMenu === "settings"}
-              data-motion="static"
-              {...sx.props(s.choice)}
-              onClick={(event) =>
-                void pickInput("settings", event.currentTarget)
-              }
-              onContextMenu={(event) => {
-                event.preventDefault();
-                void pickInput("settings", event.currentTarget);
-              }}
-              onKeyDown={(event) => inputMenuKey(event, "settings")}
-            >
-              <Settings2 size={18} />
-              <ChevronDown size={11} />
-            </button>
-          </>
-        )}
+              <div {...sx.props(s.line)} />
+              <div {...sx.props(s.modes)}>
+                {[
+                  { id: "display", label: "Display", icon: Monitor },
+                  { id: "window", label: "Window", icon: AppWindow },
+                  { id: "area", label: "Area", icon: Scan },
+                  { id: "device", label: "Device", icon: Smartphone },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    aria-pressed={panel === m.id}
+                    data-motion="static"
+                    {...sx.props(s.mode, panel === m.id && s.active)}
+                    onClick={() => pick(m.id)}
+                  >
+                    <RecorderSymbol
+                      name={m.id}
+                      size={22}
+                      fallback={<m.icon size={22} strokeWidth={1.5} />}
+                    />
+                    <span {...sx.props(s.modeLabel)}>{m.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div {...sx.props(s.line)} />
+              <div {...sx.props(s.inputs)}>
+                <button
+                  aria-haspopup="menu"
+                  aria-expanded={inputMenu === "camera"}
+                  data-motion="static"
+                  {...sx.props(
+                    s.choice,
+                    s.cameraChoice,
+                    !camera && s.inputInactive,
+                  )}
+                  onClick={(event) =>
+                    void pickInput("camera", event.currentTarget)
+                  }
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    void pickInput("camera", event.currentTarget);
+                  }}
+                  onKeyDown={(event) => inputMenuKey(event, "camera")}
+                >
+                  {camera ? (
+                    <RecorderSymbol
+                      name="camera"
+                      size={16}
+                      fallback={<Video size={16} style={{ flexShrink: 0 }} />}
+                    />
+                  ) : (
+                    <RecorderSymbol
+                      name="cameraOff"
+                      size={16}
+                      fallback={
+                        <VideoOff size={16} style={{ flexShrink: 0 }} />
+                      }
+                    />
+                  )}
+                  <span {...sx.props(s.inputLabel)}>
+                    {camera
+                      ? inputNames.camera ||
+                        sources?.cameras?.find((c) => c.id === camera)?.name ||
+                        "Camera"
+                      : "No camera"}
+                  </span>
+                </button>
+                <button
+                  aria-haspopup="menu"
+                  aria-expanded={inputMenu === "microphone"}
+                  data-motion="static"
+                  {...sx.props(
+                    s.choice,
+                    s.microphoneChoice,
+                    !microphone && s.inputInactive,
+                  )}
+                  onClick={(event) =>
+                    void pickInput("microphone", event.currentTarget)
+                  }
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    void pickInput("microphone", event.currentTarget);
+                  }}
+                  onKeyDown={(event) => inputMenuKey(event, "microphone")}
+                >
+                  {microphone ? (
+                    <RecorderSymbol
+                      name="microphone"
+                      size={16}
+                      fallback={<Mic size={16} style={{ flexShrink: 0 }} />}
+                    />
+                  ) : (
+                    <RecorderSymbol
+                      name="microphoneOff"
+                      size={16}
+                      fallback={<MicOff size={16} style={{ flexShrink: 0 }} />}
+                    />
+                  )}
+                  <span {...sx.props(s.inputLabel)}>
+                    {microphone
+                      ? inputNames.microphone || micName
+                      : "No microphone"}
+                  </span>
+                </button>
+                <button
+                  aria-haspopup="menu"
+                  aria-expanded={inputMenu === "audio"}
+                  data-motion="static"
+                  {...sx.props(s.choice, !systemAudio && s.inputInactive)}
+                  onClick={(event) =>
+                    void pickInput("audio", event.currentTarget)
+                  }
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    void pickInput("audio", event.currentTarget);
+                  }}
+                  onKeyDown={(event) => inputMenuKey(event, "audio")}
+                >
+                  <RecorderSymbol
+                    name="audio"
+                    size={16}
+                    fallback={
+                      <StateIcon
+                        active={systemAudio}
+                        size={16}
+                        on={<Volume2 size={16} />}
+                        off={<VolumeX size={16} />}
+                      />
+                    }
+                  />
+                  <span>
+                    {systemAudio ? "System audio" : "No system audio"}
+                  </span>
+                </button>
+              </div>
+              <div {...sx.props(s.line)} />
+              <button
+                aria-label="Recording options"
+                aria-haspopup="menu"
+                aria-expanded={inputMenu === "settings"}
+                data-motion="static"
+                {...sx.props(s.choice)}
+                onClick={(event) =>
+                  void pickInput("settings", event.currentTarget)
+                }
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  void pickInput("settings", event.currentTarget);
+                }}
+                onKeyDown={(event) => inputMenuKey(event, "settings")}
+              >
+                <RecorderSymbol
+                  name="options"
+                  size={18}
+                  fallback={<Settings2 size={18} />}
+                />
+                <RecorderSymbol
+                  name="chevronDown"
+                  size={12}
+                  fallback={<ChevronDown size={12} />}
+                />
+              </button>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </RecorderSymbols.Provider>
   );
 }

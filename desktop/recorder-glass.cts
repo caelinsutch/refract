@@ -19,3 +19,19 @@ export function installRecorderGlass(window: BrowserWindow): boolean {
     return false;
   }
 }
+
+let symbols: Record<string, string> | undefined;
+export function recorderSymbols(): Record<string, string> {
+  if (symbols) return symbols;
+  if (process.platform !== "darwin") return {};
+  try {
+    const native = require(
+      path.join(__dirname, "../../native/.build/recorder-glass.node"),
+    ) as { symbolAtlas(): string };
+    symbols = JSON.parse(native.symbolAtlas()) as Record<string, string>;
+    return symbols;
+  } catch (error) {
+    console.warn("System symbols unavailable; using fallback icons", error);
+    return {};
+  }
+}

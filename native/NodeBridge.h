@@ -11,3 +11,4 @@ int napi_get_buffer_info(napi_env, napi_value, void**, size_t*);
 int napi_get_boolean(napi_env, bool, napi_value*);
 int napi_create_function(napi_env, const char*, size_t, napi_callback, void*, napi_value*);
 int napi_set_named_property(napi_env, napi_value, const char*, napi_value);
+int napi_create_string_utf8(napi_env, const char*, size_t, napi_value*);
