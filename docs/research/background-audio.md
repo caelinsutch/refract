@@ -54,3 +54,9 @@ Background playback uses a separate audio element with looping, output-clock see
 The production build and 84 tests pass. Live import of the generated WAV showed its filename and 5% gain, created a copied WAV in the disposable project's media directory, and enabled project undo. Remove returned to Add background audio; undo/redo restored the selected track. The UI automation reports some changes with a delay, so audible synchronization, repeated seeking, and final saved/reopened playback need a separate controlled check. No claim of measured live audio output is made. The reference's isolated Play/Stop preview button and user library remain unimplemented, and exact inspector spacing/icon parity remains pending.
 
 A final filesystem check confirmed the saved manifest retains the imported project-relative WAV, 5000 ms duration, gain 0.05, and mute false, and the referenced copied asset exists. Reopened audible playback remains unverified.
+
+## Isolated track audition
+
+The selected track now has a Play/Stop control backed by a separate audio element. Audition starts at the beginning, uses the track gain, and does not change the video playhead. Stopping resets the audition position. Starting video playback, leaving the Audio inspector, replacing the track, or closing the project stops audition. Media URL resolution and playback errors are guarded against stale assets.
+
+The production renderer build passes. The verification app reloaded to the empty editor without console errors. The Mac locked while reopening the saved music project, before the new button could be exercised, so live audition and audible playback remain unverified. This does not establish music library or complete inspector parity.

@@ -3,6 +3,7 @@ import { Modal } from "./components/Modal";
 import { ShortcutSettings } from "./components/ShortcutSettings";
 import { clipAudioGain } from "./core/audio";
 import { useBackgroundAudio } from "./media/use-background-audio";
+import { useAudioPreview } from "./media/use-audio-preview";
 import { CameraLayouts } from "./components/CameraLayouts";
 import { StateIcon } from "./components/StateIcon";
 import { SpringControls } from "./components/SpringControls";
@@ -35,6 +36,7 @@ import {
   Captions,
   Play,
   Pause,
+  Square,
   SkipBack,
   SkipForward,
   Repeat2,
@@ -502,6 +504,11 @@ export default function App() {
   );
 
   useBackgroundAudio(project, time, playing, previewSpeed, tell);
+  const audioPreview = useAudioPreview(
+    project,
+    playing || exporting || tab !== "audio",
+    tell,
+  );
   async function importBackgroundAudio() {
     if (!project || musicBusy || !window.refract) return;
     const id = project.id;
@@ -2238,7 +2245,21 @@ export default function App() {
                 <Heading>Background audio</Heading>
                 {project.backgroundAudio ? (
                   <>
-                    <Note>{project.backgroundAudio.name}</Note>
+                    <Button
+                      disabled={!audioPreview.ready}
+                      onClick={() => {
+                        setPlaying(false);
+                        audioPreview.toggle();
+                      }}
+                    >
+                      {audioPreview.playing ? (
+                        <Square size={14} />
+                      ) : (
+                        <Play size={14} />
+                      )}
+                      {audioPreview.playing ? "Stop" : "Play"}{" "}
+                      {project.backgroundAudio.name}
+                    </Button>
                     <Toggle
                       label="Mute background audio"
                       value={project.backgroundAudio.muted}
