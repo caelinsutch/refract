@@ -30,3 +30,31 @@ export function exportHeight(format: "mp4" | "gif", requested: number): number {
     [...heights].reverse().find((height) => height <= requested) ?? heights[0]
   );
 }
+
+export type ExportPreferences = {
+  format: "mp4" | "gif";
+  mp4: { height: number; fps: number };
+  gif: { height: number; fps: number };
+};
+export function exportPreferences(value: unknown): ExportPreferences {
+  const saved =
+    value && typeof value === "object"
+      ? (value as Partial<ExportPreferences>)
+      : {};
+  const read = (format: "mp4" | "gif", height: number, fps: number) => {
+    const item = saved[format];
+    return {
+      height:
+        typeof item?.height === "number" &&
+        exportHeights[format].includes(item.height)
+          ? item.height
+          : height,
+      fps: isExportFrameRate(format, item?.fps) ? item!.fps : fps,
+    };
+  };
+  return {
+    format: saved.format === "gif" ? "gif" : "mp4",
+    mp4: read("mp4", 720, 60),
+    gif: read("gif", 480, 15),
+  };
+}

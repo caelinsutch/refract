@@ -1026,3 +1026,9 @@ Passed: a 500ms playback seek in a 2× clip trimmed to source 1000–3000ms star
 Matched the reference export sizing path: resolution denotes output height; width preserves composition/crop aspect ratio, caps at 3840px, and both dimensions round down to even pixels. Preview sizing keeps its independent behavior. MP4 choices are 720p/1080p/2160p and GIF choices 480p/720p/1080p. Format changes choose a compatible height. MP4 and quick-export defaults now use 720p/60fps; stale quick resolutions normalize to supported heights. Recorder controls use p labels.
 
 Validation: production build and 185 core tests passed, including portrait, crop, ultrawide width cap, and invalid-height cases. All 39 height/frame-rate/format encoder combinations passed actual output dimensions, frame counts, durations, and GIF delay checks. The focused synthetic editor workflow passed manual GIF, quick export, cancellation, retained editor settings, and clipboard destination handling; its 4:3 720p MP4 is 960×720. These checks do not establish quality-preset or pixel parity against the activation-gated reference.
+
+## Independent persistent export settings — September 9
+
+Ordinary MP4 and GIF exports now retain separate height/FPS choices and the selected format across launches. Defaults are MP4 720p/60fps and GIF 480p/15fps. Persisted values are validated per format. Completing a recording with automatic export no longer overwrites ordinary editor settings; its encoder request continues to use the dedicated completion settings.
+
+Validation: production build and 186 core tests passed. The renderer fixture changes MP4 to 2160p/50fps and GIF to 720p/20fps, switches both ways, reloads, reimports synthetic video, and verifies both choices remain intact. The focused completion/manual/quick export workflow also passed actual encoding, cancellation, and editor-settings isolation.

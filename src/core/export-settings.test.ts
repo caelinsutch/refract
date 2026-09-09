@@ -23,3 +23,32 @@ test("encoder validation and persisted quick settings accept the reference rates
   for (const fps of [10, 15, 20, 25, 30, 50])
     assert.equal(isExportFrameRate("gif", fps), true);
 });
+
+test("export preferences validate each format independently", async () => {
+  const { exportPreferences } = await import("./export-settings");
+  assert.deepEqual(exportPreferences(null), {
+    format: "mp4",
+    mp4: { height: 720, fps: 60 },
+    gif: { height: 480, fps: 15 },
+  });
+  assert.deepEqual(
+    exportPreferences({
+      format: "gif",
+      mp4: { height: 2160, fps: 50 },
+      gif: { height: 720, fps: 20 },
+    }),
+    {
+      format: "gif",
+      mp4: { height: 2160, fps: 50 },
+      gif: { height: 720, fps: 20 },
+    },
+  );
+  assert.deepEqual(
+    exportPreferences({
+      format: "other",
+      mp4: { height: 123, fps: 15 },
+      gif: { height: 2160, fps: 24 },
+    }),
+    exportPreferences(null),
+  );
+});

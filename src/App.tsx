@@ -1,7 +1,6 @@
 import {
-  exportHeight,
+  exportPreferences,
   exportHeights,
-  exportFrameRate,
   exportFrameRates,
 } from "./core/export-settings";
 import { supportsDirectionalShadow } from "./core/shadow-layer";
@@ -563,9 +562,17 @@ export default function App() {
     [exporting, setExporting] = useState(false),
     [exportError, setExportError] = useState(""),
     [progress, setProgress] = useState(0),
-    [fps, setFps] = useState(60),
-    [resolution, setResolution] = useState(720),
-    [format, setFormat] = useState<"mp4" | "gif">("mp4"),
+    [savedExport, setSavedExport] = useState(() => {
+      try {
+        return exportPreferences(
+          JSON.parse(
+            localStorage.getItem("refract.export.preferences") ?? "null",
+          ),
+        );
+      } catch {
+        return exportPreferences(null);
+      }
+    }),
     [exportDestination, setExportDestination] = useState<"file" | "clipboard">(
       "file",
     ),
@@ -580,6 +587,28 @@ export default function App() {
         return [];
       }
     });
+  const format = savedExport.format;
+  const { height: resolution, fps } = savedExport[format];
+  const setFormat = (format: "mp4" | "gif") =>
+    setSavedExport((value) => ({ ...value, format }));
+  const setResolution = (height: number) =>
+    setSavedExport((value) => ({
+      ...value,
+      [value.format]: { ...value[value.format], height },
+    }));
+  const setFps = (fps: number) =>
+    setSavedExport((value) => ({
+      ...value,
+      [value.format]: { ...value[value.format], fps },
+    }));
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "refract.export.preferences",
+        JSON.stringify(savedExport),
+      );
+    } catch {}
+  }, [savedExport]);
   useEffect(() => {
     void window.refract
       ?.setExportAvailability?.(
@@ -1581,9 +1610,6 @@ export default function App() {
         const completion = recordingCompletion(result.completion);
         if (completion.action !== "create-project") {
           setModal("export");
-          setResolution(completion.resolution);
-          setFps(completion.fps);
-          setFormat("mp4");
           void exportVideo({
             project: next,
             url: result.url,
@@ -3707,8 +3733,6 @@ export default function App() {
                       onChange={(e) => {
                         const next = e.target.value as "mp4" | "gif";
                         setFormat(next);
-                        setResolution((current) => exportHeight(next, current));
-                        setFps((current) => exportFrameRate(next, current));
                       }}
                     >
                       <option value="mp4">MP4 video</option>
