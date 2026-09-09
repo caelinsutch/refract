@@ -772,3 +772,11 @@ continues to require the system permission; window-source listing still does too
 - Added the reference's 96-point icon slot above the window title, with a fixed-size placeholder so loading does not move the controls.
 - Swift renders the system application icon into a 288×288 PNG. The main process obtains application paths from native window sources, validates the picker sender/window ID, and caches up to 64 icons. No renderer-supplied file path is read.
 - Native/renderer builds and the window-picker verifier passed 288px image dimensions, 96pt layout size, unknown-window rejection, and existing selection/handoff checks. The icon assertion runs after selecting the target to avoid interference from live pointer movement during an asynchronous hover load.
+
+### Universal editor hover — 2026-09-09
+
+- Removed exclusions for timeline controls, menus, command results, switches, and wallpaper swatches from the shared toolbar hover controller. Semantic button/menu/tab/option controls now receive the same spring-driven decorative fill, including controls mounted after opening panels and dialogs.
+- Removed competing static hover backgrounds from shared buttons, toggles, and editor controls. Selected states retain their own colors; the hover fill uses the existing system-theme color token.
+- Initialized motion properties on every surface so nested trim handles do not inherit their clip's hover. Labels, icons, and control bounds remain stationary.
+- Production build passed. A synthetic-video Electron fixture verified spring entrance and settling on playback, wallpaper, timeline clip, playback menu, and preview switch controls, plus stable geometry and nested-control isolation. The toolbar regression passed pointer following, held-press release, reduced-motion behavior, and disabled controls.
+- Native text inputs, selects, and slider thumbs retain their specialized interaction feedback. No recording was made during these checks.

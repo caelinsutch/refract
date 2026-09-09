@@ -275,13 +275,13 @@ const s = sx.create({
     flexShrink: 0,
     borderWidth: 0,
     borderRadius: "var(--radius-control)",
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a0a)" },
+    backgroundColor: "transparent",
     color: "var(--text-primary)",
   },
   toolActive: { color: "var(--accent)" },
   toolUnavailable: {
     opacity: 0.3,
-    backgroundColor: { default: "transparent", ":hover": "transparent" },
+    backgroundColor: "transparent",
   },
   toolIndicator: {
     position: "absolute",
@@ -310,7 +310,7 @@ const s = sx.create({
     height: 25,
     borderWidth: 0,
     borderRadius: 4,
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a0b)" },
+    backgroundColor: "transparent",
     color: "var(--text-muted)",
     fontSize: 11,
   },
@@ -342,7 +342,7 @@ const s = sx.create({
     borderRadius: 0,
     fontSize: 12,
     color: "var(--text-primary)",
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a05)" },
+    backgroundColor: "transparent",
   },
   backgroundTabSelected: {
     color: "var(--accent)",

@@ -13,11 +13,14 @@ export function installButtonHover() {
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const fine = matchMedia("(hover: hover) and (pointer: fine)");
   const abort = new AbortController();
-  const excluded =
-    '[data-timeline], [role="menu"], [data-clip-menu], [data-command-menu]';
+  const controls =
+    'button, [role="button"], [role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="tab"], [role="option"], [data-hover-control]';
+  const disabled = (button: HTMLElement) =>
+    button.matches(':disabled, [aria-disabled="true"]') ||
+    !!button.closest("[inert]");
   type Spring = { value: number; velocity: number; target: number };
   type Surface = {
-    button: HTMLButtonElement;
+    button: HTMLElement;
     x: Spring;
     y: Spring;
     hover: Spring;
@@ -28,20 +31,15 @@ export function installButtonHover() {
     width: number;
     height: number;
   };
-  const surfaces = new WeakMap<HTMLButtonElement, Surface>();
+  const surfaces = new WeakMap<HTMLElement, Surface>();
   const running = new Set<Surface>();
   let pressed: Surface | undefined;
   const spring = (): Spring => ({ value: 0, velocity: 0, target: 0 });
-  function eligible(button: HTMLButtonElement) {
-    return (
-      !button.closest(excluded) &&
-      !button.matches(
-        '[role="switch"], [data-wallpaper-swatch], [data-hover="none"]',
-      )
-    );
+  function eligible(button: HTMLElement) {
+    return !button.matches('[data-hover="none"]');
   }
   function prepare(root: ParentNode) {
-    root.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
+    root.querySelectorAll<HTMLElement>(controls).forEach((button) => {
       if (!eligible(button) || button.dataset.hoverSurface) return;
       const style = getComputedStyle(button);
       // Keep filled/selected controls' own color; plain controls use the moving fill.
@@ -70,7 +68,7 @@ export function installButtonHover() {
   }
   function tick(s: Surface, time: number) {
     s.frame = 0;
-    if (!s.button.isConnected || s.button.disabled) {
+    if (!s.button.isConnected || disabled(s.button)) {
       s.button.style.setProperty("--hover-opacity", "0");
       running.delete(s);
       surfaces.delete(s.button);
@@ -130,11 +128,11 @@ export function installButtonHover() {
   function get(event: PointerEvent) {
     const button =
       event.target instanceof Element
-        ? event.target.closest<HTMLButtonElement>("button[data-hover-surface]")
+        ? event.target.closest<HTMLElement>("[data-hover-surface]")
         : null;
     if (
       !button ||
-      button.disabled ||
+      disabled(button) ||
       !fine.matches ||
       event.pointerType === "touch"
     )
@@ -237,7 +235,7 @@ export function installButtonHover() {
     "blur",
     () => {
       document
-        .querySelectorAll<HTMLButtonElement>("[data-hover-surface]")
+        .querySelectorAll<HTMLElement>("[data-hover-surface]")
         .forEach((button) => {
           const s = surfaces.get(button);
           if (!s) return;
@@ -253,7 +251,7 @@ export function installButtonHover() {
     "change",
     () => {
       document
-        .querySelectorAll<HTMLButtonElement>("[data-hover-surface]")
+        .querySelectorAll<HTMLElement>("[data-hover-surface]")
         .forEach((button) => {
           const s = surfaces.get(button);
           if (s) animate(s);

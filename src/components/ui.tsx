@@ -17,7 +17,7 @@ const s = sx.create({
     gap: 6,
     borderWidth: 0,
     borderRadius: "var(--radius-control)",
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a12)" },
+    backgroundColor: "transparent",
     color: "var(--text-secondary)",
     height: 32,
     paddingInline: "var(--control-padding)",
@@ -27,10 +27,7 @@ const s = sx.create({
   },
   active: { backgroundColor: "var(--white-a24)", color: "var(--text-primary)" },
   primary: {
-    backgroundColor: {
-      default: "var(--primary)",
-      ":hover": "var(--primary-hover)",
-    },
+    backgroundColor: "var(--primary)",
     color: "var(--primary-text)",
     paddingInline: 14,
   },
@@ -52,7 +49,7 @@ const s = sx.create({
     borderWidth: 0,
     borderRadius: "var(--radius-control)",
     color: "var(--text-secondary)",
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a12)" },
+    backgroundColor: "transparent",
     letterSpacing: "var(--tracking-control)",
     lineHeight: "var(--line-control)",
   },
@@ -78,10 +75,7 @@ const s = sx.create({
     padding: 0,
     borderWidth: 0,
     borderRadius: 999,
-    backgroundColor: {
-      default: "var(--white-a1a)",
-      ":hover": "var(--white-a26)",
-    },
+    backgroundColor: "var(--white-a1a)",
     boxShadow: "inset 0 0 0 1px var(--white-a12)",
     transitionProperty: "background-color",
     transitionDuration: {
@@ -90,10 +84,7 @@ const s = sx.create({
     },
   },
   toggleOn: {
-    backgroundColor: {
-      default: "var(--primary)",
-      ":hover": "var(--primary-hover)",
-    },
+    backgroundColor: "var(--primary)",
   },
   thumb: {
     position: "absolute",

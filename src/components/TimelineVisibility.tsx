@@ -39,7 +39,7 @@ const s = sx.create({
     borderRadius: "var(--radius-control)",
     color: "var(--text-secondary)",
     fontSize: 12,
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a12)" },
+    backgroundColor: "transparent",
     cursor: "pointer",
   },
 });

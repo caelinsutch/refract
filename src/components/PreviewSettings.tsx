@@ -13,7 +13,7 @@ const s = sx.create({
     justifyContent: "center",
     borderWidth: 0,
     borderRadius: 6,
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a12)" },
+    backgroundColor: "transparent",
     color: "var(--text-secondary)",
   },
   dot: {
@@ -56,7 +56,7 @@ const s = sx.create({
     borderWidth: 0,
     borderRadius: 4,
     color: "var(--text-secondary)",
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a0b)" },
+    backgroundColor: "transparent",
   },
   selected: {
     backgroundColor: "var(--white-a24)",

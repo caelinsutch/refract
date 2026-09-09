@@ -12,7 +12,7 @@ const styles = sx.create({
     padding: 0,
     borderWidth: 0,
     borderRadius: "var(--radius-control)",
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a12)" },
+    backgroundColor: "transparent",
     color: "var(--text-secondary)",
     fontWeight: 500,
   },

@@ -21,7 +21,7 @@ const s = sx.create({
     paddingInline: 12,
     borderWidth: 0,
     borderRadius: 6,
-    backgroundColor: { default: "transparent", ":hover": "var(--white-a12)" },
+    backgroundColor: "transparent",
     color: "var(--text-secondary)",
   },
   menu: {

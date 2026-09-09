@@ -359,10 +359,14 @@ input[data-setting-slider]:active::-webkit-slider-thumb {
 }
 
 /* Shared pointer-following fill. Its parent and glyphs never scale or move. */
-button[data-hover-surface] {
+[data-hover-surface] {
+  --hover-opacity: 0;
+  --hover-scale: 0.8;
+  --hover-x: 0px;
+  --hover-y: 0px;
   isolation: isolate;
 }
-button[data-hover-surface]::before {
+[data-hover-surface]::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -374,9 +378,14 @@ button[data-hover-surface]::before {
   translate: var(--hover-x, 0px) var(--hover-y, 0px);
   scale: var(--hover-scale, 0.8);
 }
-button[data-hover-surface="plain"]:hover:not([aria-pressed="true"]):not([aria-expanded="true"]):not([data-active="true"]) {
+[data-hover-surface="plain"]:hover:not([aria-pressed="true"]):not(
+    [aria-expanded="true"]
+  ):not([aria-checked="true"]):not([aria-selected="true"]):not(
+    [data-active="true"]
+  ) {
   background-color: transparent !important;
 }
-button[data-hover-surface]:disabled::before {
+[data-hover-surface]:disabled::before,
+[data-hover-surface][aria-disabled="true"]::before {
   opacity: 0;
 }
