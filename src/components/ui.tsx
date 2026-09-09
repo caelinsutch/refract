@@ -42,6 +42,18 @@ const s = sx.create({
     gap: 12,
   },
   field: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 19 },
+  sliderRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 },
+  reset: {
+    height: 38,
+    flexShrink: 0,
+    paddingInline: 12,
+    borderWidth: 0,
+    borderRadius: "var(--radius-control)",
+    color: "var(--text-secondary)",
+    backgroundColor: { default: "transparent", ":hover": "var(--white-a12)" },
+    letterSpacing: "var(--tracking-control)",
+    lineHeight: "var(--line-control)",
+  },
   label: { color: "var(--text-secondary)", fontSize: 12 },
   value: {
     color: "var(--text-muted)",
@@ -193,24 +205,6 @@ export function Range({
       <span {...sx.props(s.row)}>
         <span {...sx.props(s.label)}>{label}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {resetValue !== undefined && (
-            <button
-              type="button"
-              aria-label={`Reset ${label}`}
-              title={`Reset to ${resetValue}${unit}`}
-              onClick={() => onChange(resetValue)}
-              style={{
-                alignSelf: "flex-end",
-                border: 0,
-                background: "transparent",
-                color: "var(--white-a66)",
-                padding: 0,
-                fontSize: 10,
-              }}
-            >
-              Reset
-            </button>
-          )}
           {draft === null ? (
             <button
               ref={readout}
@@ -259,24 +253,38 @@ export function Range({
           )}
         </span>
       </span>
-      <input
-        data-setting-slider
-        style={
-          {
-            "--slider-fraction":
-              max > min
-                ? Math.max(0, Math.min(1, (value - min) / (max - min)))
-                : 0,
-          } as CSSProperties
-        }
-        aria-label={label}
-        type="range"
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
+      <div {...sx.props(s.sliderRow)}>
+        <input
+          data-setting-slider
+          style={
+            {
+              "--slider-fraction":
+                max > min
+                  ? Math.max(0, Math.min(1, (value - min) / (max - min)))
+                  : 0,
+            } as CSSProperties
+          }
+          aria-label={label}
+          type="range"
+          value={value}
+          min={min}
+          max={max}
+          step={step}
+          onChange={(e) => onChange(Number(e.target.value))}
+        />
+        {resetValue !== undefined && (
+          <button
+            type="button"
+            aria-label={`Reset ${label}`}
+            title={`Reset to ${resetValue}${unit}`}
+            disabled={value === resetValue}
+            onClick={() => onChange(resetValue)}
+            {...sx.props(s.reset)}
+          >
+            Reset
+          </button>
+        )}
+      </div>
     </div>
   );
 }

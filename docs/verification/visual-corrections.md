@@ -229,3 +229,9 @@ The resulting dark editor capture was inspected; production editor interaction c
 Read-only decoding of `dIDR4zos.js` exposes the installed `SliderPicker` component. Its default kind is primary; SliderRoot is 20px high, SliderTrack/SliderRange are 3px high and expand to 5px on hover, and SliderThumb is 20×20px. Refract's settings previously used an unfilled 4px track and a 12px white thumb. Shared Range controls now use the reference geometry, primary fill, and theme-aware colored thumbs, with reduced-motion overrides. Native range input semantics and editable numeric values remain functional. Timeline zoom sliders are outside this scoped styling.
 
 Production build and the isolated editor checks pass, including exact numeric trim entry and gesture interactions. The dark renderer capture was inspected and light capture was generated. Actual reset-row placement, hover value preview, full keyboard/focus visual comparison and exact color-transfer behavior remain outstanding. The primary color remains the user's chosen teal rather than the reference purple.
+
+## Slider reset-row placement
+
+The inspected `SliderPicker` renders its reset button in the slider's horizontal form, using toolbar size and disabling it when value equals resetValue. Shared Refract Range controls now place Reset beside the track rather than beside the label, with a 38px control height and explicit disabled-at-default behavior. Numeric entry stays available above the track; exact reference value-preview placement remains open.
+
+Production build and isolated editor checks pass. The verifier changes Padding from 10 to 18 through real numeric entry, confirms Reset becomes enabled and is horizontally adjacent/vertically centered on the slider, then verifies it restores 10 and disables again. The resulting light-theme screenshot was inspected. This is a shared row-layout correction, not full-panel visual parity.

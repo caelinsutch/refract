@@ -534,6 +534,26 @@ app.whenReady().then(async () => {
       originalZooms + 1,
       "Closing editor removed the zoom",
     );
+    await window.webContents.executeJavaScript(`(async () => {
+      const reset=document.querySelector('button[aria-label="Reset Padding"]');
+      const slider=document.querySelector('input[aria-label="Padding"]');
+      if (!reset.disabled) throw Error('Default padding reset should be disabled');
+      document.querySelector('button[aria-label="Edit Padding"]').click();
+    })()`);
+    await window.webContents.insertText("18");
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await window.webContents.executeJavaScript(`(async () => {
+      await new Promise(resolve=>setTimeout(resolve,40));
+      const reset=document.querySelector('button[aria-label="Reset Padding"]');
+      const slider=document.querySelector('input[aria-label="Padding"]');
+      if (reset.disabled || Number(slider.value)!==18) throw Error('Changed padding did not enable reset');
+      const r=reset.getBoundingClientRect(), s=slider.getBoundingClientRect();
+      if (r.left<s.right || Math.abs((r.top+r.bottom)/2-(s.top+s.bottom)/2)>1) throw Error('Reset is not beside slider');
+      reset.click();
+      await new Promise(resolve=>setTimeout(resolve,40));
+      if (!reset.disabled || Number(slider.value)!==10) throw Error('Reset did not restore default');
+    })()`);
     for (const theme of ["dark", "light"] as const) {
       nativeTheme.themeSource = theme;
       await window.webContents.executeJavaScript(`(async () => {
@@ -563,6 +583,7 @@ app.whenReady().then(async () => {
         rangeCreation: "passed",
         existingRangeGestures: "passed",
         sidebarClose: "passed",
+        settingsReset: "passed",
       }),
     );
   } catch (error) {
