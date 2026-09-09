@@ -678,34 +678,40 @@ export default function App() {
     setTime(timeRef.current);
     setPlaying(false);
   };
+  const pausePreview = () => {
+    // Freeze the source before a slow frame or a new UI can publish stale time.
+    const media = video.current;
+    const current = projectRef.current;
+    if (media && current && playingRef.current) {
+      media.pause();
+      timeRef.current = previewTransport(
+        current,
+        timeRef.current,
+        {
+          time: media.currentTime * 1000,
+          seeking: media.seeking,
+          ready: media.readyState >= 2,
+          ended: media.ended,
+        },
+        false,
+      ).position;
+      setTime(timeRef.current);
+    }
+    playingRef.current = false;
+    setPlaying(false);
+  };
   const togglePlayback = () => {
     if (!project) return;
-    if (!playing && timeRef.current >= duration(project)) {
+    if (playing) {
+      pausePreview();
+      return;
+    }
+    if (timeRef.current >= duration(project)) {
       seekRevision.current++;
       timeRef.current = 0;
       setTime(0);
-    } else if (playing) {
-      // The video can advance while a costly canvas frame blocks animation
-      // updates. Freeze and sample it now instead of rewinding to the last draw.
-      const media = video.current;
-      if (media) {
-        media.pause();
-        timeRef.current = previewTransport(
-          project,
-          timeRef.current,
-          {
-            time: media.currentTime * 1000,
-            seeking: media.seeking,
-            ready: media.readyState >= 2,
-            ended: media.ended,
-          },
-          false,
-        ).position;
-      }
-      playingRef.current = false;
-      setTime(timeRef.current);
     }
-    setPlaying((value) => !value);
+    setPlaying(true);
   };
   const cut = () => {
     if (project) {
@@ -1021,7 +1027,7 @@ export default function App() {
       }
       if (cropping || modal) return;
       if (a === "commands" && !exporting && !modal) {
-        setPlaying(false);
+        pausePreview();
         setCommandOpen((v) => !v);
       }
       if (a === "import") void importVideo();
@@ -1029,7 +1035,7 @@ export default function App() {
       if (a === "save") void save();
       if (a === "saveAs") void save(true);
       if (a === "export" && project) {
-        setPlaying(false);
+        pausePreview();
         setModal("export");
       }
       if (a === "undo") undo();
@@ -1047,7 +1053,7 @@ export default function App() {
         !exporting
       ) {
         e.preventDefault();
-        setPlaying(false);
+        pausePreview();
         setCommandOpen((v) => !v);
         return;
       }
@@ -1147,7 +1153,7 @@ export default function App() {
     const api = window.refract,
       p = structuredClone(project),
       size = dimensions(p, resolution);
-    setPlaying(false);
+    pausePreview();
     cancelExport.current = false;
     let v: HTMLVideoElement | undefined;
     let cam: HTMLVideoElement | undefined;
@@ -1267,7 +1273,7 @@ export default function App() {
   const trimBounds = project && clip ? clipTrimBounds(project, clip.id) : null;
   const editClipTrim = (side: "start" | "end", seconds: number) => {
     if (!project || !clip) return;
-    setPlaying(false);
+    pausePreview();
     const next = trimClip(
       project,
       clip.id,
@@ -1329,7 +1335,7 @@ export default function App() {
   }
   const openCrop = async () => {
     if (!project || cropping) return;
-    setPlaying(false);
+    pausePreview();
     if (!window.refract) {
       setCropping(true);
       return;
@@ -1593,7 +1599,7 @@ export default function App() {
           primary
           disabled={!project}
           onClick={() => {
-            setPlaying(false);
+            pausePreview();
             setModal("export");
           }}
         >
@@ -1623,7 +1629,6 @@ export default function App() {
                   </select>
                   <Button
                     onClick={() => {
-                      setPlaying(false);
                       void openCrop();
                     }}
                     title="Crop recording"
@@ -1681,7 +1686,7 @@ export default function App() {
                           point.y > mask.y + mask.height))
                     )
                       return;
-                    setPlaying(false);
+                    pausePreview();
                     e.currentTarget.focus({ preventScroll: true });
                     e.currentTarget.setPointerCapture(e.pointerId);
                     maskDrag.current = {
@@ -2590,7 +2595,7 @@ export default function App() {
                       disabled={!audioPreview.ready}
                       title={`${audioPreview.playing ? "Stop" : "Play"} ${project.backgroundAudio.name}`}
                       onClick={() => {
-                        setPlaying(false);
+                        pausePreview();
                         audioPreview.toggle();
                       }}
                     >

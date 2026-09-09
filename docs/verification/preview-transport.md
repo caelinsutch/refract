@@ -47,3 +47,9 @@ The corrected full-editor check passes: focused End seeks to the end and remains
 The full-editor verifier now deliberately blocks renderer JavaScript for 120 ms during playback, then clicks Pause and compares actual media time immediately before and after. The original implementation failed: video moved from 472.399 ms to 344.343 ms because Pause published the last animation-frame position, and paused synchronization sought backward to it.
 
 Pause now freezes the video immediately, maps its current source time through the production transport, updates the shared clock, and stops animation advancement before publishing paused state. The corrected real-editor check passes with a <30 ms position-change bound, followed by a stationary paused-media check. The complete crop, keyboard, and modal verifier still passes, as do the production build and 121 core tests. The artificial stall exercises delayed animation updates; it is not a benchmark of sustained 4K preview performance.
+
+## Consistent pause behavior for editor actions
+
+Opening Crop during playback after a 120 ms renderer stall reproduced the same stale-frame rewind: source time moved from 432.899 ms to 295.106 ms. A shared `pausePreview` now freezes/samples active media and publishes its edited position. Play/Pause, Crop, export UI/start, command-menu opening, clip trimming, mask drag start, and music audition use this helper. Explicit timeline seeks, project loads, and media-end publication retain their own target positions.
+
+The full-editor crop-opening regression now passes with a <30 ms source-position change, followed by the existing crop confirmation/cancellation and keyboard checks. Build and 121 core tests pass. Crop opening and ordinary Pause were exercised with actual media; other callers are covered by the shared implementation and compilation but have not individually undergone the artificial-stall check.

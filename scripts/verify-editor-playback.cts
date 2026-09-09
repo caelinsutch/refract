@@ -159,10 +159,15 @@ app.whenReady().then(async () => {
       }
       if (document.activeElement.textContent.trim() !== 'Presets') throw Error('Dialog did not restore trigger focus');
     })()`);
-    const openCrop = async () => {
+    const openCrop = async (stall = false) => {
       await window!.webContents.executeJavaScript(`(async () => {
         const trigger = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Crop');
         if (!trigger) throw Error('Missing Crop control');
+        if (${stall}) {
+          const video=Array.from(document.querySelectorAll('video')).find(v=>v.src.startsWith('blob:'));
+          const until=performance.now()+120; while(performance.now()<until) {}
+          window.beforeCropTime=video.currentTime;
+        }
         trigger.focus(); trigger.click();
         const deadline = performance.now() + 3000;
         while (!document.querySelector('[aria-label="Crop width"]')) {
@@ -171,7 +176,23 @@ app.whenReady().then(async () => {
         }
       })()`);
     };
-    await openCrop();
+    await window.webContents.executeJavaScript(`(async () => {
+      document.querySelector('button[aria-label="Start"]').click();
+      await new Promise(resolve=>setTimeout(resolve,50));
+      document.querySelector('button[aria-label="Play"]').click();
+      const video=Array.from(document.querySelectorAll('video')).find(v=>v.src.startsWith('blob:'));
+      const deadline=performance.now()+3000;
+      while(video.currentTime<0.3) {
+        if(performance.now()>deadline) throw Error('Crop playback setup failed');
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+    })()`);
+    await openCrop(true);
+    await window.webContents.executeJavaScript(`(async () => {
+      const video=Array.from(document.querySelectorAll('video')).find(v=>v.src.startsWith('blob:'));
+      if (!video.paused || Math.abs(video.currentTime-window.beforeCropTime)>0.03)
+        throw Error('Opening crop moved media from '+window.beforeCropTime+' to '+video.currentTime);
+    })()`);
     await window.webContents.executeJavaScript(
       `const field=document.querySelector('[aria-label="Crop width"]'); field.focus(); field.select();`,
     );
