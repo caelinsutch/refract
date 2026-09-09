@@ -1,3 +1,4 @@
+import { playbackTime } from "./core/playback-time";
 import { PreviewSettings } from "./components/PreviewSettings";
 import { PlaybackSpeed } from "./components/PlaybackSpeed";
 import {
@@ -2010,14 +2011,21 @@ export default function App() {
                 {...sx.props(s.time)}
                 onClick={() => {
                   void navigator.clipboard
-                    .writeText(formatTime(time, true))
+                    .writeText(
+                      playbackTime(time, 60, project ? duration(project) : 0),
+                    )
                     .then(
                       () => setStatus("Copied to clipboard"),
                       () => setStatus("Could not copy timestamp"),
                     );
                 }}
               >
-                {formatTime(time, !playing)}
+                {playbackTime(
+                  time,
+                  60,
+                  project ? duration(project) : 0,
+                  !playing,
+                )}
               </button>
               <div {...sx.props(s.playButtons)}>
                 <Button
@@ -2061,7 +2069,11 @@ export default function App() {
                 onClick={() => {
                   void navigator.clipboard
                     .writeText(
-                      formatTime(project ? duration(project) : 0, true),
+                      playbackTime(
+                        project ? duration(project) : 0,
+                        60,
+                        project ? duration(project) : 0,
+                      ),
                     )
                     .then(
                       () => setStatus("Copied to clipboard"),
@@ -2069,7 +2081,12 @@ export default function App() {
                     );
                 }}
               >
-                {formatTime(project ? duration(project) : 0, !playing)}
+                {playbackTime(
+                  project ? duration(project) : 0,
+                  60,
+                  project ? duration(project) : 0,
+                  !playing,
+                )}
               </button>
             </div>
             <div {...sx.props(s.transportRight)}>

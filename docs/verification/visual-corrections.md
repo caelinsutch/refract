@@ -312,3 +312,18 @@ checks option state, warning-dot reset, keyboard dismissal, and counts actual
 composition clears over 650ms of playback (2–23 allowed), while checking media
 continues advancing. Native popover material and exact segmented-choice styling
 remain unverified.
+
+## Frame-based playback timestamps — 2026-09-09
+
+Read-only inspection of the installed playback formatter confirms fractional
+fields represent frames, not hundredths. Short recordings use m:ss.ff; recordings
+at least ten minutes pad minutes to mm:ss.ff. Frames hide during playback except
+in the reference's hour-format branch (selected when total duration exceeds one
+hour). Copy actions retain frame precision.
+
+Added a dedicated formatter and applied it to the two visible playback readouts
+and copy actions. The preview uses a 60fps timebase, matching the installed
+editor's explicit preview configuration. Clip editing and the assistive playback
+timer retain millisecond-based values. Tests cover 24/30/60fps, the second boundary,
+duration-dependent padding, playback formatting, and invalid inputs. The unusual
+strictly-greater-than-one-hour branch follows the observed formatter.
