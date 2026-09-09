@@ -99,7 +99,11 @@
   --white-a26: #ffffff26;
   --white-a1a: #ffffff1a;
   --white-a66: #ffffff66;
-  --radius-control: 5px;
+  --radius-control: 6px;
+  --line-ui: 1.2307692308;
+  --line-control: 1.33;
+  --tracking-control: -0.01863636em;
+  --control-padding: 12px;
   --radius-panel: 8px;
   --radius-item: 10px;
   --radius-dialog: 12px;
