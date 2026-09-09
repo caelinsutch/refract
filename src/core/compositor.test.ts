@@ -110,7 +110,7 @@ test("background blur leaves the recording itself sharp", () => {
   );
 });
 
-test("shadow distance and angle work in both modes without shifting the recording", () => {
+test("ordinary shadow distance and angle work without shifting the recording", () => {
   const source = createCanvas(100, 100),
     sc = source.getContext("2d");
   sc.fillStyle = "#ffffff";
@@ -146,13 +146,11 @@ test("shadow distance and angle work in both modes without shifting the recordin
     );
     return c.getImageData(x, 200, 1, 1).data[0];
   }
-  for (const directional of [false, true]) {
-    p.appearance.shadowDirectional = directional;
-    assert.ok(redAt(0, 295) < redAt(0, 105) - 50);
-    assert.ok(redAt(180, 105) < redAt(180, 295) - 50);
-    assert.equal(redAt(0, 200), 255);
-    assert.equal(redAt(180, 200), 255);
-  }
+  p.appearance.shadowDirectional = false;
+  assert.ok(redAt(0, 295) < redAt(0, 105) - 50);
+  assert.ok(redAt(180, 105) < redAt(180, 295) - 50);
+  assert.equal(redAt(0, 200), 255);
+  assert.equal(redAt(180, 200), 255);
   p.appearance.shadowDistance = 0;
   assert.equal(
     redAt(0, 295),
@@ -606,4 +604,56 @@ test("image backgrounds center-cover portrait and landscape outputs without stre
       `${width}x${height} should reveal the centered crop, not the original corner`,
     );
   }
+});
+
+test("directional shadow extends its masked footprint and falls back for large recordings", () => {
+  const source = createCanvas(100, 100);
+  source.getContext("2d").fillStyle = "white";
+  source.getContext("2d").fillRect(0, 0, 100, 100);
+  const p = createProject({
+    file: "test",
+    width: 100,
+    height: 100,
+    duration: 1000,
+    hasAudio: false,
+  });
+  Object.assign(p.appearance, {
+    background: "color",
+    color: "white",
+    padding: 30,
+    radius: 0,
+    shadow: 1,
+    shadowDistance: 0,
+    shadowBlur: 5,
+  });
+  const c = createCanvas(400, 400).getContext("2d");
+  const sample = (directional: boolean) => {
+    p.appearance.shadowDirectional = directional;
+    drawFrame(
+      c as unknown as CanvasRenderingContext2D,
+      source as unknown as CanvasImageSource,
+      p,
+      0,
+      400,
+      400,
+    );
+    return c.getImageData(320, 320, 1, 1).data[0];
+  };
+  const ordinary = sample(false),
+    directional = sample(true);
+  assert.ok(
+    directional < ordinary - 100,
+    "Directional mask must extend beyond the ordinary frame",
+  );
+  assert.equal(
+    c.getImageData(200, 200, 1, 1).data[0],
+    255,
+    "Recording remains opaque and stationary",
+  );
+  p.source.width = p.source.height = 5001;
+  assert.equal(
+    sample(true),
+    sample(false),
+    "Large recordings must use ordinary shadows regardless of saved toggle",
+  );
 });

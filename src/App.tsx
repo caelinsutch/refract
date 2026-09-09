@@ -1,3 +1,4 @@
+import { supportsDirectionalShadow } from "./core/shadow-layer";
 import { WallpaperPicker } from "./components/WallpaperPicker";
 import { BackgroundImagePicker } from "./components/BackgroundImagePicker";
 import { GradientPresets } from "./components/GradientPresets";
@@ -2589,6 +2590,12 @@ export default function App() {
                 <Disclosure label="Advanced shadow settings">
                   <Toggle
                     label="Directional shadow"
+                    disabled={
+                      !supportsDirectionalShadow(
+                        project.source.width,
+                        project.source.height,
+                      )
+                    }
                     value={project.appearance.shadowDirectional}
                     onChange={(shadowDirectional) =>
                       appearance({
@@ -2597,6 +2604,15 @@ export default function App() {
                       })
                     }
                   />
+                  {!supportsDirectionalShadow(
+                    project.source.width,
+                    project.source.height,
+                  ) && (
+                    <Note>
+                      Directional shadow is disabled for recordings on large
+                      screens.
+                    </Note>
+                  )}
                   <Range
                     label="Shadow Distance"
                     preview={false}

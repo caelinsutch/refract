@@ -316,9 +316,11 @@ export function Toggle({
   label,
   value,
   onChange,
+  disabled = false,
 }: {
   label: string;
   value: boolean;
+  disabled?: boolean;
   onChange: (v: boolean) => void;
 }) {
   const id = useId();
@@ -329,6 +331,7 @@ export function Toggle({
         id={id}
         type="button"
         role="switch"
+        disabled={disabled}
         aria-label={label}
         aria-checked={value}
         {...sx.props(s.toggle, value && s.toggleOn)}

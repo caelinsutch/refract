@@ -912,3 +912,11 @@ continues to require the system permission; window-source listing still does too
 - Kept the existing inset-interior exclusion and directional Canvas path pending reference composition verification. Reference filter resolution (3), exact raster scaling, shape rounding, directional diamond masking, and inset/shadow overlap still require direct visual/export comparison. This change is not a full shadow-parity claim.
 - Production build and the existing 173 core tests passed. Two added shadow tests passed cached surface reuse across intensity/zoom, invalidation on distance change, zero-intensity skipping, and linear intensity blending. GPU Kawase comparison against an independent CPU implementation had maximum channel error 1/255 and mean 0.035/255 in the checked region. Background GPU and 720p MP4/GIF plus 4K MP4 encoder checks remained passing.
 - Production editor inspector checks passed, including shadow numeric editing, reset, Undo, and previous background/inset checks. Inspected the rendered light-theme fixture and visible ordinary shadow beneath the recording.
+
+## Directional shadow mask and editor hover regression — September 9
+
+Inspection of the installed reference renderer established that the directional shadow doubles the shape dimensions and clips it to a diamond before applying the blur. Refract now uses that geometry with the cached diagonal blur implementation, and falls back to ordinary shadows for source dimensions above 5000 pixels. The inspector disables that option for unsupported sources while preserving the saved preference.
+
+Validation: production build and all 177 core tests passed. Synthetic Electron inspector checks passed, including the directional toggle, changed canvas output, and Undo. The directional screenshot was inspected. The editor hover fixture also passed across playback, disclosures, wallpaper choices/context menus, timeline controls, speed menu items, and switches; geometry stayed stationary and nested controls remained isolated.
+
+Exact exported pixel parity remains unverified: the installed reference requires activation to export. Filter resolution, large shadow texture scaling, and translucent inset overlap still need comparison. The synthetic checks do not establish full capture/export or complete UI parity.

@@ -1,4 +1,4 @@
-import { drawOrdinaryShadow } from "./shadow-layer";
+import { drawFrameShadow, supportsDirectionalShadow } from "./shadow-layer";
 import { drawBackgroundLayer } from "./background-layer";
 import { gradientColors } from "./gradient-presets";
 import { insetEdges } from "./inset-balance";
@@ -299,22 +299,15 @@ export function drawFrame(
       const edges = insetEdges(a);
       const edgeScale = scale * transform.scale;
       c.save();
-      c.shadowColor = a.shadowDirectional
-        ? `rgba(0,0,0,${a.shadow * 0.6})`
-        : "transparent";
-      c.shadowBlur = a.shadowBlur * 2 * scale * transform.scale;
-      // Distance and angle apply to ordinary shadows too. Directional mode
-      // controls the shadow shape in the reference, not whether it has an offset.
-      const distance = a.shadowDistance * scale * transform.scale;
-      const angle = (a.shadowAngle * Math.PI) / 180;
-      c.shadowOffsetX = Math.cos(angle) * distance;
-      c.shadowOffsetY = Math.sin(angle) * distance;
+      c.shadowColor = "transparent";
+      c.shadowBlur = 0;
+      c.shadowOffsetX = c.shadowOffsetY = 0;
       const frameX = x - edges.left * edgeScale,
         frameY = y - edges.top * edgeScale,
         frameWidth = w + (edges.left + edges.right) * edgeScale,
         frameHeight = h + (edges.top + edges.bottom) * edgeScale;
       const opacity = a.insetOpacity ?? 1;
-      if (!a.shadowDirectional) {
+      {
         c.save();
         // Keep translucent inset interiors independent of the outside shadow.
         c.beginPath();
@@ -329,7 +322,7 @@ export function drawFrame(
         c.clip("evenodd");
         c.shadowBlur = 0;
         c.shadowOffsetX = c.shadowOffsetY = 0;
-        drawOrdinaryShadow(
+        drawFrameShadow(
           c,
           a,
           frameX,
@@ -338,28 +331,11 @@ export function drawFrame(
           frameHeight,
           outerRadius,
           edgeScale,
+          a.shadowDirectional && supportsDirectionalShadow(sw, sh),
         );
         c.restore();
       }
       c.fillStyle = a.insetColor;
-      if (opacity < 1) {
-        // Draw the outside shadow at full strength before blending the inset color.
-        c.save();
-        c.beginPath();
-        c.rect(0, 0, width, height);
-        c.roundRect(
-          frameX,
-          frameY,
-          frameWidth,
-          frameHeight,
-          Math.max(0, Math.min(outerRadius, frameWidth / 2, frameHeight / 2)),
-        );
-        c.clip("evenodd");
-        rounded(c, frameX, frameY, frameWidth, frameHeight, outerRadius);
-        c.fill();
-        c.restore();
-        c.shadowColor = "transparent";
-      }
       rounded(c, frameX, frameY, frameWidth, frameHeight, outerRadius);
       c.save();
       c.globalAlpha *= opacity;

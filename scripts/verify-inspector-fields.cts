@@ -487,6 +487,53 @@ app.whenReady().then(async () => {
       await read(`document.querySelector('input[aria-label="Shadow"]').value`),
       "0.385",
     );
+    await read(
+      `Array.from(document.querySelectorAll('[data-disclosure-header]')).find(button=>button.textContent.includes('Advanced shadow settings')).click()`,
+    );
+    await wait(100);
+    assert.equal(
+      await read(
+        `document.querySelector('[role="switch"][aria-label="Directional shadow"]').disabled`,
+      ),
+      false,
+    );
+    const ordinaryFrame = await read(
+      `document.querySelector('canvas').toDataURL()`,
+    );
+    await read(
+      `document.querySelector('[role="switch"][aria-label="Directional shadow"]').click()`,
+    );
+    await wait(300);
+    assert.equal(
+      await read(
+        `document.querySelector('[role="switch"][aria-label="Directional shadow"]').getAttribute('aria-checked')`,
+      ),
+      "true",
+    );
+    assert.equal(
+      await read(`document.querySelector('input[aria-label="Shadow"]').value`),
+      "0.4",
+    );
+    assert.notEqual(
+      await read(`document.querySelector('canvas').toDataURL()`),
+      ordinaryFrame,
+    );
+    await fs.writeFile(
+      path.join(directory, "directional-shadow.png"),
+      (await c.capturePage()).toPNG(),
+    );
+    await read(`document.querySelector('button[aria-label="Undo"]').click()`);
+    await wait(150);
+    assert.equal(
+      await read(
+        `document.querySelector('[role="switch"][aria-label="Directional shadow"]').getAttribute('aria-checked')`,
+      ),
+      "false",
+    );
+    assert.equal(
+      await read(`document.querySelector('input[aria-label="Shadow"]').value`),
+      "0.385",
+    );
     console.log(
       JSON.stringify({
         rest: "hidden",

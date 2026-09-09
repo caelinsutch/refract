@@ -2,6 +2,10 @@ import { BackgroundFilter } from "./background-filter";
 import { createRenderSurface } from "./cursor-render";
 import type { Appearance } from "./project";
 
+export function supportsDirectionalShadow(width: number, height: number) {
+  return width <= 5000 && height <= 5000;
+}
+
 export function shadowKernels(blur: number): number[] {
   const quality = Math.max(1, Math.round(blur * 0.625));
   return Array.from(
@@ -19,8 +23,8 @@ const cache = new WeakMap<
 >();
 let filter: BackgroundFilter | undefined;
 
-/** Ordinary shadows are cached at unit scale, then transformed with the screen. */
-export function drawOrdinaryShadow(
+/** Frame shadows are cached at unit scale, then transformed with the screen. */
+export function drawFrameShadow(
   c: CanvasRenderingContext2D,
   a: Appearance,
   x: number,
@@ -29,6 +33,7 @@ export function drawOrdinaryShadow(
   height: number,
   radius: number,
   scale: number,
+  directional = a.shadowDirectional,
 ) {
   if (!(a.shadow > 0) || !(scale > 0)) return;
   const baseWidth = width / scale,
@@ -37,24 +42,46 @@ export function drawOrdinaryShadow(
   const blur = Math.max(0, Math.min(30, a.shadowBlur));
   const distance = a.shadowDistance;
   // Stable precision avoids reallocating because of floating-point zoom roundoff.
-  const key = [baseWidth, baseHeight, baseRadius, blur, distance, a.shadowAngle]
+  const key = [
+    baseWidth,
+    baseHeight,
+    baseRadius,
+    blur,
+    distance,
+    a.shadowAngle,
+    Number(directional),
+  ]
     .map((value) => value.toFixed(4))
     .join(":");
   let cached = cache.get(c);
   if (!cached || cached.key !== key) {
     const padding = Math.ceil(Math.abs(distance) + blur * 9);
-    const sw = Math.ceil(baseWidth + padding * 2),
-      sh = Math.ceil(baseHeight + padding * 2);
+    const factor = directional ? 2 : 1;
+    const sw = Math.ceil(baseWidth * factor + padding * 2),
+      sh = Math.ceil(baseHeight * factor + padding * 2);
     const input = createRenderSurface(c, sw, sh);
     const context = input.getContext("2d") as CanvasRenderingContext2D;
     const radians = (a.shadowAngle * Math.PI) / 180;
+    context.translate(
+      Math.cos(radians) * distance,
+      Math.sin(radians) * distance,
+    );
+    if (directional) {
+      context.beginPath();
+      context.moveTo(padding, padding + baseHeight);
+      context.lineTo(padding + baseWidth, padding + baseHeight * 2);
+      context.lineTo(padding + baseWidth * 2, padding + baseHeight);
+      context.lineTo(padding + baseWidth, padding);
+      context.closePath();
+      context.clip();
+    }
     context.fillStyle = "black";
     context.beginPath();
     context.roundRect(
-      padding + Math.cos(radians) * distance,
-      padding + Math.sin(radians) * distance,
-      baseWidth,
-      baseHeight,
+      padding,
+      padding,
+      baseWidth * factor,
+      baseHeight * factor,
       Math.max(0, Math.min(baseRadius, baseWidth / 2, baseHeight / 2)),
     );
     context.fill();
