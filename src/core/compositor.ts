@@ -237,7 +237,7 @@ export function drawFrame(
       const { sx, sy, cw, ch } = videoGeometry(p, t, width, height, transform);
       c.drawImage(video, sx, sy, cw, ch, x, y, w, h);
       for (const m of p.masks.filter(
-        (m) => source >= m.start && source <= m.end,
+        (m) => source >= m.start && source < m.end,
       )) {
         const mx = x + ((m.x * sw - sx) / cw) * w,
           my = y + ((m.y * sh - sy) / ch) * h,
