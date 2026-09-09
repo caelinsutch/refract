@@ -861,3 +861,9 @@ continues to require the system permission; window-source listing still does too
 - Removed the disclosure chevron's independent static highlight and the duplicate hover fills in aspect-ratio and playback-speed menus. Disclosure headers now have the shared control radius and spring background.
 - Expanded shared hover enrollment to semantic switches, checkboxes, radios, links, and disclosure summaries, including non-button implementations.
 - Production build passed. The synthetic Electron editor fixture passed spring entrance/settling and stationary bounds for playback, disclosure headers, wallpaper swatches, timeline clips, playback menus, and switches. Nested trim controls remained isolated, and the disclosure chevron no longer painted a second hover background. The fixture scrolls inspector controls into view before pointer checks.
+
+### Background image aspect-ratio fitting — 2026-09-09
+
+- Read-only inspection of the installed reference renderer found a maximum width/height scale with centered offsets for image backgrounds (`MG`, used by `py`). Refract previously stretched images independently on each axis.
+- The shared preview/export compositor now center-covers images using intrinsic dimensions, preserving proportions across output ratios. Existing blur overscan remains; exact reference blur/filter matching is not established by this change.
+- Production build and all 12 compositor tests passed. A distinctive banded image verifies the expected cropped corner in landscape and portrait outputs and the original corner in square output. The real Electron inspector fixture also passed image drop/paste rendering, invalid-image retention, Undo, and its existing inspector checks. No live desktop capture was used.

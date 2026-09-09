@@ -552,3 +552,49 @@ test("gradient presets render intermediate color stops", () => {
   assert.ok(Math.abs(pixel[1] - 255 * (1 - t)) <= 1);
   assert.ok(Math.abs(pixel[2] - 255 * t) <= 1);
 });
+
+test("image backgrounds center-cover portrait and landscape outputs without stretching", () => {
+  const source = createCanvas(400, 400);
+  const background = createCanvas(400, 400);
+  const image = background.getContext("2d");
+  image.fillStyle = "red";
+  image.fillRect(0, 0, 400, 400);
+  image.fillStyle = "lime";
+  image.fillRect(50, 0, 300, 400);
+  image.fillStyle = "blue";
+  image.fillRect(0, 50, 400, 300);
+  const p = createProject({
+    file: "test",
+    width: 400,
+    height: 400,
+    duration: 2000,
+    hasAudio: false,
+  });
+  Object.assign(p.appearance, {
+    background: "image",
+    blur: 0,
+    padding: 35,
+    shadow: 0,
+  });
+  for (const [width, height, expected] of [
+    [1280, 720, [0, 0, 255, 255]],
+    [720, 1280, [0, 255, 0, 255]],
+    [400, 400, [255, 0, 0, 255]],
+  ] as const) {
+    const c = createCanvas(width, height).getContext("2d");
+    drawFrame(
+      c as unknown as CanvasRenderingContext2D,
+      source as unknown as CanvasImageSource,
+      p,
+      0,
+      width,
+      height,
+      background as unknown as CanvasImageSource,
+    );
+    assert.deepEqual(
+      [...c.getImageData(1, 1, 1, 1).data],
+      [...expected],
+      `${width}x${height} should reveal the centered crop, not the original corner`,
+    );
+  }
+});

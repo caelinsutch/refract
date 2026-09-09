@@ -193,13 +193,45 @@ export function drawFrame(
       height + overscan * 2,
     );
   } else if (a.background === "image" && bgImage) {
-    c.drawImage(
-      bgImage,
-      -overscan,
-      -overscan,
-      width + overscan * 2,
-      height + overscan * 2,
-    );
+    // Use intrinsic dimensions: an image's DOM layout size is unrelated to
+    // its pixels. Center-cover keeps photographs undistorted at every ratio.
+    const dimensions = bgImage as {
+      naturalWidth?: number;
+      naturalHeight?: number;
+      videoWidth?: number;
+      videoHeight?: number;
+      displayWidth?: number;
+      displayHeight?: number;
+      width?: number;
+      height?: number;
+    };
+    const imageWidth =
+      dimensions.naturalWidth ??
+      dimensions.videoWidth ??
+      dimensions.displayWidth ??
+      dimensions.width ??
+      width;
+    const imageHeight =
+      dimensions.naturalHeight ??
+      dimensions.videoHeight ??
+      dimensions.displayHeight ??
+      dimensions.height ??
+      height;
+    if (imageWidth > 0 && imageHeight > 0) {
+      const fit = Math.max(
+        (width + overscan * 2) / imageWidth,
+        (height + overscan * 2) / imageHeight,
+      );
+      const fittedWidth = imageWidth * fit;
+      const fittedHeight = imageHeight * fit;
+      c.drawImage(
+        bgImage,
+        (width - fittedWidth) / 2,
+        (height - fittedHeight) / 2,
+        fittedWidth,
+        fittedHeight,
+      );
+    }
   } else {
     const colors = wallpapers[a.wallpaper % wallpapers.length];
     const grad =
