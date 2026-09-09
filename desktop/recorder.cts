@@ -1,3 +1,4 @@
+import { recorderSourceItems } from "./recorder-source-menu.cjs";
 import { countdownDuration, countdownRemaining } from "./countdown.cjs";
 import { installRecorderGlass, recorderSymbols } from "./recorder-glass.cjs";
 import {
@@ -32,6 +33,8 @@ import {
 import { promisify } from "node:util";
 import crypto from "node:crypto";
 import type {
+  RecorderSourceMenu,
+  RecorderSourceSelection,
   CaptureChoice,
   CaptureSources,
   RecorderState,
@@ -372,6 +375,50 @@ export function setupRecorder(
   register("recorder-sources", list);
   register("recorder-symbols", recorderSymbols);
   let inputMenuOpen = false;
+  register("recorder-source-menu", async (request: RecorderSourceMenu) => {
+    if (
+      inputMenuOpen ||
+      !bar ||
+      bar.isDestroyed() ||
+      !["idle", "error"].includes(state.phase)
+    )
+      return null;
+    if (
+      !request ||
+      !["display", "window"].includes(request.kind) ||
+      !Number.isFinite(request.x) ||
+      !Number.isFinite(request.y)
+    )
+      throw Error("Invalid source menu request.");
+    inputMenuOpen = true;
+    const owner = bar;
+    try {
+      const sources = await list();
+      if (owner.isDestroyed() || !["idle", "error"].includes(state.phase))
+        return null;
+      return await new Promise<RecorderSourceSelection | null>((resolve) => {
+        let selection: RecorderSourceSelection | null = null;
+        const finish = () => {
+          owner.removeListener("closed", finish);
+          resolve(selection);
+        };
+        const menu = Menu.buildFromTemplate(
+          recorderSourceItems(request, sources, (source) => {
+            selection = { kind: request.kind, source };
+          }),
+        );
+        owner.once("closed", finish);
+        menu.popup({
+          window: owner,
+          x: Math.max(0, Math.round(request.x)),
+          y: Math.max(0, Math.round(request.y)),
+          callback: finish,
+        });
+      });
+    } finally {
+      inputMenuOpen = false;
+    }
+  });
   register("recorder-input-menu", async (request: RecorderInputMenu) => {
     if (
       inputMenuOpen ||
@@ -394,7 +441,8 @@ export function setupRecorder(
         request.kind === "audio" || request.kind === "settings"
           ? null
           : await list();
-      if (owner.isDestroyed()) return null;
+      if (owner.isDestroyed() || !["idle", "error"].includes(state.phase))
+        return null;
       const inputs =
         request.kind === "settings"
           ? []

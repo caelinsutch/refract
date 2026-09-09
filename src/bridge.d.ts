@@ -38,6 +38,9 @@ declare global {
       recorderChooseDirectory(): Promise<string | null>;
       recorderSymbols(): Promise<Record<string, string>>;
       recorderSources(): Promise<CaptureSources>;
+      recorderSourceMenu(
+        request: import("./core/recorder").RecorderSourceMenu,
+      ): Promise<import("./core/recorder").RecorderSourceSelection | null>;
       recorderInputMenu(
         request: RecorderInputMenu,
       ): Promise<RecorderInputSelection | null>;

@@ -284,7 +284,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         if CommandLine.arguments.contains("--list") {
             guard CGPreflightScreenCaptureAccess() else { emit(["keyboardPermission": CGPreflightListenEventAccess() ? "granted" : "required", "permission": "required", "displays": [], "windows": [], "microphones": [], "cameras": []]); return }
             do { let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
-                let displays = content.displays.map { ["id": $0.displayID, "name": "Display \($0.displayID)", "width": $0.width, "height": $0.height] as [String: Any] }
+                let displays = content.displays.map { display in
+                    let name = NSScreen.screens.first {
+                        ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value == display.displayID
+                    }?.localizedName ?? "Display \(display.displayID)"
+                    return ["id": display.displayID, "name": name, "width": display.width, "height": display.height] as [String: Any]
+                }
                 let windows = content.windows.filter { window in
                     // The chooser lists app windows, not desktop surfaces or overlays.
                     guard let app = window.owningApplication,
@@ -295,6 +300,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                     let app = window.owningApplication?.applicationName ?? ""
                     let title = window.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                     return ["id": window.windowID, "name": title.isEmpty ? app : title, "app": app,
+                            "appPath": window.owningApplication.flatMap { NSRunningApplication(processIdentifier: $0.processID)?.bundleURL?.path } ?? "",
                             "width": window.frame.width, "height": window.frame.height] as [String: Any]
                 }
                 let microphones = AVCaptureDevice.DiscoverySession(deviceTypes: [.microphone], mediaType: .audio, position: .unspecified).devices.map { ["id": $0.uniqueID, "name": $0.localizedName] }

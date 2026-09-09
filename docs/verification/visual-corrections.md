@@ -629,3 +629,31 @@ native glyphs in the toolbar. Repeated menu selection/cancellation preserves DOM
 identity and performs zero native resizes. The renderer refresh check also passes
 with long camera/microphone labels. Screenshots and live reference comparison were
 used for optical sizing; full-app visual parity remains unproven.
+
+## Native source context menus — 2026-09-09
+
+Added the reference's secondary-click menus on Display and Window. Down-arrow,
+Shift-F10, and the context-menu key open the same native menus. Window entries
+group by application path: one-window applications select directly from their
+application name, while applications with multiple windows get title submenus.
+The current selected target is checked. Display entries use NSScreen's real
+localized display names; those names also replace generic numbering in the
+existing display list. Swift source metadata now includes application paths so
+separate apps with the same display name do not merge into one group.
+
+Cancellation leaves the existing toolbar and panel untouched. Choosing an entry
+prepares a target and focuses an explicit Record action; it does not start capture.
+The native reference shows full-screen source highlighting at this step, whereas
+Refract currently shows its existing panel shell with the chosen source and Record
+action. That overlay mismatch remains open; the new native menu is not evidence
+of complete picker parity. Primary-click source selection retains its existing
+behavior. Native menu requests share a guard with the input menus, and a source
+scan that finishes after recording starts cannot open a stale menu.
+
+All 152 core tests pass, including app-identity grouping, checked selection,
+permission denial, and empty sources. Native helpers and application build pass.
+A production Electron check exercised real secondary-click/keyboard menus,
+cancellation, target selection, unchanged toolbar identity, and the idle recording
+state after selection. The renderer capture-request check confirms the selected
+window ID and recording preferences only get sent after the explicit Record
+button is activated; it uses a capture stub and does not record desktop content.

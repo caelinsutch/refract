@@ -39,6 +39,7 @@ import type {
   CaptureChoice,
   RecorderState,
   RecorderInputMenu,
+  RecorderSourceSelection,
 } from "./core/recorder";
 import { formatTime } from "./core/project";
 const s = sx.create({
@@ -453,6 +454,16 @@ export default function Recorder() {
   );
   const sourceRequest = useRef<Promise<void> | null>(null);
   const inputMenuBusy = useRef(false);
+  const [sourceMenu, setSourceMenu] = useState<"display" | "window" | null>(
+    null,
+  );
+  const [selectedSource, setSelectedSource] =
+    useState<RecorderSourceSelection | null>(null);
+  const sourceStartButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (panel === "source-ready")
+      sourceStartButton.current?.focus({ preventScroll: true });
+  }, [panel, selectedSource]);
   const [inputNames, setInputNames] = useState({ camera: "", microphone: "" });
   const [inputMenu, setInputMenu] = useState<RecorderInputMenu["kind"] | null>(
     null,
@@ -697,6 +708,39 @@ export default function Recorder() {
       button.focus({ preventScroll: true });
     }
   };
+  const pickSourceMenu = async (
+    kind: "display" | "window",
+    button: HTMLButtonElement,
+  ) => {
+    if (!api?.recorderSourceMenu) {
+      await pick(kind);
+      return;
+    }
+    if (inputMenuBusy.current) return;
+    inputMenuBusy.current = true;
+    setSourceMenu(kind);
+    try {
+      const rect = button.getBoundingClientRect();
+      const selection = await api.recorderSourceMenu({
+        kind,
+        selected:
+          selectedSource?.kind === kind ? selectedSource.source.id : undefined,
+        x: rect.left,
+        y: rect.bottom,
+      });
+      if (selection) {
+        setSelectedSource(selection);
+        expand("source-ready");
+      }
+    } catch (error) {
+      setError(String(error));
+      expand("error");
+    } finally {
+      inputMenuBusy.current = false;
+      setSourceMenu(null);
+      button.focus({ preventScroll: true });
+    }
+  };
   const inputMenuKey = (
     event: ReactKeyboardEvent<HTMLButtonElement>,
     kind: RecorderInputMenu["kind"],
@@ -758,6 +802,7 @@ export default function Recorder() {
                       window: "Record a window",
                       area: "Record an area",
                       "area-ready": "Your recording area",
+                      "source-ready": "Ready to record",
                       microphone: "Microphone",
                       audio: "System audio",
                       camera: "Camera",
@@ -776,7 +821,37 @@ export default function Recorder() {
                 <X size={14} />
               </button>
             </div>
-            {loading ? (
+            {panel === "source-ready" && selectedSource ? (
+              <>
+                <p {...sx.props(s.itemTitle)}>{selectedSource.source.name}</p>
+                <p {...sx.props(s.text)}>
+                  {selectedSource.source.app
+                    ? `${selectedSource.source.app} · `
+                    : ""}
+                  {selectedSource.source.width} × {selectedSource.source.height}
+                </p>
+                <button
+                  ref={sourceStartButton}
+                  {...sx.props(s.primary)}
+                  onClick={() =>
+                    void start(
+                      selectedSource.kind === "display"
+                        ? {
+                            mode: "display",
+                            displayId: selectedSource.source.id,
+                          }
+                        : {
+                            mode: "window",
+                            windowId: selectedSource.source.id,
+                          },
+                    )
+                  }
+                >
+                  <span {...sx.props(s.indicator)} /> Record{" "}
+                  {selectedSource.kind}
+                </button>
+              </>
+            ) : loading ? (
               <p {...sx.props(s.text)}>Finding available sources…</p>
             ) : error ? (
               <>
@@ -820,7 +895,7 @@ export default function Recorder() {
               </>
             ) : panel === "display" || panel === "area" ? (
               <>
-                {sources?.displays.map((d, i) => (
+                {sources?.displays.map((d) => (
                   <button
                     key={d.id}
                     {...sx.props(s.item)}
@@ -832,9 +907,7 @@ export default function Recorder() {
                   >
                     <Monitor size={29} strokeWidth={1.2} />
                     <span>
-                      <span {...sx.props(s.itemTitle)}>
-                        {i === 0 ? "Main display" : `Display ${i + 1}`}
-                      </span>
+                      <span {...sx.props(s.itemTitle)}>{d.name}</span>
                       <span {...sx.props(s.itemDetail)}>
                         {d.width} × {d.height} ·{" "}
                         {panel === "area"
@@ -1284,10 +1357,44 @@ export default function Recorder() {
                 ].map((m) => (
                   <button
                     key={m.id}
-                    aria-pressed={panel === m.id}
+                    aria-pressed={
+                      panel === m.id ||
+                      (panel === "source-ready" &&
+                        selectedSource?.kind === m.id)
+                    }
+                    aria-haspopup={
+                      m.id === "display" || m.id === "window"
+                        ? "menu"
+                        : undefined
+                    }
+                    aria-expanded={sourceMenu === m.id}
                     data-motion="static"
                     {...sx.props(s.mode, panel === m.id && s.active)}
                     onClick={() => pick(m.id)}
+                    onContextMenu={(event) => {
+                      if (m.id !== "display" && m.id !== "window") return;
+                      event.preventDefault();
+                      void pickSourceMenu(m.id, event.currentTarget);
+                    }}
+                    onKeyDown={(event) => {
+                      if (
+                        (m.id !== "display" && m.id !== "window") ||
+                        event.nativeEvent.isComposing ||
+                        event.repeat ||
+                        event.metaKey ||
+                        event.ctrlKey ||
+                        event.altKey
+                      )
+                        return;
+                      if (
+                        event.key === "ArrowDown" ||
+                        event.key === "ContextMenu" ||
+                        (event.key === "F10" && event.shiftKey)
+                      ) {
+                        event.preventDefault();
+                        void pickSourceMenu(m.id, event.currentTarget);
+                      }
+                    }}
                   >
                     <RecorderSymbol
                       name={m.id}

@@ -17,6 +17,7 @@ void app.whenReady().then(async () => {
         recorderDirectory: async () => '',
         onRecorderState: () => () => {}, onAreaSelected: () => () => {},
         recorderExpand: async () => {},
+        recorderSourceMenu: request => ipcRenderer.invoke('verify-source-menu',request),
         recorderInputMenu: request => ipcRenderer.invoke('verify-input-menu',request),
         recorderSources: () => ipcRenderer.invoke('verify-sources'),
         recorderStart: choice => ipcRenderer.invoke('verify-start',choice),
@@ -31,6 +32,16 @@ void app.whenReady().then(async () => {
             label: "A very long external camera and microphone device name",
           },
     );
+    ipcMain.handle("verify-source-menu", (_, request) => ({
+      kind: request.kind,
+      source: {
+        id: 2,
+        name: "Selected window",
+        app: "Example",
+        width: 1200,
+        height: 800,
+      },
+    }));
     let requests = 0;
     let complete: ((value: unknown) => void) | undefined;
     ipcMain.handle("verify-sources", () => {
@@ -40,7 +51,13 @@ void app.whenReady().then(async () => {
       });
     });
     let captureChoice:
-      { countdownSeconds?: number; hideDesktopIcons?: boolean } | undefined;
+      | {
+          mode?: string;
+          windowId?: number;
+          countdownSeconds?: number;
+          hideDesktopIcons?: boolean;
+        }
+      | undefined;
     ipcMain.handle("verify-start", (_, choice) => {
       captureChoice = choice;
     });
@@ -203,7 +220,7 @@ void app.whenReady().then(async () => {
       "No-countdown hint did not update",
     );
     await evaluate(
-      "Array.from(document.querySelectorAll('button')).find(button => button.textContent.includes('Main display')).click()",
+      "Array.from(document.querySelectorAll('button')).find(button => button.textContent.includes('Updated display')).click()",
     );
     await until(() => !!captureChoice, "Capture request was not sent");
     assert.equal(
@@ -216,6 +233,33 @@ void app.whenReady().then(async () => {
       true,
       "Capture ignored the desktop-icon preference",
     );
+    const previousCapture = captureChoice;
+    await evaluate(
+      "window.controls.find(button => button.textContent === 'Window').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true}))",
+    );
+    await until(
+      () =>
+        evaluate(
+          "[...document.querySelectorAll('button')].some(button => button.textContent.trim() === 'Record window')",
+        ),
+      "Source selection was not prepared",
+    );
+    assert.equal(
+      captureChoice,
+      previousCapture,
+      "Source selection started recording without confirmation",
+    );
+    await evaluate(
+      "[...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Record window').click()",
+    );
+    await until(
+      () => captureChoice !== previousCapture,
+      "Record action did not send the selected source",
+    );
+    assert.equal(captureChoice!.mode, "window");
+    assert.equal(captureChoice!.windowId, 2);
+    assert.equal(captureChoice!.countdownSeconds, 0);
+    assert.equal(captureChoice!.hideDesktopIcons, true);
     console.log(
       JSON.stringify({
         overlappingScans: "coalesced",

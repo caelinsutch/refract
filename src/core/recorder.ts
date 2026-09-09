@@ -4,6 +4,17 @@ export type CaptureSource = {
   width: number;
   height: number;
   app?: string;
+  appPath?: string;
+};
+export type RecorderSourceMenu = {
+  kind: "display" | "window";
+  selected?: number;
+  x: number;
+  y: number;
+};
+export type RecorderSourceSelection = {
+  kind: "display" | "window";
+  source: CaptureSource;
 };
 export type RecorderInputMenu = {
   kind: "camera" | "microphone" | "audio" | "settings";
