@@ -407,6 +407,16 @@ export function setupRecorder(
           request.kind === "settings"
             ? [
                 {
+                  label: "Hide desktop icons in recorded video",
+                  type: "checkbox",
+                  checked: request.hideDesktopIcons === true,
+                  click: () => {
+                    selection = {
+                      hideDesktopIcons: request.hideDesktopIcons !== true,
+                    };
+                  },
+                },
+                {
                   label: "After recording",
                   submenu: [
                     {

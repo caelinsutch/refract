@@ -15,6 +15,7 @@ struct CaptureConfig: Decodable {
     let windowId: UInt32?
     let area: Rect?
     let systemAudio: Bool
+    let hideDesktopIcons: Bool?
     let cameraId: String?
     let cameraResolution: Int?
     let microphoneId: String?
@@ -75,7 +76,10 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                 }
             }
             let excluded = content.applications.filter { $0.bundleIdentifier == "com.github.Electron" || $0.bundleIdentifier == "com.caelinsutch.refract" }
-            filter = SCContentFilter(display: display, excludingApplications: excluded, exceptingWindows: [])
+            let desktopIcons = config.hideDesktopIcons == true ? content.windows.filter {
+                isDesktopIconWindow(bundleIdentifier: $0.owningApplication?.bundleIdentifier, layer: $0.windowLayer)
+            } : []
+            filter = SCContentFilter(display: display, excludingApplications: excluded, exceptingWindows: desktopIcons)
             bounds = display.frame
             if let area = config.area { bounds = CGRect(x: display.frame.minX + area.x, y: display.frame.minY + area.y, width: area.width, height: area.height) }
         }

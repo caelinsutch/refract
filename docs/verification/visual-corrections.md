@@ -516,3 +516,30 @@ The renderer refresh verifier still passes through the explicit panel path.
 This is a partial menu match: desktop-icon hiding, the quick-share widget, dock
 visibility, recorded-area highlighting, and the reference's Advanced structure
 remain absent. Exact live menu placement/material comparison awaits unlock.
+
+## Capture-only desktop-icon option and resumed live checks — 2026-09-09
+
+Added the reference's “Hide desktop icons in recorded video” native-menu option,
+persisted its value, and forwarded it to the Swift capture configuration. For
+display/area capture, the existing app-exclusion filter now excepts Finder windows
+at the CoreGraphics desktop-icon level. It does not modify Finder preferences,
+hide ordinary Finder windows, or replace the desktop wallpaper. Single-window
+capture retains its existing filter. The default remains off for older settings.
+
+The implementation uses Apple's documented exception semantics for
+[SCContentFilter](https://developer.apple.com/documentation/screencapturekit/sccontentfilter/init(display:excludingapplications:exceptingwindows:))
+and its [desktop-icon window level](https://developer.apple.com/documentation/coregraphics/cgwindowlevelkey/desktopiconwindow).
+Both native helpers and the application build pass. A Swift classification check
+excludes only the intended app/layer combination. Native-menu persistence and the
+renderer-to-capture request checks pass. Once the Mac became accessible, a
+read-only SCShareableContent inspection found one matching Finder window at layer
+-2147483603. Recorded-pixel verification remains pending, as does behavior if
+Finder recreates its desktop window during an active recording.
+
+Opened the fresh package at `release/camera-menu/Refract-darwin-arm64/Refract.app`
+after confirming Refract was not running. CUA now returns visible toolbar images.
+Opening and cancelling Recording options showed the native menu and returned to
+the compact bar. The reference recording bar is also visible again: its close
+button placement, group spacing, and SF Symbol shapes still differ. It rendered
+dark while Refract followed the system's light theme. Full visual parity is not
+claimed, and the user's earlier deliberate theme/accent preferences still apply.

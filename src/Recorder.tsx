@@ -405,6 +405,15 @@ export default function Recorder() {
       displayId: number;
     } | null>(null);
   const areaStartButton = useRef<HTMLButtonElement>(null);
+  const [hideDesktopIcons, setHideDesktopIcons] = useState(() => {
+    try {
+      return (
+        localStorage.getItem("refract.recorder.hideDesktopIcons") === "true"
+      );
+    } catch {
+      return false;
+    }
+  });
   const [countdownSeconds, setCountdownSeconds] = useState<0 | 3 | 5 | 10>(
     () => {
       try {
@@ -427,6 +436,7 @@ export default function Recorder() {
       areaStartButton.current?.focus({ preventScroll: true });
   }, [panel, area]);
   const options = useRef({
+    hideDesktopIcons,
     countdownSeconds,
     systemAudio,
     microphone,
@@ -436,6 +446,7 @@ export default function Recorder() {
     cameraResolution,
   });
   options.current = {
+    hideDesktopIcons,
     countdownSeconds,
     systemAudio,
     microphone,
@@ -464,6 +475,7 @@ export default function Recorder() {
     try {
       await api?.recorderStart({
         ...choice,
+        hideDesktopIcons: options.current.hideDesktopIcons,
         countdownSeconds: options.current.countdownSeconds,
         systemAudio: options.current.systemAudio,
         automaticZooms: options.current.automaticZooms,
@@ -579,10 +591,23 @@ export default function Recorder() {
         countdownSeconds,
         automaticZooms,
         completionAction: completion.action,
+        hideDesktopIcons,
         x: rect.left,
         y: rect.top,
       });
       if (!result) return;
+      if ("hideDesktopIcons" in result) {
+        setHideDesktopIcons(result.hideDesktopIcons);
+        try {
+          localStorage.setItem(
+            "refract.recorder.hideDesktopIcons",
+            String(result.hideDesktopIcons),
+          );
+        } catch {
+          /* Keep the session preference. */
+        }
+        return;
+      }
       if ("settings" in result) {
         expand("settings");
         void refresh();

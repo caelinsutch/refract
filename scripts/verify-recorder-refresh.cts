@@ -17,10 +17,19 @@ void app.whenReady().then(async () => {
         recorderDirectory: async () => '',
         onRecorderState: () => () => {}, onAreaSelected: () => () => {},
         recorderExpand: async () => {},
-        recorderInputMenu: async request => request.kind === 'settings' ? {settings:'advanced'} : ({value:'fixture-device', label:'A very long external camera and microphone device name'}),
+        recorderInputMenu: request => ipcRenderer.invoke('verify-input-menu',request),
         recorderSources: () => ipcRenderer.invoke('verify-sources'),
         recorderStart: choice => ipcRenderer.invoke('verify-start',choice),
       });`,
+    );
+    let settingsChoice: unknown = { settings: "advanced" };
+    ipcMain.handle("verify-input-menu", (_, request) =>
+      request.kind === "settings"
+        ? settingsChoice
+        : {
+            value: "fixture-device",
+            label: "A very long external camera and microphone device name",
+          },
     );
     let requests = 0;
     let complete: ((value: unknown) => void) | undefined;
@@ -30,7 +39,8 @@ void app.whenReady().then(async () => {
         complete = resolve;
       });
     });
-    let captureChoice: { countdownSeconds?: number } | undefined;
+    let captureChoice:
+      { countdownSeconds?: number; hideDesktopIcons?: boolean } | undefined;
     ipcMain.handle("verify-start", (_, choice) => {
       captureChoice = choice;
     });
@@ -175,6 +185,15 @@ void app.whenReady().then(async () => {
         ),
       "Countdown preference was not saved",
     );
+    settingsChoice = { hideDesktopIcons: true };
+    await evaluate("window.pick('Recording options')");
+    await until(
+      () =>
+        evaluate(
+          "localStorage.getItem('refract.recorder.hideDesktopIcons') === 'true'",
+        ),
+      "Desktop-icon preference was not saved",
+    );
     await evaluate("window.pick('Display')");
     await until(
       () =>
@@ -191,6 +210,11 @@ void app.whenReady().then(async () => {
       captureChoice!.countdownSeconds,
       0,
       "Capture ignored the no-countdown preference",
+    );
+    assert.equal(
+      captureChoice!.hideDesktopIcons,
+      true,
+      "Capture ignored the desktop-icon preference",
     );
     console.log(
       JSON.stringify({

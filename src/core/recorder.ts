@@ -11,6 +11,7 @@ export type RecorderInputMenu = {
   cameraResolution?: 720 | 1080 | 2160;
   countdownSeconds?: 0 | 3 | 5 | 10;
   automaticZooms?: boolean;
+  hideDesktopIcons?: boolean;
   completionAction?: "create-project" | "export-file";
   x: number;
   y: number;
@@ -20,6 +21,7 @@ export type RecorderInputSelection =
   | { cameraResolution: 720 | 1080 | 2160 }
   | { countdownSeconds: 0 | 3 | 5 | 10 }
   | { automaticZooms: boolean }
+  | { hideDesktopIcons: boolean }
   | { completionAction: "create-project" | "export-file" }
   | { settings: "advanced" };
 export type CaptureSources = {
@@ -31,6 +33,7 @@ export type CaptureSources = {
   microphones: { id: string; name: string }[];
 };
 export type CaptureChoice = {
+  hideDesktopIcons?: boolean;
   countdownSeconds?: 0 | 3 | 5 | 10;
   mode: "display" | "window" | "area";
   displayId?: number;

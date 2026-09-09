@@ -74,7 +74,8 @@ void app.whenReady().then(async () => {
       ["keyboard", true],
       ["click", false],
     ];
-    if (settingsMode) interactions.push(["click", true], ["click", true]);
+    if (settingsMode)
+      interactions.push(["click", true], ["click", true], ["click", true]);
     let settingsSelection = 0;
     for (const [activation, select] of interactions) {
       inputMenu = undefined;
@@ -126,10 +127,16 @@ void app.whenReady().then(async () => {
             inputMenu!.items
               .find((item) => item.label === "Automatically create zooms")!
               .click();
-          else
+          else if (settingsSelection === 2)
             inputMenu!.items
               .find((item) => item.label === "After recording")!
               .submenu!.items[1].click();
+          if (settingsSelection === 3)
+            inputMenu!.items
+              .find(
+                (item) => item.label === "Hide desktop icons in recorded video",
+              )!
+              .click();
           settingsSelection++;
         }
       } else if (cameraMode) {
@@ -188,6 +195,12 @@ void app.whenReady().then(async () => {
           "JSON.parse(localStorage.getItem('refract.recorder.completion')).action",
         ),
         "export-file",
+      );
+      assert.equal(
+        await contents.executeJavaScript(
+          "localStorage.getItem('refract.recorder.hideDesktopIcons')",
+        ),
+        "true",
       );
     } else if (cameraMode) {
       assert.equal(
