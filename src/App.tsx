@@ -1,3 +1,4 @@
+import { useClickAudio } from "./media/use-click-audio";
 import {
   dragMask,
   maskHandleAt,
@@ -540,6 +541,13 @@ export default function App() {
 
   useBackgroundAudio(project, time, playing, previewSpeed, tell);
   useMicrophoneAudio(project, time, playing, previewSpeed, tell);
+  const auditionClick = useClickAudio(
+    project,
+    time,
+    playing,
+    previewSpeed,
+    tell,
+  );
   const audioPreview = useAudioPreview(
     project,
     playing || exporting || tab !== "audio",
@@ -2370,6 +2378,53 @@ export default function App() {
                         <option value="ripple">Ripple</option>
                       </select>
                     </Row>
+                    <Row>
+                      <label htmlFor="click-sound">Click sound</label>
+                      <select
+                        id="click-sound"
+                        value={project.appearance.clickSound ?? "none"}
+                        onChange={(e) => {
+                          const value = e.target.value as
+                            "none" | "soft" | "mechanical";
+                          appearance({ clickSound: value });
+                          if (value !== "none") void auditionClick(value);
+                        }}
+                      >
+                        <option value="none">None</option>
+                        <option value="soft">Soft</option>
+                        <option value="mechanical">Mechanical</option>
+                      </select>
+                    </Row>
+                    {project.appearance.clickSound &&
+                      project.appearance.clickSound !== "none" && (
+                        <>
+                          <Range
+                            label="Click sound volume"
+                            value={
+                              (project.appearance.clickSoundVolume ?? 0.25) *
+                              100
+                            }
+                            min={0}
+                            max={100}
+                            step={5}
+                            unit="%"
+                            resetValue={25}
+                            onChange={(value) =>
+                              appearance({ clickSoundVolume: value / 100 })
+                            }
+                          />
+                          <Button
+                            onClick={() =>
+                              void auditionClick(
+                                project.appearance.clickSound as
+                                  "soft" | "mechanical",
+                              )
+                            }
+                          >
+                            Play click sound preview
+                          </Button>
+                        </>
+                      )}
                     <Divider />
                     <Toggle
                       label="Hide cursor if not moving"
