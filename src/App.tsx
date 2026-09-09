@@ -2,6 +2,7 @@ import { confirmProjectReplacement } from "./core/unsaved-project";
 import { Modal } from "./components/Modal";
 import { ShortcutSettings } from "./components/ShortcutSettings";
 import { clipAudioGain } from "./core/audio";
+import { useBackgroundAudio } from "./media/use-background-audio";
 import { CameraLayouts } from "./components/CameraLayouts";
 import { StateIcon } from "./components/StateIcon";
 import { SpringControls } from "./components/SpringControls";
@@ -366,6 +367,7 @@ const tabs = [
 export default function App() {
   const [cropping, setCropping] = useState(false);
   const [captionBusy, setCaptionBusy] = useState(false);
+  const [musicBusy, setMusicBusy] = useState(false);
   const [previewQuality, setPreviewQuality] = useState<
     "quality" | "performance"
   >("quality");
@@ -498,6 +500,23 @@ export default function App() {
       }
     }),
   );
+
+  useBackgroundAudio(project, time, playing, previewSpeed, tell);
+  async function importBackgroundAudio() {
+    if (!project || musicBusy || !window.refract) return;
+    const id = project.id;
+    setMusicBusy(true);
+    try {
+      const track = await window.refract.importBackgroundAudio();
+      const current = projectRef.current;
+      if (track && current?.id === id)
+        edit({ ...current, backgroundAudio: track });
+    } catch (error) {
+      tell(String(error));
+    } finally {
+      setMusicBusy(false);
+    }
+  }
 
   async function importVideo() {
     if (replacingProject.current) return;
@@ -1590,8 +1609,8 @@ export default function App() {
               icon
               title={
                 project?.appearance.muted
-                  ? "Unmute preview and export"
-                  : "Mute preview and export"
+                  ? "Unmute source audio"
+                  : "Mute source audio"
               }
               aria-pressed={project?.appearance.muted ?? false}
               disabled={!project}
@@ -2215,6 +2234,74 @@ export default function App() {
                   Audio follows clip cuts and speed changes in the exported
                   video.
                 </Note>
+                <Divider />
+                <Heading>Background audio</Heading>
+                {project.backgroundAudio ? (
+                  <>
+                    <Note>{project.backgroundAudio.name}</Note>
+                    <Toggle
+                      label="Mute background audio"
+                      value={project.backgroundAudio.muted}
+                      onChange={(muted) =>
+                        edit({
+                          ...project,
+                          backgroundAudio: {
+                            ...project.backgroundAudio!,
+                            muted,
+                          },
+                        })
+                      }
+                    />
+                    <Range
+                      label="Background audio volume"
+                      value={project.backgroundAudio.volume * 100}
+                      max={100}
+                      unit="%"
+                      onChange={(volume) =>
+                        edit(
+                          {
+                            ...project,
+                            backgroundAudio: {
+                              ...project.backgroundAudio!,
+                              volume: volume / 100,
+                            },
+                          },
+                          "background-audio-volume",
+                        )
+                      }
+                    />
+                    <Button
+                      onClick={() =>
+                        edit({
+                          ...project,
+                          backgroundAudio: {
+                            ...project.backgroundAudio!,
+                            volume: 0.05,
+                          },
+                        })
+                      }
+                    >
+                      Reset volume
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        edit({ ...project, backgroundAudio: undefined })
+                      }
+                    >
+                      Remove background audio
+                    </Button>
+                  </>
+                ) : null}
+                <Button
+                  disabled={musicBusy || !window.refract}
+                  onClick={importBackgroundAudio}
+                >
+                  {musicBusy
+                    ? "Adding audio…"
+                    : project.backgroundAudio
+                      ? "Replace background audio…"
+                      : "Add background audio…"}
+                </Button>
               </>
             ) : tab === "animations" ? (
               <>

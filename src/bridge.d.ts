@@ -63,6 +63,10 @@ declare global {
         url: string;
         title: string;
       } | null>;
+      importBackgroundAudio(): Promise<NonNullable<
+        Project["backgroundAudio"]
+      > | null>;
+      projectAudioUrl(file: string): Promise<string>;
       confirmUnsaved(title: string): Promise<"save" | "discard" | "cancel">;
       openProject(): Promise<{
         project: Project;

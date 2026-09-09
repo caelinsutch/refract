@@ -52,6 +52,9 @@ contextBridge.exposeInMainWorld("refract", {
   },
 
   importVideo: () => ipcRenderer.invoke("import-video"),
+  importBackgroundAudio: () => ipcRenderer.invoke("import-background-audio"),
+  projectAudioUrl: (file: string) =>
+    ipcRenderer.invoke("project-audio-url", file),
   confirmUnsaved: (title: string) =>
     ipcRenderer.invoke("confirm-unsaved", title),
   openProject: () => ipcRenderer.invoke("open-project"),

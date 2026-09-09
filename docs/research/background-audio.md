@@ -44,3 +44,13 @@ Refract now has a validated optional project background-audio asset with indepen
 The production encoder verifier generated two actual MP4s from distinct tones. At 0.25 and 1.25 seconds, across an edit into a 2× segment, the mixed source amplitude was 0.06237/0.06239 (expected 0.0625) and music amplitude was 0.03123/0.03115 (expected 0.03125). The music asset lasts only 0.5 seconds, so the later measurement also verifies repetition. Muting the source reduced its measured component below 0.000001 while retaining the music. Files remain ignored scratch artifacts.
 
 This is the project/export foundation, not a finished user-facing feature. Native import, playback synchronization, editor controls, asset reopening, and library support still need implementation. Preview and export parity for a saved music-bearing project is therefore not yet established. Reference mix limiting and fades also remain unverified.
+
+## Editor import and playback integration
+
+The editor now imports audio through a native picker, validates an audio stream and finite duration with FFprobe, and copies the selected asset under a unique project-relative media filename. Cancellation or a project-directory change prevents attaching the result to a different project. Add/replace/remove, independent mute, 0–100% volume, and reset to 5% use project history. Removing a track retains its media for undo. A project-relative media URL resolver supports loading tracks from reopened projects.
+
+Background playback uses a separate audio element with looping, output-clock seeking, preview-speed adjustment, and independent gain. Pause, mute, replacement, removal, and unmount stop that element. Late URL resolution is cancelled when the asset changes. The transport mute label now specifies source audio, matching its independent behavior. Save As copies the project media directory through the existing save path.
+
+The production build and 84 tests pass. Live import of the generated WAV showed its filename and 5% gain, created a copied WAV in the disposable project's media directory, and enabled project undo. Remove returned to Add background audio; undo/redo restored the selected track. The UI automation reports some changes with a delay, so audible synchronization, repeated seeking, and final saved/reopened playback need a separate controlled check. No claim of measured live audio output is made. The reference's isolated Play/Stop preview button and user library remain unimplemented, and exact inspector spacing/icon parity remains pending.
+
+A final filesystem check confirmed the saved manifest retains the imported project-relative WAV, 5000 ms duration, gain 0.05, and mute false, and the referenced copied asset exists. Reopened audible playback remains unverified.

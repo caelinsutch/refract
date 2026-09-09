@@ -384,6 +384,63 @@ handle("import-video", async () => {
     title: path.basename(file, path.extname(file)),
   };
 });
+handle("project-audio-url", async (file: string) => {
+  if (!projectDir || typeof file !== "string")
+    throw Error("Open a project first.");
+  const resolved = inside(projectDir, file);
+  await fs.access(resolved);
+  return expose(resolved);
+});
+handle("import-background-audio", async () => {
+  if (!projectDir) throw Error("Open a video first.");
+  const directory = projectDir;
+  const selected = await dialog.showOpenDialog(win, {
+    title: "Add background audio",
+    properties: ["openFile"],
+    filters: [
+      {
+        name: "Audio",
+        extensions: ["mp3", "mp4", "m4a", "wav", "aiff", "aif", "flac", "ogg"],
+      },
+    ],
+  });
+  if (selected.canceled || projectDir !== directory) return null;
+  const source = selected.filePaths[0];
+  const { stdout } = await run(
+    tool("ffprobe"),
+    [
+      "-v",
+      "error",
+      "-select_streams",
+      "a:0",
+      "-show_entries",
+      "stream=duration:format=duration",
+      "-of",
+      "json",
+      source,
+    ],
+    { timeout: 15000 },
+  );
+  const info = JSON.parse(stdout);
+  const duration =
+    (Number(info.streams?.[0]?.duration) || Number(info.format?.duration)) *
+    1000;
+  if (!info.streams?.length || !Number.isFinite(duration) || duration <= 0)
+    throw Error("Choose a file with a playable audio track.");
+  if (projectDir !== directory) return null;
+  const file =
+    "media/" + crypto.randomUUID() + path.extname(source).toLowerCase();
+  await fs.mkdir(path.join(directory, "media"), { recursive: true });
+  await fs.copyFile(source, inside(directory, file));
+  if (projectDir !== directory) return null;
+  return {
+    file,
+    name: path.basename(source),
+    duration,
+    volume: 0.05,
+    muted: false,
+  };
+});
 handle("open-project", async () => {
   const chosen = await dialog.showOpenDialog(win, {
     properties: ["openDirectory"],
