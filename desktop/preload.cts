@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld("refract", {
   recorderWindowPicker: () => ipcRenderer.invoke("recorder-window-picker"),
   recorderWindowPickerCancel: () =>
     ipcRenderer.invoke("recorder-window-picker-cancel"),
+  windowPickerIcon: (id: number) =>
+    ipcRenderer.invoke("window-picker-icon", id),
   windowPickerState: () => ipcRenderer.invoke("window-picker-state"),
   windowPickerSelect: (id: number | null) =>
     ipcRenderer.invoke("window-picker-select", id),

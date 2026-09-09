@@ -70,3 +70,23 @@ export function updateRecorderPanelGlass(
     return false;
   }
 }
+
+const appIcons = new Map<string, string>();
+/** Callers must obtain the path from a trusted native source list. */
+export function recorderApplicationIcon(appPath: string): string | null {
+  if (process.platform !== "darwin" || !appPath) return null;
+  const cached = appIcons.get(appPath);
+  if (cached) return cached;
+  try {
+    const native = require(
+      path.join(__dirname, "../../native/.build/recorder-glass.node"),
+    ) as { applicationIcon(path: string): string };
+    const icon = native.applicationIcon(appPath);
+    if (!icon.startsWith("data:image/png;base64,")) return null;
+    if (appIcons.size >= 64) appIcons.delete(appIcons.keys().next().value!);
+    appIcons.set(appPath, icon);
+    return icon;
+  } catch {
+    return null;
+  }
+}

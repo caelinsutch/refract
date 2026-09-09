@@ -1,3 +1,4 @@
+import { recorderApplicationIcon } from "./recorder-glass.cjs";
 import { BrowserWindow, ipcMain, screen } from "electron";
 import path from "node:path";
 import type {
@@ -44,6 +45,11 @@ export function createWindowPicker(list: () => Promise<CaptureSources>) {
     if (!window) throw Error("Unknown window picker sender.");
     return window;
   }
+  ipcMain.handle("window-picker-icon", (event, id: number) => {
+    owner(event.sender);
+    const source = sources.find((source) => source.id === id);
+    return source?.appPath ? recorderApplicationIcon(source.appPath) : null;
+  });
   ipcMain.handle("window-picker-state", (event) => state(owner(event.sender)));
   ipcMain.handle("window-picker-select", (event, id: number | null) => {
     owner(event.sender);

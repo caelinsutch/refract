@@ -36,6 +36,7 @@ declare global {
         import("./core/recorder").WindowPickerResult
       >;
       recorderWindowPickerCancel?(): Promise<void>;
+      windowPickerIcon(id: number): Promise<string | null>;
       windowPickerState(): Promise<import("./core/recorder").WindowPickerState>;
       windowPickerSelect(id: number | null): Promise<void>;
       windowPickerFinish(

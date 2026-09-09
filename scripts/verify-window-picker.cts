@@ -31,6 +31,7 @@ void app.whenReady().then(async () => {
     const front = {
       id: 202,
       name: "Front",
+      appPath: "/System/Applications/TextEdit.app",
       app: "Fixture",
       width: 500,
       height: 300,
@@ -108,6 +109,30 @@ void app.whenReady().then(async () => {
     assert.equal(
       await evaluate("document.activeElement.textContent"),
       "Start recording",
+    );
+    await until(
+      () =>
+        evaluate(
+          "document.querySelector('.window-picker-app-icon img')?.naturalWidth === 288",
+        ),
+      "Native app icon did not load at 3x",
+    );
+    assert.equal(
+      await evaluate(
+        "document.querySelector('.window-picker-app-icon img').naturalHeight",
+      ),
+      288,
+    );
+    assert.equal(
+      await evaluate(
+        "document.querySelector('.window-picker-app-icon').getBoundingClientRect().width",
+      ),
+      96,
+    );
+    assert.equal(
+      await evaluate("window.refract.windowPickerIcon(-99)"),
+      null,
+      "Unknown source could request icon",
     );
     sources = { ...sources, windows: [back] };
     await until(
@@ -217,6 +242,7 @@ void app.whenReady().then(async () => {
     recorder.destroy();
     console.log(
       JSON.stringify({
+        nativeApplicationIcon: "96pt / 288px",
         rendererModeSwitchAndHandoff: true,
         fullDisplay: true,
         frontmostHover: true,

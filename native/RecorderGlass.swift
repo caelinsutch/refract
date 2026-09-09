@@ -125,6 +125,35 @@ private let panel: napi_callback = { env, info in
     return result
 }
 
+/// Render the system application icon at 3x its 96-point picker size.
+private let applicationIcon: napi_callback = { env, info in
+    var argument: napi_value?
+    var count = 1
+    var result: napi_value?
+    var output = ""
+    if Thread.isMainThread, napi_get_cb_info(env, info, &count, &argument, nil, nil) == 0, count == 1 {
+        var length = 0
+        if napi_get_value_string_utf8(env, argument, nil, 0, &length) == 0, length > 0, length < 8192 {
+            var text = [CChar](repeating: 0, count: length + 1)
+            if napi_get_value_string_utf8(env, argument, &text, text.count, &length) == 0,
+               let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 288, pixelsHigh: 288, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+               let context = NSGraphicsContext(bitmapImageRep: bitmap) {
+                let icon = NSWorkspace.shared.icon(forFile: String(cString: text))
+                NSGraphicsContext.saveGraphicsState()
+                NSGraphicsContext.current = context
+                context.imageInterpolation = .high
+                icon.draw(in: NSRect(x: 0, y: 0, width: 288, height: 288), from: .zero, operation: .copy, fraction: 1)
+                NSGraphicsContext.restoreGraphicsState()
+                if let png = bitmap.representation(using: .png, properties: [:]) {
+                    output = "data:image/png;base64," + png.base64EncodedString()
+                }
+            }
+        }
+    }
+    output.withCString { text in _ = napi_create_string_utf8(env, text, output.utf8.count, &result) }
+    return result
+}
+
 private let symbolAtlas: napi_callback = { env, _ in
     var result: napi_value?
     let atlas = recorderSymbolAtlas()
@@ -143,5 +172,7 @@ public func registerRecorderGlass(_ env: napi_env?, _ exports: napi_value?) -> n
     _ = napi_set_named_property(env, exports, "symbolAtlas", function)
     _ = napi_create_function(env, "panel", 5, panel, nil, &function)
     _ = napi_set_named_property(env, exports, "panel", function)
+    _ = napi_create_function(env, "applicationIcon", 15, applicationIcon, nil, &function)
+    _ = napi_set_named_property(env, exports, "applicationIcon", function)
     return exports
 }

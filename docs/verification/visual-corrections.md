@@ -766,3 +766,9 @@ continues to require the system permission; window-source listing still does too
 - Production build and native window-picker verifier passed full-display bounds, frontmost hover, two-step selection, source refresh, keyboard selection, cancellation, missing permission, overlay cleanup, and production recorder mode-switch/result handoff. Capture was stubbed in these tests.
 - Packaged app opened the live picker and displayed the real ChatGPT window's bounds. It was subsequently dismissed; no successful live recording is claimed from this check.
 - Remaining reference gaps: application icons, split-button completion menu inside the window highlight, window resize presets, crop suggestions, ignored-window controls, display context menu, and exact motion/material comparison. Geometry polling may need refinement for rapidly moving windows.
+
+### Native application icons — 2026-09-09
+
+- Added the reference's 96-point icon slot above the window title, with a fixed-size placeholder so loading does not move the controls.
+- Swift renders the system application icon into a 288×288 PNG. The main process obtains application paths from native window sources, validates the picker sender/window ID, and caches up to 64 icons. No renderer-supplied file path is read.
+- Native/renderer builds and the window-picker verifier passed 288px image dimensions, 96pt layout size, unknown-window rejection, and existing selection/handoff checks. The icon assertion runs after selecting the target to avoid interference from live pointer movement during an asynchronous hover load.

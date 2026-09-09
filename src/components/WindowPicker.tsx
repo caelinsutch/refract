@@ -3,6 +3,7 @@ import type { WindowPickerState } from "../core/recorder";
 import { windowAtPoint } from "../core/window-picker";
 export function WindowPicker() {
   const [state, setState] = useState<WindowPickerState | null>(null);
+  const [icon, setIcon] = useState<{ path: string; url: string } | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const start = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -33,10 +34,23 @@ export function WindowPicker() {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [state]);
-  if (!state) return null;
-  const target = state.windows.find(
-    (source) => source.id === (state.selected ?? hover),
+  const target = state?.windows.find(
+    (source) => source.id === (state?.selected ?? hover),
   );
+  useEffect(() => {
+    let cancelled = false;
+    if (!target?.appPath) return;
+    void window.refract
+      ?.windowPickerIcon(target.id)
+      .then((url) => {
+        if (!cancelled && url) setIcon({ path: target.appPath!, url });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [target?.id, target?.appPath]);
+  if (!state) return null;
   const r = target?.bounds;
   return (
     <main
@@ -73,6 +87,13 @@ export function WindowPicker() {
           aria-label={target.name}
         >
           <div className="window-picker-info">
+            <div className="window-picker-app-icon" aria-hidden="true">
+              {icon && icon.path === target.appPath ? (
+                <img src={icon.url} alt="" draggable={false} />
+              ) : (
+                <span />
+              )}
+            </div>
             <h1>{target.app || target.name}</h1>
             <p>
               {Math.round(r.width)} × {Math.round(r.height)}
