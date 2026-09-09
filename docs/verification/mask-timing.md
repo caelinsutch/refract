@@ -21,3 +21,9 @@ Code review of the preview scheduler found that paused frames render only when i
 Project validation now checks individual masks: nonempty unique IDs, finite numeric fields, valid source-time intervals, supported mask types, strength from 0 to 100, and normalized coordinates/dimensions from 0 to 1. Previously only the presence of the masks array was checked. Existing masks whose rectangle extends past the frame edge remain accepted because older numeric controls allowed that geometry and the compositor clips it. Zero-size and zero-strength legacy values also remain accepted.
 
 Round-trip compatibility and malformed-mask regression tests pass, including null entries, duplicate IDs, NaN, unsupported types, and invalid ranges. All 100 core tests and production compilation pass. Native project-open error presentation was not exercised for this change.
+
+## Preview resize handles
+
+The selected mask now has an editor-only outline and four corner handles, drawn after the shared composition renderer. Corner hit testing uses CSS-sized targets and the source-to-preview transform; the drawn handles scale with preview pixel density. Dragging a corner anchors the opposite corner and clamps resizing to source bounds with a one-source-pixel minimum. Movement and resizing share draft, cancellation, and single-release commit behavior. Selection changes explicitly invalidate the paused preview. The shared renderer used for exports and copied frames does not draw these editing adornments.
+
+The added geometry test checks corner hit targets, opposite-corner anchoring, source-edge limits, and prevention of inverted or sub-pixel dimensions. All 101 tests and the production build pass. Live handle interaction, visual handle placement, and encoded-export comparison remain unverified. Reference-specific handle styling has not been established because the reference editor screenshot is still unavailable.

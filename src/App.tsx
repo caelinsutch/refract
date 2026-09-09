@@ -1,4 +1,9 @@
-import { moveMask } from "./core/mask-drag";
+import {
+  dragMask,
+  maskHandleAt,
+  drawMaskSelection,
+  type MaskHandle,
+} from "./core/mask-drag";
 import { useMicrophoneAudio } from "./media/use-microphone-audio";
 import { AudioLibrary } from "./components/AudioLibrary";
 import { confirmProjectReplacement } from "./core/unsaved-project";
@@ -387,6 +392,7 @@ export default function App() {
     width: number;
     height: number;
     draft: Mask;
+    handle: MaskHandle;
   } | null>(null);
 
   const [captionBusy, setCaptionBusy] = useState(false);
@@ -440,6 +446,7 @@ export default function App() {
     captionInput = useRef<HTMLInputElement>(null),
     cancelExport = useRef(false),
     projectRef = useRef(project),
+    selectionRef = useRef(selection),
     dirtyRef = useRef(dirty),
     replacingProject = useRef(false),
     timeRef = useRef(time),
@@ -453,6 +460,7 @@ export default function App() {
   };
 
   projectRef.current = project;
+  selectionRef.current = selection;
   dirtyRef.current = dirty;
   timeRef.current = time;
   playingRef.current = playing;
@@ -814,7 +822,7 @@ export default function App() {
           c.height = d.height;
         }
         const ctx = c.getContext("2d");
-        if (ctx)
+        if (ctx) {
           drawFrame(
             ctx,
             v,
@@ -837,6 +845,24 @@ export default function App() {
               : undefined,
             previewQuality,
           );
+          const selected = selectionRef.current;
+          const selectedMask =
+            selected?.type === "mask"
+              ? p.masks.find((m) => m.id === selected.id)
+              : undefined;
+          if (selectedMask)
+            drawMaskSelection(
+              ctx,
+              p,
+              maskDrag.current?.project === p
+                ? maskDrag.current.draft
+                : selectedMask,
+              timeRef.current,
+              d.width,
+              d.height,
+              d.width / d.cssWidth,
+            );
+        }
       }
       if (playingRef.current && p) {
         let next = timeRef.current + (now - last) * previewSpeed;
@@ -914,7 +940,7 @@ export default function App() {
   }, [previewSpeed, loop, url, cameraUrl, project?.id, previewQuality]);
   useEffect(() => {
     requestPreview.current();
-  }, [project, time, playing]);
+  }, [project, time, playing, selection]);
   useEffect(() => {
     const action = (a: string) => {
       cancelMaskDrag();
@@ -1567,14 +1593,24 @@ export default function App() {
                       e.clientY - rect.top,
                     );
                     const source = sourceAt(project, time)?.time ?? 0;
+                    const handle = maskHandleAt(
+                      project,
+                      mask,
+                      time,
+                      rect.width,
+                      rect.height,
+                      e.clientX - rect.left,
+                      e.clientY - rect.top,
+                    );
                     if (
-                      !point ||
                       source < mask.start ||
                       source >= mask.end ||
-                      point.x < mask.x ||
-                      point.x > mask.x + mask.width ||
-                      point.y < mask.y ||
-                      point.y > mask.y + mask.height
+                      (!handle &&
+                        (!point ||
+                          point.x < mask.x ||
+                          point.x > mask.x + mask.width ||
+                          point.y < mask.y ||
+                          point.y > mask.y + mask.height))
                     )
                       return;
                     setPlaying(false);
@@ -1589,12 +1625,13 @@ export default function App() {
                       width: rect.width,
                       height: rect.height,
                       draft: mask,
+                      handle: handle ?? "move",
                     };
                   }}
                   onPointerMove={(e) => {
                     const drag = maskDrag.current;
                     if (drag) {
-                      drag.draft = moveMask(
+                      drag.draft = dragMask(
                         drag.project,
                         drag.mask,
                         drag.time,
@@ -1602,6 +1639,7 @@ export default function App() {
                         drag.height,
                         e.clientX - drag.x,
                         e.clientY - drag.y,
+                        drag.handle,
                       );
                       requestPreview.current();
                     }
@@ -1610,7 +1648,7 @@ export default function App() {
                     const drag = maskDrag.current;
                     cancelMaskDrag();
                     if (!drag || project !== drag.project) return;
-                    const moved = moveMask(
+                    const moved = dragMask(
                       project,
                       drag.mask,
                       drag.time,
@@ -1618,8 +1656,14 @@ export default function App() {
                       drag.height,
                       e.clientX - drag.x,
                       e.clientY - drag.y,
+                      drag.handle,
                     );
-                    if (moved.x !== drag.mask.x || moved.y !== drag.mask.y)
+                    if (
+                      moved.x !== drag.mask.x ||
+                      moved.y !== drag.mask.y ||
+                      moved.width !== drag.mask.width ||
+                      moved.height !== drag.mask.height
+                    )
                       edit({
                         ...project,
                         masks: project.masks.map((m) =>
@@ -1993,7 +2037,9 @@ export default function App() {
                   <option value="blur">Blur</option>
                   <option value="highlight">Highlight</option>
                 </select>
-                <Note>Drag the mask in the preview to reposition it.</Note>
+                <Note>
+                  Drag the mask to move it, or drag a corner to resize it.
+                </Note>
                 <Divider />
                 {(["x", "y", "width", "height"] as const).map((k) => (
                   <Range

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createProject, type Mask } from "./project";
 import { videoGeometry } from "./compositor";
-import { moveMask } from "./mask-drag";
+import { moveMask, dragMask, maskHandleAt } from "./mask-drag";
 test("mask movement follows preview pixels through crop and zoom", () => {
   const p = createProject({
     file: "fixture",
@@ -53,4 +53,45 @@ test("mask movement follows preview pixels through crop and zoom", () => {
   assert.equal(low.y, 0);
   assert.equal(high.x, 0.9);
   assert.equal(high.y, 0.9);
+});
+
+test("corner resize anchors the opposite corner and cannot invert or leave the source", () => {
+  const p = createProject({
+    file: "fixture",
+    width: 1000,
+    height: 1000,
+    duration: 1000,
+    hasAudio: false,
+  });
+  p.appearance.padding = 0;
+  const m: Mask = {
+    id: "m",
+    start: 0,
+    end: 1000,
+    x: 0.2,
+    y: 0.3,
+    width: 0.4,
+    height: 0.3,
+    type: "blur",
+    strength: 10,
+  };
+  const nw = dragMask(p, m, 0, 1000, 1000, 100, 100, "nw");
+  assert.ok(Math.abs(nw.x - 0.3) < 1e-9 && Math.abs(nw.y - 0.4) < 1e-9);
+  assert.ok(
+    Math.abs(nw.x + nw.width - 0.6) < 1e-9 &&
+      Math.abs(nw.y + nw.height - 0.6) < 1e-9,
+  );
+  const se = dragMask(p, m, 0, 1000, 1000, 10000, 10000, "se");
+  assert.equal(se.x, m.x);
+  assert.equal(se.y, m.y);
+  assert.equal(se.x + se.width, 1);
+  assert.equal(se.y + se.height, 1);
+  const crossed = dragMask(p, m, 0, 1000, 1000, -10000, -10000, "se");
+  assert.ok(
+    Math.abs(crossed.width - 0.001) < 1e-9 &&
+      Math.abs(crossed.height - 0.001) < 1e-9,
+  );
+  assert.equal(maskHandleAt(p, m, 0, 1000, 1000, 200, 300), "nw");
+  assert.equal(maskHandleAt(p, m, 0, 1000, 1000, 600, 600), "se");
+  assert.equal(maskHandleAt(p, m, 0, 1000, 1000, 400, 450), null);
 });
