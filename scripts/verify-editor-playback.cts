@@ -521,8 +521,18 @@ app.whenReady().then(async () => {
       if (!status || status.getBoundingClientRect().bottom > timeline.getBoundingClientRect().top)
         throw Error('Status message overlaps timeline');
     })()`);
-    await window.webContents.executeJavaScript(
-      `document.querySelector('button[title="Background & screen"]').click()`,
+    await window.webContents.executeJavaScript(`(async () => {
+      const close=document.querySelector('button[title="Close Zoom editor"]');
+      if (!close) throw Error('Selected zoom has no close-editor row');
+      close.click();
+      await new Promise(resolve=>setTimeout(resolve,40));
+      if (document.querySelector('input[aria-label="Zoom level"]')) throw Error('Close did not leave zoom editor');
+      if (!document.querySelector('button[aria-label="Wallpaper 1"]')) throw Error('Close did not restore background panel');
+    })()`);
+    assert.equal(
+      await countZooms(),
+      originalZooms + 1,
+      "Closing editor removed the zoom",
     );
     for (const theme of ["dark", "light"] as const) {
       nativeTheme.themeSource = theme;
@@ -552,6 +562,7 @@ app.whenReady().then(async () => {
         trimGesture: "passed",
         rangeCreation: "passed",
         existingRangeGestures: "passed",
+        sidebarClose: "passed",
       }),
     );
   } catch (error) {

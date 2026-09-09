@@ -42,6 +42,7 @@ import {
   Redo2,
   Upload,
   ChevronDown,
+  ChevronLeft,
   Image as ImageIcon,
   MousePointer2,
   Video,
@@ -2003,23 +2004,23 @@ export default function App() {
               </>
             ) : z ? (
               <>
-                <Row>
-                  <Heading>Zoom</Heading>
+                <div style={{ marginBottom: 3 }}>
                   <Button
-                    icon
-                    title="Deselect zoom"
+                    title="Close Zoom editor"
                     onClick={() => setSelection(null)}
                   >
-                    <X size={13} />
+                    <ChevronLeft size={13} />
+                    Close Zoom editor
                   </Button>
-                </Row>
-                <div {...sx.props(s.backgroundTabs)}>
+                </div>
+                <Heading>Zoom</Heading>
+                <div {...sx.props(s.segmented)}>
                   {(["manual", "auto"] as const).map((mode) => (
                     <button
                       key={mode}
                       {...sx.props(
-                        s.backgroundTab,
-                        z.mode === mode && s.backgroundTabSelected,
+                        s.segment,
+                        z.mode === mode && s.segmentActive,
                       )}
                       onClick={() => zoomEdit({ mode })}
                     >
@@ -2066,16 +2067,16 @@ export default function App() {
               </>
             ) : clip ? (
               <>
-                <Row>
-                  <Heading>Clip</Heading>
+                <div style={{ marginBottom: 3 }}>
                   <Button
-                    icon
-                    title="Deselect clip"
+                    title="Close Slice editor"
                     onClick={() => setSelection(null)}
                   >
-                    <X size={13} />
+                    <ChevronLeft size={13} />
+                    Close Slice editor
                   </Button>
-                </Row>
+                </div>
+                <Heading>Clip</Heading>
                 <Toggle
                   label="Hide mouse cursor"
                   value={!!clip.hideCursor}
@@ -2170,16 +2171,16 @@ export default function App() {
               </>
             ) : mask ? (
               <>
-                <Row>
-                  <Heading>Mask & highlight</Heading>
+                <div style={{ marginBottom: 3 }}>
                   <Button
-                    icon
-                    title="Deselect mask"
+                    title="Close Mask editor"
                     onClick={() => setSelection(null)}
                   >
-                    <X size={13} />
+                    <ChevronLeft size={13} />
+                    Close Mask editor
                   </Button>
-                </Row>
+                </div>
+                <Heading>Mask & highlight</Heading>
                 <select
                   aria-label="Mask type"
                   value={mask.type}
