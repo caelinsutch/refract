@@ -996,3 +996,9 @@ Validation: build and all 183 core tests passed. The synthetic shortcut fixture 
 Added the reference's four combinations of timeline/sidebar visibility. Command-menu actions toggle each independently. Preview mode hides both; toggling preview again restores both, including when preview was entered from a partially hidden layout. Command-Shift-Return follows the reference shortcut. Hiding the sidebar also hides its navigation rail. Hiding the timeline removes its visibility menu, scissors control, and zoom slider and adds the reference's bottom playback spacing.
 
 Validation: build, the complete layout-mode transition fixture, default layout/preview-size checks, and playback shortcuts passed. The preview canvas stays mounted across every layout transition. A synthetic preview-mode screenshot was visually inspected. Layout transitions are currently immediate; the reference's transition animation and direct screenshot parity remain outstanding.
+
+## Native View menu — September 9
+
+Added native menu actions for sidebar visibility, timeline visibility, preview mode (Command-Shift-Return), preview size, and loop playback. A renderer-to-main state update keeps checkbox/radio selections synchronized with commands and shortcuts. Actions disable without a project or while a modal, crop, command menu, or export is active; reload and renderer termination clear availability. The main process accepts these state updates only from the editor through its existing sender check.
+
+Validation: production build and synthetic native-menu integration passed. The fixture uses Electron Menu objects, the production renderer, and an IPC preload to verify menu clicks change the layout and feed checked state back; all five preview sizes apply; loop updates; empty/editor-dialog states disable actions; invalid state values fall back safely. Actual menu accelerator dispatch remains a separate live check.

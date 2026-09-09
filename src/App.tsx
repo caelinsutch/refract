@@ -570,6 +570,27 @@ export default function App() {
       )
       .catch(() => {});
   }, [!!project, exporting, modal, cropping, commandOpen]);
+  useEffect(() => {
+    void window.refract
+      ?.setEditorViewState?.({
+        enabled: !!project && !exporting && !modal && !cropping && !commandOpen,
+        sidebar: showSidebar,
+        timeline: showTimeline,
+        previewHeight,
+        loop,
+      })
+      .catch(() => {});
+  }, [
+    !!project,
+    exporting,
+    modal,
+    cropping,
+    commandOpen,
+    showSidebar,
+    showTimeline,
+    previewHeight,
+    loop,
+  ]);
   const video = useRef<HTMLVideoElement>(null),
     cameraVideo = useRef<HTMLVideoElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
@@ -1188,6 +1209,18 @@ export default function App() {
         return;
       }
       if (cropping || modal) return;
+      if (project && !exporting && !commandOpen) {
+        if (a === "toggle-sidebar") setShowSidebar((value) => !value);
+        if (a === "toggle-timeline") setShowTimeline((value) => !value);
+        if (a === "toggle-preview") togglePreviewLayout();
+        if (a === "toggle-loop") setLoop((value) => !value);
+        const size = Number(a.replace("preview-size-", ""));
+        if (
+          a.startsWith("preview-size-") &&
+          previewSizes.some((value) => value === size)
+        )
+          setPreviewHeight(size);
+      }
       if (a === "commands" && !exporting && !modal) {
         pausePreview();
         setCommandOpen((v) => !v);

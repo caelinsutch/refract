@@ -6,6 +6,7 @@ import {
   listAudioLibrary,
   resolveLibraryTrack,
 } from "./audio-library.cjs";
+import { editorViewMenu, updateEditorViewMenu } from "./editor-view-menu.cjs";
 import { setupEditorLifecycle } from "./editor-lifecycle.cjs";
 import { setupCropWindow } from "./crop-window.cjs";
 import { setupProjectGuard } from "./project-guard.cjs";
@@ -169,6 +170,9 @@ app.whenReady().then(() => {
     }
   };
   handle("export-availability", updateExportAvailability);
+  handle("editor-view-state", (state: unknown) => updateEditorViewMenu(state));
+  win.webContents.on("did-start-loading", () => updateEditorViewMenu(null));
+  win.webContents.on("render-process-gone", () => updateEditorViewMenu(null));
   win.webContents.on("did-start-loading", () =>
     updateExportAvailability(false),
   );
@@ -418,6 +422,8 @@ app.whenReady().then(() => {
       {
         label: "View",
         submenu: [
+          ...editorViewMenu(send),
+          { type: "separator" },
           {
             label: "Command menu…",
             accelerator: "CmdOrCtrl+K",

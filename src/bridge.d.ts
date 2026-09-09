@@ -134,6 +134,13 @@ declare global {
         cameraUrl?: string;
       } | null>;
       saveProject(p: Project, saveAs?: boolean): Promise<string | null>;
+      setEditorViewState(state: {
+        enabled: boolean;
+        sidebar: boolean;
+        timeline: boolean;
+        previewHeight: number;
+        loop: boolean;
+      }): Promise<void>;
       setExportAvailability(ready: boolean): Promise<void>;
       showClipboardExports(): Promise<void>;
       exportStart(options: {
