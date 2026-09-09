@@ -59,6 +59,7 @@ export type Appearance = {
   image?: string;
   padding: number;
   radius: number;
+  outerRadius?: number;
   inset: number;
   insetColor: string;
   shadow: number;
@@ -521,6 +522,13 @@ export function validateProject(value: unknown): Project {
       p.appearance.cursorLoopMs > 4000)
   )
     throw new Error("The project has an invalid cursor loop duration.");
+  if (
+    p.appearance.outerRadius !== undefined &&
+    (!valid(p.appearance.outerRadius) ||
+      p.appearance.outerRadius < 0 ||
+      p.appearance.outerRadius > 200)
+  )
+    throw new Error("The project has an invalid outer corner radius.");
   for (const k of [
     "padding",
     "radius",

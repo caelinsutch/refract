@@ -1,3 +1,4 @@
+import { insetAppearance, screenCorners } from "./core/screen-corners";
 import { Tooltip } from "./components/Tooltip";
 import { Disclosure } from "./components/Disclosure";
 import { AspectRatioPicker } from "./components/AspectRatioPicker";
@@ -2552,16 +2553,18 @@ export default function App() {
                 <Range
                   label="Rounded corners"
                   resetValue={defaults.radius}
-                  value={project.appearance.radius}
+                  value={screenCorners(project.appearance).outer}
                   max={200}
-                  onChange={(radius) => appearance({ radius })}
+                  onChange={(outerRadius) => appearance({ outerRadius })}
                 />
                 <Range
                   label="Inset"
                   resetValue={defaults.inset}
                   value={project.appearance.inset}
-                  max={30}
-                  onChange={(inset) => appearance({ inset })}
+                  max={60}
+                  step={0.001}
+                  formatValue={(value) => value.toFixed(0)}
+                  onChange={(inset) => appearance(insetAppearance(inset))}
                 />
                 {project.appearance.inset ? (
                   <Row>

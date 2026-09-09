@@ -157,6 +157,49 @@ app.whenReady().then(async () => {
       path.join(directory, "inspector.png"),
       (await c.capturePage()).toPNG(),
     );
+    await read(
+      `document.querySelector('button[aria-label="Edit Inset"]').click()`,
+    );
+    await c.insertText("45.5");
+    c.sendInputEvent({ type: "keyDown", keyCode: "Return" });
+    c.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+    await wait(100);
+    assert.equal(
+      await read(
+        `Number(document.querySelector('input[aria-label="Inset"]').value)`,
+      ),
+      45.5,
+    );
+    assert.equal(
+      await read("Number(corners.value)"),
+      58,
+      "Inset did not update outer radius",
+    );
+    await read(`document.querySelector('button[aria-label="Undo"]').click()`);
+    await wait(100);
+    assert.equal(
+      await read(
+        `Number(document.querySelector('input[aria-label="Inset"]').value)`,
+      ),
+      0,
+    );
+    assert.equal(
+      await read("Number(corners.value)"),
+      14,
+      "Undo did not restore both fields",
+    );
+    await read(`document.querySelector('button[aria-label="Redo"]').click()`);
+    await wait(100);
+    assert.equal(await read("Number(corners.value)"), 58);
+    await read(
+      `document.querySelector('button[aria-label="Reset Inset"]').click()`,
+    );
+    await wait(100);
+    assert.equal(
+      await read("Number(corners.value)"),
+      12,
+      "Inset reset did not reset radius",
+    );
     c.debugger.attach("1.3");
     await c.debugger.sendCommand("Emulation.setEmulatedMedia", {
       features: [{ name: "prefers-reduced-motion", value: "reduce" }],

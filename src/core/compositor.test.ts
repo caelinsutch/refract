@@ -358,3 +358,63 @@ test("zoom expands the screen body into letterbox space rather than recropping a
   assert.deepEqual([...ctx.getImageData(200, 60, 1, 1).data], [255, 0, 0, 255]);
   assert.deepEqual([...ctx.getImageData(200, 20, 1, 1).data], [0, 0, 255, 255]);
 });
+
+test("outer-radius rendering preserves equivalent legacy frames and changes both corner clips", () => {
+  const source = createCanvas(1280, 720);
+  const sc = source.getContext("2d");
+  sc.fillStyle = "#ff0000";
+  sc.fillRect(0, 0, 1280, 720);
+  const p = createProject({
+    file: "test",
+    width: 1280,
+    height: 720,
+    duration: 2000,
+    hasAudio: false,
+  });
+  Object.assign(p.appearance, {
+    radius: 24,
+    inset: 30,
+    shadow: 0,
+    background: "color",
+    color: "#000000",
+    insetColor: "#ffffff",
+    padding: 10,
+  });
+  const output = createCanvas(1280, 720),
+    c = output.getContext("2d");
+  const render = () => {
+    drawFrame(
+      c as unknown as CanvasRenderingContext2D,
+      source as unknown as CanvasImageSource,
+      p,
+      0,
+      1280,
+      720,
+    );
+    return Buffer.from(c.getImageData(0, 0, 1280, 720).data);
+  };
+  const legacy = render();
+  p.appearance.outerRadius = 54;
+  assert.deepEqual(
+    render(),
+    legacy,
+    "Equivalent radius semantics changed pixels",
+  );
+  p.appearance.outerRadius = 0;
+  const square = render();
+  assert.notDeepEqual(
+    square,
+    legacy,
+    "Outer radius did not affect rendered corners",
+  );
+  let moreRed = 0,
+    moreWhite = 0;
+  for (let i = 0; i < square.length; i += 4) {
+    if (square[i] === 255 && square[i + 1] === 0 && legacy[i + 1] !== 0)
+      moreRed++;
+    if (square[i] === 255 && square[i + 1] === 255 && legacy[i] !== 255)
+      moreWhite++;
+  }
+  assert.ok(moreRed > 0, "Video clip did not become square");
+  assert.ok(moreWhite > 0, "Inset frame did not become square");
+});

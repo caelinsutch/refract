@@ -1,3 +1,4 @@
+import { screenCorners } from "./screen-corners";
 import { screenExposure, drawScreenExposure } from "./screen-blur";
 import { cursorExposure, drawCursorExposure } from "./cursor-render";
 import { drawShortcut, shortcutEnabled, shortcutFontSize } from "./shortcuts";
@@ -239,7 +240,9 @@ export function drawFrame(
         height,
         transform,
       );
-      const r = a.radius * scale * transform.scale;
+      const corners = screenCorners(a);
+      const r = corners.inner * scale * transform.scale;
+      const outerRadius = corners.outer * scale * transform.scale;
       const inset = a.inset * scale * transform.scale;
       c.save();
       c.shadowColor = `rgba(0,0,0,${a.shadow * 0.6})`;
@@ -250,7 +253,14 @@ export function drawFrame(
       const angle = (a.shadowAngle * Math.PI) / 180;
       c.shadowOffsetX = Math.cos(angle) * distance;
       c.shadowOffsetY = Math.sin(angle) * distance;
-      rounded(c, x - inset, y - inset, w + inset * 2, h + inset * 2, r + inset);
+      rounded(
+        c,
+        x - inset,
+        y - inset,
+        w + inset * 2,
+        h + inset * 2,
+        outerRadius,
+      );
       c.fillStyle = a.insetColor;
       c.fill();
       c.shadowColor = "transparent";
@@ -283,7 +293,7 @@ export function drawFrame(
     },
   );
   c.save();
-  rounded(c, x, y, w, h, a.radius * scale * z.scale);
+  rounded(c, x, y, w, h, screenCorners(a).inner * scale * z.scale);
   c.clip();
   const cursorStyle = a.cursorSmooth ? a.cursorAnimation : "none";
   const firstSource = p.segments[0].start;

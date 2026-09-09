@@ -801,3 +801,11 @@ continues to require the system permission; window-source listing still does too
 - Added per-field preview placement to shared ranges and configured those background controls accordingly. Below-thumb previews respond to the full row; above-thumb values respond to the slider itself. Direct numeric entry and keyboard visibility remain available.
 - Padding now uses the reference's 0.001 input step and one-decimal percent preview. Its arrow increment remains one hundredth of its 0–35 range (0.35), avoiding whole-number truncation.
 - Build and inspector fixture passed above-thumb blur positioning, below-thumb padding formatting, fractional adjustment, stationary geometry, Enter/Escape, reset, reduced motion, and theme checks. Other inspector panels still require field-by-field configuration comparison.
+
+### Inset and outer-corner behavior — 2026-09-09
+
+- Installed inset controls span 0–60 with fractional input; changing inset sets the outer corner radius to rounded inset plus 12. The reference renderer subtracts the inset to derive video corners, retaining a four-point minimum when the outer radius is at least four.
+- Added optional outerRadius appearance data for new edits. Existing projects without it keep the original inner-radius interpretation and render unchanged. Rounded corners now displays the outer frame radius; changing Inset sets both values in one undoable edit. Reset restores zero inset and a 12-point outer radius.
+- Preview/export share the updated compositor; both video and cursor clipping use the derived inner radius. Project validation checks optional outer radii without requiring migration of older projects.
+- All 159 core tests passed before the final compositor assertion; the focused 12-test compositor/corner suite then passed, including pixel equality for equivalent legacy/new settings and distinct video/frame corner changes. Inspector verification passed fractional edits, coupled radius changes, reset, Undo/Redo, and prior editing/hover checks.
+- Asymmetric per-edge inset positioning, source-derived color suggestions, and live reference comparison remain open.
