@@ -15,3 +15,9 @@ The geometry test checks the resulting displacement in composition pixels for a 
 ### On-demand preview correction
 
 Code review of the preview scheduler found that paused frames render only when invalidated. The initial drag implementation changed its draft ref without requesting a frame, so its claimed continuous draft preview was not established. Pointer movement now requests a preview frame explicitly. Cancellation, Escape, lost pointer capture, and pointer-up also invalidate the preview to remove draft pixels. Native menu actions and non-modifier keyboard actions cancel the draft before changing the editing context, preventing playback/seek shortcuts from retaining a gesture computed against an earlier frame. Production compilation passes. Live gesture verification remains outstanding.
+
+## Saved-mask validation
+
+Project validation now checks individual masks: nonempty unique IDs, finite numeric fields, valid source-time intervals, supported mask types, strength from 0 to 100, and normalized coordinates/dimensions from 0 to 1. Previously only the presence of the masks array was checked. Existing masks whose rectangle extends past the frame edge remain accepted because older numeric controls allowed that geometry and the compositor clips it. Zero-size and zero-strength legacy values also remain accepted.
+
+Round-trip compatibility and malformed-mask regression tests pass, including null entries, duplicate IDs, NaN, unsupported types, and invalid ranges. All 100 core tests and production compilation pass. Native project-open error presentation was not exercised for this change.

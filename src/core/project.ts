@@ -365,6 +365,36 @@ export function validateProject(value: unknown): Project {
     layoutEnd = layout.end;
   }
 
+  const maskIds = new Set<string>();
+  for (const mask of p.masks) {
+    if (
+      !mask ||
+      typeof mask.id !== "string" ||
+      !mask.id ||
+      maskIds.has(mask.id) ||
+      ![
+        mask.start,
+        mask.end,
+        mask.x,
+        mask.y,
+        mask.width,
+        mask.height,
+        mask.strength,
+      ].every(valid) ||
+      mask.start < 0 ||
+      mask.end <= mask.start ||
+      mask.end > p.source.duration ||
+      !["blur", "highlight"].includes(mask.type) ||
+      mask.strength < 0 ||
+      mask.strength > 100 ||
+      [mask.x, mask.y, mask.width, mask.height].some(
+        (value) => value < 0 || value > 1,
+      )
+    )
+      throw new Error("The project has invalid mask data.");
+    maskIds.add(mask.id);
+  }
+
   for (const z of p.zooms)
     if (
       ![z.start, z.end, z.scale, z.x, z.y].every(valid) ||
