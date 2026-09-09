@@ -71,3 +71,11 @@ npx tsc scripts/verify-native-crop.cts --target ES2022 --module Node16 --moduleR
 ```
 
 The run uses a generated 1920×1080 frame and its own profile. It does not modify the running Refract session or the system appearance. This closes the native-host numeric-entry and result/cancellation gaps. Parent DOM focus restoration, dragging, visual material comparison, and undo after accepting a native result in the real editor remain separate checks.
+
+## Reference crop minimum and confirmation feedback
+
+Read-only inspection of the installed Screen Studio editor bundle (`BCjI4y2S.js`, crop-window module) identifies an exported `MIN_CROP_SIZE` of 200, an undersize warning, and a disabled confirmation action while the crop is invalid. This is the editor crop window, distinct from the capture-area tools' separate 150-pixel message. No vendor code or assets were copied.
+
+Refract's shared crop editor now declares 200 as the size-input minimum and displays a centered minimum-size message while either dimension is below 200. Confirmation is disabled during such drafts, including Enter through the shared default action. Existing project data and rendering are unaffected; this is new-crop confirmation behavior.
+
+The real native-window verifier enters width 199, checks the disabled confirmation and warning, sends Enter, and confirms that crop IPC remains pending. It then replaces the value with 1000 digit by digit and confirms successfully. Escape and native-close cancellation still pass. The full-editor fixture was increased from 320×180 to 320×240 to exercise valid crops under this reference constraint; its complete keyboard/crop sequence passes. Production build passes. Exact spacing/material fidelity remains unverified because the reference editor screenshot is still white.

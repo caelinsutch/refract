@@ -103,6 +103,7 @@ const s = sx.create({
     flexShrink: 0,
   },
 });
+const minimumCropSize = 200;
 const handles = [
   ["nw", 0, 0],
   ["n", 50, 0],
@@ -227,7 +228,7 @@ export default function CropEditor({
               {...sx.props(s.field)}
               type="number"
               aria-label={`Crop ${key}`}
-              min={1}
+              min={minimumCropSize}
               max={key === "width" ? width : height}
               value={fieldDraft?.key === key ? fieldDraft.value : rect[key]}
               onBlur={() => setFieldDraft(null)}
@@ -356,8 +357,27 @@ export default function CropEditor({
           </div>
         </div>
       </div>
+      {(rect.width < minimumCropSize || rect.height < minimumCropSize) && (
+        <p
+          role="status"
+          style={{
+            margin: 0,
+            textAlign: "center",
+            color: "var(--text-secondary)",
+          }}
+        >
+          Minimum size is {minimumCropSize} × {minimumCropSize} pixels.
+        </p>
+      )}
       <div {...sx.props(s.footer)}>
-        <Button primary defaultAction onClick={() => onConfirm(rect)}>
+        <Button
+          primary
+          defaultAction
+          disabled={
+            rect.width < minimumCropSize || rect.height < minimumCropSize
+          }
+          onClick={() => onConfirm(rect)}
+        >
           Confirm changes ↵
         </Button>
         <Button onClick={onCancel}>Discard changes</Button>

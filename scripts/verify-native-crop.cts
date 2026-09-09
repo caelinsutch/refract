@@ -71,6 +71,32 @@ app.whenReady().then(async () => {
       await child.webContents.executeJavaScript(
         `(() => {const field=document.querySelector('[aria-label="Crop width"]');field.focus();field.select();})()`,
       );
+      if (action === "confirm") {
+        await child.webContents.insertText("199");
+        const invalid = await child.webContents.executeJavaScript(
+          `({disabled:document.querySelector('[data-dialog-default]').disabled,warning:document.querySelector('[role="status"]')?.textContent})`,
+        );
+        assert.equal(invalid.disabled, true);
+        assert.match(invalid.warning, /200/);
+        child.webContents.sendInputEvent({
+          type: "keyDown",
+          keyCode: "Return",
+        });
+        child.webContents.sendInputEvent({ type: "keyUp", keyCode: "Return" });
+        await child.webContents.executeJavaScript(
+          `new Promise(resolve=>setTimeout(resolve,50))`,
+        );
+        assert.equal(
+          await parent.webContents.executeJavaScript(
+            `window.cropResult === undefined`,
+          ),
+          true,
+          "Enter accepted an undersized crop",
+        );
+        await child.webContents.executeJavaScript(
+          `document.querySelector('[aria-label="Crop width"]').select()`,
+        );
+      }
       for (const digit of action === "confirm"
         ? ["1", "0", "0", "0"]
         : ["8", "0", "0"])

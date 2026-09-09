@@ -16,7 +16,7 @@ app.whenReady().then(async () => {
       "-f",
       "lavfi",
       "-i",
-      "testsrc2=size=320x180:rate=30:duration=2",
+      "testsrc2=size=320x240:rate=30:duration=2",
       "-c:v",
       "libx264",
       "-pix_fmt",
