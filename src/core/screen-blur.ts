@@ -1,3 +1,4 @@
+import { instantZoomAt } from "./instant-zoom";
 import { sourceAt, zoomAt, type Project } from "./project";
 import { createRenderSurface } from "./cursor-render";
 type Transform = ReturnType<typeof zoomAt>;
@@ -7,7 +8,12 @@ export function screenExposure(p: Project, t: number): Transform[] {
   const amount = p.appearance.motionBlurAmount ?? 1;
   const move = (p.appearance.screenMoveBlur ?? 0) * amount,
     zoom = (p.appearance.screenZoomBlur ?? 0) * amount;
-  if (!at || (!move && !zoom) || p.appearance.animation === "instant")
+  if (
+    !at ||
+    (!move && !zoom) ||
+    p.appearance.animation === "instant" ||
+    instantZoomAt(p, at.time)
+  )
     return [current];
   const samples = Array.from({ length: 12 }, (_, i) => {
     const time = Math.max(

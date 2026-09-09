@@ -1,3 +1,4 @@
+import { instantZoomAt } from "./instant-zoom.js";
 import { snapAutoTarget } from "./edge-snap.js";
 import { effectiveZooms } from "./system-zooms.js";
 import { initialZoomScale } from "./framing.js";
@@ -10,6 +11,7 @@ export const screenPresets = {
 };
 type Target = { scale: number; x: number; y: number };
 type Checkpoint = {
+  instant?: boolean;
   time: number;
   target: Target;
   position: Target;
@@ -30,6 +32,13 @@ function advance(
   time: number,
   config: SpringConfig,
 ): Checkpoint {
+  if (point.instant)
+    return {
+      ...point,
+      time,
+      position: { ...point.target },
+      velocity: { scale: 0, x: 0, y: 0 },
+    };
   const position = { ...point.position },
     velocity = { ...point.velocity };
   for (const key of ["scale", "x", "y"] as const) {
@@ -41,7 +50,13 @@ function advance(
       config,
     );
   }
-  return { time, position, velocity, target: point.target };
+  return {
+    time,
+    position,
+    velocity,
+    target: point.target,
+    instant: point.instant,
+  };
 }
 
 /** Spring checkpoints make zoom boundaries and retargets independent of playback order. */
@@ -66,6 +81,11 @@ export function screenMotionAt(p: Project, time: number): Target {
     for (const { z, targets } of zooms) {
       times.add(z.start);
       times.add(z.end);
+      if (z.instantAnimation)
+        for (const boundary of [z.start, z.end]) {
+          times.add(Math.max(0, boundary - 100));
+          times.add(boundary + 100);
+        }
       for (const c of targets) times.add(c.time);
     }
     const orderedTimes = [...times].sort((a, b) => a - b);
@@ -98,7 +118,15 @@ export function screenMotionAt(p: Project, time: number): Target {
           : { x: z.x, y: z.y };
         target = { scale: z.scale * initialScale, ...position };
       }
-      point = { ...point, target };
+      const instant = instantZoomAt(p, t);
+      point = {
+        ...point,
+        target,
+        instant,
+        ...(instant
+          ? { position: { ...target }, velocity: { scale: 0, x: 0, y: 0 } }
+          : {}),
+      };
       checkpoints.push(point);
     }
     entry = { zooms: p.zooms, cursor: p.cursor, key, checkpoints };

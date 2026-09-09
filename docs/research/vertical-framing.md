@@ -196,3 +196,21 @@ visibility, Advanced disclosure, numeric Enter commit, and Reset.
 The rule is implemented against Refract's current size normalization. Matching
 inset normalization, special cursor-target overrides and reference-rendered
 trajectories still requires verification; this is not a pixel-parity claim.
+
+## Per-zoom instant animation — 2026-09-09
+
+Installed ZoomEditor exposes Instant animation per range. The renderer's animation
+disable predicate checks proximity to that range's start/end with a 100ms window;
+it does not disable mouse-follow springs throughout the whole zoom.
+
+Added optional persisted `instantAnimation` with boolean validation and a sidebar
+switch. Motion checkpoints include the suppression-window boundaries, resetting
+position/velocity to the current target inside them. Interior target changes still
+use the chosen spring. Screen motion-blur exposure is suppressed near instant
+boundaries to avoid averaging across cuts. Disabled ranges have no effect.
+
+Three new tests cover entry/exit cuts, ordinary spring behavior, interior automatic
+retarget continuity and seeking, persistence, validation and blur suppression.
+All 148 tests pass. The editor verifier toggles the new per-range switch on/off.
+The implementation uses half-open 100ms windows for deterministic checkpoint
+transitions; exact reference frame-boundary parity is still unverified.

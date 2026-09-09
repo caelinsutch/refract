@@ -546,6 +546,12 @@ app.whenReady().then(async () => {
       if(Number(document.querySelector('input[aria-label="Snap to edges"]').value)!==25) throw Error('Snap reset failed');
       Array.from(document.querySelectorAll('aside button')).find(b=>b.textContent==='Manual').click();await wait(30);
       if(document.querySelector('input[aria-label="Snap to edges"]')||!document.querySelector('input[aria-label="Horizontal target"]')) throw Error('Manual mode did not restore target controls');
+      const instant=document.querySelector('[role="switch"][aria-label="Instant animation"]');
+      if(!instant||instant.getAttribute('aria-checked')!=='false') throw Error('Missing per-zoom instant switch');
+      instant.click();await wait(30);
+      if(instant.getAttribute('aria-checked')!=='true') throw Error('Instant animation did not enable');
+      instant.click();await wait(30);
+      if(instant.getAttribute('aria-checked')!=='false') throw Error('Instant animation did not disable');
     })()`);
     await window.webContents.executeJavaScript(`(async () => {
       const close=document.querySelector('button[title="Close Zoom editor"]');

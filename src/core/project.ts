@@ -15,6 +15,7 @@ export type Segment = {
 };
 export type Zoom = {
   snapToEdgesRatio?: number;
+  instantAnimation?: boolean;
   id: string;
   start: number;
   end: number;
@@ -419,6 +420,8 @@ export function validateProject(value: unknown): Project {
       z.x > 1 ||
       z.y < 0 ||
       z.y > 1 ||
+      (z.instantAnimation !== undefined &&
+        typeof z.instantAnimation !== "boolean") ||
       (z.snapToEdgesRatio !== undefined &&
         (!valid(z.snapToEdgesRatio) ||
           z.snapToEdgesRatio < 0 ||

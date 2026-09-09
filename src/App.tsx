@@ -2186,6 +2186,13 @@ export default function App() {
                     : "Auto zoom follows recorded mouse movement. Imported videos do not include cursor metadata."}
                 </Note>
                 <Toggle
+                  label="Instant animation"
+                  value={z.instantAnimation ?? false}
+                  onChange={(instantAnimation) =>
+                    zoomEdit({ instantAnimation })
+                  }
+                />
+                <Toggle
                   label="Enabled"
                   value={!z.disabled}
                   onChange={(v) => zoomEdit({ disabled: !v })}
