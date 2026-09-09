@@ -19,6 +19,7 @@ void app.whenReady().then(async () => {
         recorderExpand: async () => {},
         recorderInputMenu: async request => ({value:'fixture-device', label:'A very long external camera and microphone device name'}),
         recorderSources: () => ipcRenderer.invoke('verify-sources'),
+        recorderStart: choice => ipcRenderer.invoke('verify-start',choice),
       });`,
     );
     let requests = 0;
@@ -28,6 +29,10 @@ void app.whenReady().then(async () => {
       return new Promise((resolve) => {
         complete = resolve;
       });
+    });
+    let captureChoice: { countdownSeconds?: number } | undefined;
+    ipcMain.handle("verify-start", (_, choice) => {
+      captureChoice = choice;
     });
     const fixture = (name: string) => ({
       permission: "granted",
@@ -152,6 +157,40 @@ void app.whenReady().then(async () => {
     await fs.writeFile(
       path.join(directory, "toolbar.png"),
       (await window.webContents.capturePage()).toPNG(),
+    );
+    await evaluate("window.pick('Recording options')");
+    await until(
+      () =>
+        evaluate(
+          "!!document.querySelector('[aria-label=\"Recording countdown\"]')",
+        ),
+      "Countdown options did not mount",
+    );
+    await evaluate(`const countdown = document.querySelector('[aria-label="Recording countdown"]');
+      countdown.value = '0'; countdown.dispatchEvent(new Event('change',{bubbles:true}));`);
+    await until(
+      () =>
+        evaluate(
+          "localStorage.getItem('refract.recorder.countdownSeconds') === '0'",
+        ),
+      "Countdown preference was not saved",
+    );
+    await evaluate("window.pick('Display')");
+    await until(
+      () =>
+        evaluate(
+          "document.body.textContent.includes('Click to start recording')",
+        ),
+      "No-countdown hint did not update",
+    );
+    await evaluate(
+      "Array.from(document.querySelectorAll('button')).find(button => button.textContent.includes('Main display')).click()",
+    );
+    await until(() => !!captureChoice, "Capture request was not sent");
+    assert.equal(
+      captureChoice!.countdownSeconds,
+      0,
+      "Capture ignored the no-countdown preference",
     );
     console.log(
       JSON.stringify({

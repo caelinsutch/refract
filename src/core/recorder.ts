@@ -24,6 +24,7 @@ export type CaptureSources = {
   microphones: { id: string; name: string }[];
 };
 export type CaptureChoice = {
+  countdownSeconds?: 0 | 3 | 5 | 10;
   mode: "display" | "window" | "area";
   displayId?: number;
   windowId?: number;

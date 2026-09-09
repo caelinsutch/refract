@@ -405,6 +405,17 @@ export default function Recorder() {
       displayId: number;
     } | null>(null);
   const areaStartButton = useRef<HTMLButtonElement>(null);
+  const [countdownSeconds, setCountdownSeconds] = useState<0 | 3 | 5 | 10>(
+    () => {
+      try {
+        const saved = localStorage.getItem("refract.recorder.countdownSeconds");
+        const value = saved === null ? 3 : Number(saved);
+        return value === 0 || value === 5 || value === 10 ? value : 3;
+      } catch {
+        return 3;
+      }
+    },
+  );
   const sourceRequest = useRef<Promise<void> | null>(null);
   const inputMenuBusy = useRef(false);
   const [inputNames, setInputNames] = useState({ camera: "", microphone: "" });
@@ -416,6 +427,7 @@ export default function Recorder() {
       areaStartButton.current?.focus({ preventScroll: true });
   }, [panel, area]);
   const options = useRef({
+    countdownSeconds,
     systemAudio,
     microphone,
     camera,
@@ -424,6 +436,7 @@ export default function Recorder() {
     cameraResolution,
   });
   options.current = {
+    countdownSeconds,
     systemAudio,
     microphone,
     camera,
@@ -451,6 +464,7 @@ export default function Recorder() {
     try {
       await api?.recorderStart({
         ...choice,
+        countdownSeconds: options.current.countdownSeconds,
         systemAudio: options.current.systemAudio,
         automaticZooms: options.current.automaticZooms,
         completion: options.current.completion,
@@ -737,7 +751,9 @@ export default function Recorder() {
                       {d.width} × {d.height} ·{" "}
                       {panel === "area"
                         ? "Choose area"
-                        : "Click to start a 3-second countdown"}
+                        : countdownSeconds === 0
+                          ? "Click to start recording"
+                          : `Click to start a ${countdownSeconds}-second countdown`}
                     </span>
                   </span>
                 </button>
@@ -886,6 +902,30 @@ export default function Recorder() {
             </p>
           ) : panel === "settings" ? (
             <>
+              <label {...sx.props(s.item)}>
+                <span>Recording countdown</span>
+                <select
+                  aria-label="Recording countdown"
+                  value={countdownSeconds}
+                  onChange={(event) => {
+                    const value = Number(event.target.value) as 0 | 3 | 5 | 10;
+                    setCountdownSeconds(value);
+                    try {
+                      localStorage.setItem(
+                        "refract.recorder.countdownSeconds",
+                        String(value),
+                      );
+                    } catch {
+                      /* Keep the session preference. */
+                    }
+                  }}
+                >
+                  <option value={0}>No countdown</option>
+                  <option value={3}>3s</option>
+                  <option value={5}>5s</option>
+                  <option value={10}>10s</option>
+                </select>
+              </label>
               <label {...sx.props(s.item)}>
                 <span>After recording</span>
                 <select

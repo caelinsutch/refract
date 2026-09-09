@@ -483,3 +483,19 @@ input methods. One initial right-click attempt did not open a menu; a diagnostic
 rerun passed. The verifier now explicitly waits for document focus and two frames
 before sending input, and that run passed too. Live comparison is still needed
 to distinguish any remaining native interaction issues from automation timing.
+
+## Recording countdown choices — 2026-09-09
+
+The reference's recording options offer No countdown, 3s, 5s, and 10s. Refract
+now saves these choices and sends the selected duration with the capture request.
+Older requests retain the three-second default. Zero goes directly to starting;
+positive durations use a monotonic deadline and only update the displayed count
+when the remaining second changes. A delayed event-loop tick therefore catches
+up instead of extending the countdown. Existing cancel behavior clears the timer.
+
+All 150 core tests pass, including duration normalization and delayed-tick math.
+The recorder renderer verifier chooses No countdown, checks persistence and the
+updated display-source hint, and verifies the intercepted capture request carries
+zero. It does not start a real recording. Live start/cancel timing and native
+recording-options menu presentation remain unverified; the current control lives
+in Refract's recording settings panel.

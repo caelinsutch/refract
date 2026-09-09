@@ -1,3 +1,4 @@
+import { countdownDuration, countdownRemaining } from "./countdown.cjs";
 import {
   readRecordingDestination,
   saveRecordingDestination,
@@ -226,19 +227,29 @@ export function setupRecorder(
     if (!["idle", "error"].includes(state.phase)) return;
     choice = selected;
     stopWhenStarted = false;
-    state = { phase: "countdown", countdown: 3, elapsed: 0 };
+    const seconds = countdownDuration(selected.countdownSeconds);
     resize(false);
-    send();
     editor.hide();
+    if (seconds === 0) {
+      state = { phase: "starting", countdown: 0, elapsed: 0 };
+      void record(selected);
+      return;
+    }
+    state = { phase: "countdown", countdown: seconds, elapsed: 0 };
+    send();
+    const deadline = performance.now() + seconds * 1000;
     countdownTimer = setInterval(() => {
-      state.countdown--;
-      send();
+      const remaining = countdownRemaining(deadline, performance.now());
+      if (remaining !== state.countdown) {
+        state.countdown = remaining;
+        send();
+      }
       if (state.countdown <= 0) {
         clearInterval(countdownTimer!);
         countdownTimer = null;
         void record(selected);
       }
-    }, 1000);
+    }, 100);
   }
   async function record(selected: CaptureChoice) {
     state = { ...state, phase: "starting" };
